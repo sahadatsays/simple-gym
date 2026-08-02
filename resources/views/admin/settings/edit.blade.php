@@ -49,11 +49,12 @@
                         required
                     />
 
-                    <x-forms.input
+                    <x-forms.select
                         label="Currency"
                         name="currency"
-                        :value="$settings->currency"
-                        maxlength="3"
+                        :options="$currencies"
+                        :selected="$settings->currency"
+                        placeholder="Select currency"
                         required
                     />
 

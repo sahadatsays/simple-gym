@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GymSettingController;
+use App\Http\Controllers\Admin\MembershipPlanController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
@@ -53,6 +54,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::put('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::resource('roles', RoleController::class)->except(['show']);
         Route::resource('permissions', PermissionController::class)->except(['show']);
+        Route::resource('membership-plans', MembershipPlanController::class)->except(['show']);
 
         Route::get('settings', [GymSettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [GymSettingController::class, 'update'])->name('settings.update');

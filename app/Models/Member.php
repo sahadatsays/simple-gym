@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'name',
     'email',
     'phone',
+    'membership_plan_id',
     'joined_at',
     'membership_expires_at',
     'status',
@@ -35,6 +37,14 @@ class Member extends Model
             'membership_expires_at' => 'date',
             'status' => MemberStatus::class,
         ];
+    }
+
+    /**
+     * @return BelongsTo<MembershipPlan, $this>
+     */
+    public function membershipPlan(): BelongsTo
+    {
+        return $this->belongsTo(MembershipPlan::class);
     }
 
     /**

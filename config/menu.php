@@ -38,6 +38,12 @@ return [
             'match' => 'admin.permissions.*',
         ],
         [
+            'label' => 'Membership Plans',
+            'route' => 'admin.membership-plans.index',
+            'permission' => 'membership-plans.view',
+            'match' => 'admin.membership-plans.*',
+        ],
+        [
             'label' => 'Gym Settings',
             'route' => 'admin.settings.edit',
             'permission' => 'settings.view',

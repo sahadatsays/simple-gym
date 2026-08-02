@@ -28,6 +28,12 @@ return [
             'members.edit',
             'members.delete',
         ],
+        'membership-plans' => [
+            'membership-plans.view',
+            'membership-plans.create',
+            'membership-plans.edit',
+            'membership-plans.delete',
+        ],
         'payments' => [
             'payments.view',
             'payments.create',
@@ -73,6 +79,9 @@ return [
             'members.view',
             'members.create',
             'members.edit',
+            'membership-plans.view',
+            'membership-plans.create',
+            'membership-plans.edit',
             'payments.view',
             'payments.create',
             'products.view',
