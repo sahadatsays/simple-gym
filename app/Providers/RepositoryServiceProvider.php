@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\GymSettingRepositoryInterface;
+use App\Contracts\Repositories\MemberRepositoryInterface;
 use App\Contracts\Repositories\MembershipPlanRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Repositories\ActivityLogRepository;
 use App\Repositories\GymSettingRepository;
+use App\Repositories\MemberRepository;
 use App\Repositories\MembershipPlanRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +22,7 @@ class RepositoryServiceProvider extends ServiceProvider
     public array $bindings = [
         UserRepositoryInterface::class => UserRepository::class,
         MembershipPlanRepositoryInterface::class => MembershipPlanRepository::class,
+        MemberRepositoryInterface::class => MemberRepository::class,
         GymSettingRepositoryInterface::class => GymSettingRepository::class,
         ActivityLogRepositoryInterface::class => ActivityLogRepository::class,
     ];

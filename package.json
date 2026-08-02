@@ -15,6 +15,7 @@
         "@popperjs/core": "^2.11.8",
         "alpinejs": "^3.15.12",
         "bootstrap": "^5.3.8",
-        "chart.js": "^4.5.1"
+        "chart.js": "^4.5.1",
+        "flatpickr": "^4.6.13"
     }
 }

@@ -2,21 +2,31 @@
 
 namespace App\Models;
 
+use App\Enums\Gender;
 use App\Enums\MemberStatus;
 use Database\Factories\MemberFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'member_code',
+    'rfid_card',
+    'photo_path',
     'name',
     'email',
     'phone',
+    'gender',
+    'date_of_birth',
+    'address',
+    'emergency_contact_name',
+    'emergency_contact_phone',
     'membership_plan_id',
     'joined_at',
     'membership_expires_at',
@@ -35,8 +45,34 @@ class Member extends Model
         return [
             'joined_at' => 'date',
             'membership_expires_at' => 'date',
+            'date_of_birth' => 'date',
             'status' => MemberStatus::class,
+            'gender' => Gender::class,
         ];
+    }
+
+    /**
+     * @return Attribute<string|null, never>
+     */
+    protected function photoUrl(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->photo_path
+            ? Storage::disk('public')->url($this->photo_path)
+            : null);
+    }
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function initials(): Attribute
+    {
+        return Attribute::get(function (): string {
+            return collect(explode(' ', $this->name))
+                ->filter()
+                ->take(2)
+                ->map(fn (string $part): string => mb_strtoupper(mb_substr($part, 0, 1)))
+                ->implode('');
+        });
     }
 
     /**

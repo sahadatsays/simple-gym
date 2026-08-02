@@ -44,6 +44,12 @@ return [
             'match' => 'admin.membership-plans.*',
         ],
         [
+            'label' => 'Members',
+            'route' => 'admin.members.index',
+            'permission' => 'members.view',
+            'match' => 'admin.members.*',
+        ],
+        [
             'label' => 'Gym Settings',
             'route' => 'admin.settings.edit',
             'permission' => 'settings.view',

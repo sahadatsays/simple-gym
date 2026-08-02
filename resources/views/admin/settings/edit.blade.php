@@ -60,18 +60,16 @@
 
                     <div class="row">
                         <div class="col-md-6">
-                            <x-forms.input
+                            <x-forms.time-picker
                                 label="Opening time"
                                 name="opening_time"
-                                type="time"
                                 :value="optional($settings->opening_time)?->format('H:i')"
                             />
                         </div>
                         <div class="col-md-6">
-                            <x-forms.input
+                            <x-forms.time-picker
                                 label="Closing time"
                                 name="closing_time"
-                                type="time"
                                 :value="optional($settings->closing_time)?->format('H:i')"
                             />
                         </div>
