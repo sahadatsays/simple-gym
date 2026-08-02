@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\GymSettingController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\MembershipPlanController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\RfidCardController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -57,6 +58,11 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::resource('permissions', PermissionController::class)->except(['show']);
         Route::resource('membership-plans', MembershipPlanController::class)->except(['show']);
         Route::resource('members', MemberController::class);
+        Route::post('rfid-cards', [RfidCardController::class, 'store'])->name('rfid-cards.store');
+        Route::get('rfid-cards', [RfidCardController::class, 'index'])->name('rfid-cards.index');
+        Route::post('rfid-cards/replace', [RfidCardController::class, 'replace'])->name('rfid-cards.replace');
+        Route::post('rfid-cards/{rfid_card}/assign', [RfidCardController::class, 'assign'])->name('rfid-cards.assign');
+        Route::patch('rfid-cards/{rfid_card}/disable', [RfidCardController::class, 'disable'])->name('rfid-cards.disable');
 
         Route::get('settings', [GymSettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [GymSettingController::class, 'update'])->name('settings.update');

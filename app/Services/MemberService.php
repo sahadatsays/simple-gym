@@ -15,6 +15,7 @@ class MemberService extends BaseService
     public function __construct(
         private MemberRepositoryInterface $members,
         private ActivityLogger $activityLogger,
+        private RfidCardService $rfidCardService,
     ) {}
 
     /**
@@ -72,11 +73,11 @@ class MemberService extends BaseService
     public function delete(Member $member): void
     {
         $this->transaction(function () use ($member): void {
+            $this->rfidCardService->disableAllForMember($member);
+
             $this->members->update($member, [
                 'phone' => $member->phone.'-deleted-'.$member->id,
-                'rfid_card' => $member->rfid_card !== null
-                    ? $member->rfid_card.'-deleted-'.$member->id
-                    : null,
+                'rfid_card' => null,
             ]);
 
             $this->activityLogger->log('member.deleted', $member, 'Member deleted', [

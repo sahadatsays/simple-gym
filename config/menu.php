@@ -50,6 +50,12 @@ return [
             'match' => 'admin.members.*',
         ],
         [
+            'label' => 'RFID Cards',
+            'route' => 'admin.rfid-cards.index',
+            'permission' => 'rfid-cards.view',
+            'match' => 'admin.rfid-cards.*',
+        ],
+        [
             'label' => 'Gym Settings',
             'route' => 'admin.settings.edit',
             'permission' => 'settings.view',

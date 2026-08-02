@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Gender;
 use App\Enums\MemberStatus;
+use App\Enums\RfidCardStatus;
 use Database\Factories\MemberFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
@@ -73,6 +75,22 @@ class Member extends Model
                 ->map(fn (string $part): string => mb_strtoupper(mb_substr($part, 0, 1)))
                 ->implode('');
         });
+    }
+
+    /**
+     * @return HasMany<RfidCard, $this>
+     */
+    public function rfidCards(): HasMany
+    {
+        return $this->hasMany(RfidCard::class);
+    }
+
+    /**
+     * @return HasOne<RfidCard, $this>
+     */
+    public function activeRfidCard(): HasOne
+    {
+        return $this->hasOne(RfidCard::class)->where('status', RfidCardStatus::Active);
     }
 
     /**

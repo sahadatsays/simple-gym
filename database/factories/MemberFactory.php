@@ -23,7 +23,7 @@ class MemberFactory extends Factory
 
         return [
             'member_code' => 'M'.fake()->unique()->numerify('#####'),
-            'rfid_card' => fake()->unique()->numerify('RFID########'),
+            'rfid_card' => null,
             'photo_path' => null,
             'name' => fake()->name(),
             'email' => fake()->optional()->safeEmail(),

@@ -61,7 +61,6 @@ it('creates a member with auto generated member id and photo', function () {
             'name' => 'New Member',
             'phone' => '01711112222',
             'email' => 'new@example.com',
-            'rfid_card' => 'RFID12345',
             'gender' => 'male',
             'date_of_birth' => '1995-05-10',
             'address' => '123 Gym Street',
@@ -78,28 +77,25 @@ it('creates a member with auto generated member id and photo', function () {
 
     expect($member)->not->toBeNull()
         ->and($member->member_code)->toStartWith('M')
-        ->and($member->rfid_card)->toBe('RFID12345')
         ->and($member->photo_path)->not->toBeNull()
         ->and($member->membership_expires_at)->not->toBeNull();
 
     Storage::disk('public')->assertExists($member->photo_path);
 });
 
-it('rejects duplicate phone and rfid', function () {
+it('rejects duplicate phone', function () {
     Member::factory()->create([
         'phone' => '01700000099',
-        'rfid_card' => 'RFID99999',
     ]);
 
     $this->actingAs($this->admin)
         ->post(route('admin.members.store'), [
             'name' => 'Duplicate Member',
             'phone' => '01700000099',
-            'rfid_card' => 'RFID99999',
             'joined_at' => now()->toDateString(),
             'status' => 'active',
         ])
-        ->assertSessionHasErrors(['phone', 'rfid_card']);
+        ->assertSessionHasErrors(['phone']);
 });
 
 it('shows member profile page', function () {
@@ -138,7 +134,6 @@ it('updates a member', function () {
 it('soft deletes a member and frees unique fields', function () {
     $member = Member::factory()->create([
         'phone' => '01733334444',
-        'rfid_card' => 'RFID44444',
     ]);
 
     $this->actingAs($this->admin)
@@ -152,7 +147,6 @@ it('soft deletes a member and frees unique fields', function () {
         ->post(route('admin.members.store'), [
             'name' => 'Reused Phone',
             'phone' => '01733334444',
-            'rfid_card' => 'RFID44444',
             'joined_at' => now()->toDateString(),
             'status' => 'active',
         ])

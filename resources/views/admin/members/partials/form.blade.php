@@ -82,14 +82,6 @@
                 />
             </div>
             <div class="col-md-6">
-                <x-forms.input
-                    label="RFID card"
-                    name="rfid_card"
-                    :value="$member?->rfid_card"
-                    placeholder="Scan or enter RFID"
-                />
-            </div>
-            <div class="col-md-6">
                 <x-forms.select
                     label="Gender"
                     name="gender"

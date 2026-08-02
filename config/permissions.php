@@ -34,6 +34,10 @@ return [
             'membership-plans.edit',
             'membership-plans.delete',
         ],
+        'rfid-cards' => [
+            'rfid-cards.view',
+            'rfid-cards.manage',
+        ],
         'payments' => [
             'payments.view',
             'payments.create',
@@ -82,6 +86,8 @@ return [
             'membership-plans.view',
             'membership-plans.create',
             'membership-plans.edit',
+            'rfid-cards.view',
+            'rfid-cards.manage',
             'payments.view',
             'payments.create',
             'products.view',
@@ -93,6 +99,7 @@ return [
         'staff' => [
             'dashboard.view',
             'members.view',
+            'rfid-cards.view',
             'payments.view',
             'payments.create',
             'products.view',

@@ -71,7 +71,18 @@
                         <dd class="col-sm-8">{{ $member->email ?? '—' }}</dd>
 
                         <dt class="col-sm-4">RFID card</dt>
-                        <dd class="col-sm-8">{{ $member->rfid_card ?? '—' }}</dd>
+                        <dd class="col-sm-8">
+                            @if ($member->activeRfidCard)
+                                {{ $member->activeRfidCard->card_number }}
+                            @else
+                                —
+                            @endif
+                            @can('viewAny', App\Models\RfidCard::class)
+                                <a href="{{ route('admin.rfid-cards.index', ['search' => $member->member_code]) }}" class="small ms-2">
+                                    Manage cards
+                                </a>
+                            @endcan
+                        </dd>
 
                         <dt class="col-sm-4">Gender</dt>
                         <dd class="col-sm-8">{{ $member->gender?->label() ?? '—' }}</dd>

@@ -22,7 +22,6 @@ class StoreMemberRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'rfid_card' => ['nullable', 'string', 'max:50', Rule::unique('members', 'rfid_card')->whereNull('deleted_at')],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'phone' => ['required', 'string', 'max:20', Rule::unique('members', 'phone')->whereNull('deleted_at')],
             'email' => ['nullable', 'email', 'max:255'],

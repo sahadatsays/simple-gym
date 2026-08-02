@@ -28,12 +28,6 @@ class UpdateMemberRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'rfid_card' => [
-                'nullable',
-                'string',
-                'max:50',
-                Rule::unique('members', 'rfid_card')->whereNull('deleted_at')->ignore($member->id),
-            ],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_photo' => ['nullable', 'boolean'],
             'phone' => [
