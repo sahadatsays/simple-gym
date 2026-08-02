@@ -39,6 +39,8 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request): RedirectResponse
     {
+        $this->authorize('create', User::class);
+
         $this->userService->create([
             ...$request->validated(),
             'is_active' => $request->boolean('is_active', true),
@@ -61,6 +63,8 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        $this->authorize('update', $user);
+
         $this->userService->update($user, [
             ...$request->validated(),
             'is_active' => $request->boolean('is_active'),

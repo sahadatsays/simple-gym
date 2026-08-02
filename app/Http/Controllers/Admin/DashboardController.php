@@ -16,7 +16,7 @@ class DashboardController extends Controller
 
     public function index(): View
     {
-        abort_unless(auth()->user()?->can('dashboard.view'), 403);
+        $this->authorizePermission('dashboard.view');
 
         $currency = $this->gymSettings->get()->currency;
 
