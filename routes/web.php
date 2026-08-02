@@ -19,6 +19,10 @@ Route::middleware('guest')->group(function (): void {
     Route::get('login', [LoginController::class, 'create'])->name('login');
     Route::post('login', [LoginController::class, 'store'])->middleware('throttle:5,1');
 
+    if (app()->isLocal()) {
+        Route::post('login/dev', [LoginController::class, 'devLogin'])->name('login.dev');
+    }
+
     Route::get('forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
     Route::post('forgot-password', [ForgotPasswordController::class, 'store'])
         ->middleware('throttle:5,1')

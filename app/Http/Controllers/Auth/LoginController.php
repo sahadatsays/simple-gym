@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use App\Services\AuthService;
 use App\Support\Flash;
 use Illuminate\Auth\AuthenticationException;
@@ -17,7 +18,19 @@ class LoginController extends Controller
 
     public function create(): View
     {
-        return view('auth.login');
+        $devLogin = null;
+
+        if (app()->isLocal()) {
+            $email = config('gym.dev_login.email');
+            $user = User::query()->where('email', $email)->first();
+
+            $devLogin = [
+                'email' => $email,
+                'name' => $user?->name ?? 'Super Admin',
+            ];
+        }
+
+        return view('auth.login', compact('devLogin'));
     }
 
     public function store(LoginRequest $request): RedirectResponse
@@ -42,6 +55,23 @@ class LoginController extends Controller
         $request->clearRateLimiter();
 
         Flash::success('Welcome back!');
+
+        return redirect()->intended(route('admin.dashboard'));
+    }
+
+    public function devLogin(Request $request): RedirectResponse
+    {
+        abort_unless(app()->isLocal(), 404);
+
+        try {
+            $this->authService->devLogin(config('gym.dev_login.email'));
+        } catch (AuthenticationException $exception) {
+            return back()->withErrors(['email' => $exception->getMessage()]);
+        }
+
+        $request->session()->regenerate();
+
+        Flash::success('Logged in via local dev shortcut.');
 
         return redirect()->intended(route('admin.dashboard'));
     }

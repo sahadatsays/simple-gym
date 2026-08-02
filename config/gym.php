@@ -31,4 +31,17 @@ return [
         'per_page' => 15,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Local Development Login
+    |--------------------------------------------------------------------------
+    |
+    | One-click login is only available when APP_ENV=local.
+    |
+    */
+
+    'dev_login' => [
+        'email' => env('DEV_LOGIN_EMAIL', 'admin@simplegym.test'),
+    ],
+
 ];

@@ -44,6 +44,30 @@ class AuthService extends BaseService
         return $user;
     }
 
+    /**
+     * @throws AuthenticationException
+     */
+    public function devLogin(string $email): User
+    {
+        abort_unless(app()->isLocal(), 404);
+
+        $user = $this->users->findByEmail($email);
+
+        if (! $user) {
+            throw new AuthenticationException('Dev login user not found. Run php artisan db:seed.');
+        }
+
+        if (! $user->isActive()) {
+            throw new AuthenticationException('Your account has been deactivated.');
+        }
+
+        Auth::login($user);
+
+        $this->activityLogger->log('auth.dev_login', $user, 'One-click local dev login');
+
+        return $user;
+    }
+
     public function logout(): void
     {
         $user = Auth::user();

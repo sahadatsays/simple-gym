@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolePermissionSeeder::class,
             GymSettingSeeder::class,
+            DashboardSeeder::class,
         ]);
 
         $admin = User::query()->firstOrCreate(

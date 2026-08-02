@@ -57,6 +57,25 @@
                     Sign in
                 </button>
             </form>
+
+            @if ($devLogin)
+                <div class="sg-dev-login mt-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <hr class="flex-grow-1 m-0">
+                        <span class="small text-muted text-uppercase fw-semibold">Local only</span>
+                        <hr class="flex-grow-1 m-0">
+                    </div>
+
+                    <form action="{{ route('login.dev') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="btn sg-dev-login-btn w-100">
+                            <span class="sg-dev-login-badge">DEV</span>
+                            One-click login as {{ $devLogin['name'] }}
+                        </button>
+                        <p class="small text-muted text-center mb-0 mt-2">{{ $devLogin['email'] }}</p>
+                    </form>
+                </div>
+            @endif
         </div>
     </div>
 @endsection

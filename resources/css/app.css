@@ -101,6 +101,41 @@ body {
     box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
 }
 
+.sg-dev-login-btn {
+    border: 1px dashed #cbd5e1;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #334155;
+    background: #f8fafc;
+    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.sg-dev-login-btn:hover,
+.sg-dev-login-btn:focus {
+    color: #0f172a;
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+.sg-dev-login-btn:active {
+    transform: translateY(1px);
+}
+
+.sg-dev-login-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.125rem 0.375rem;
+    margin-right: 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fff;
+    background: #64748b;
+}
+
 .sg-admin-wrapper {
     min-height: 100vh;
 }
@@ -157,6 +192,68 @@ body {
     border: none;
     border-radius: 0.875rem;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.sg-dashboard-stat {
+    border-radius: 1rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sg-dashboard-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+.sg-dashboard-stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sg-dashboard-stat-icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.sg-dashboard-widget {
+    border-radius: 1rem;
+}
+
+.sg-dashboard-widget .card-header {
+    background: transparent;
+}
+
+.sg-dashboard-chart {
+    position: relative;
+    height: 280px;
+}
+
+.sg-dashboard-table thead th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    border-bottom-width: 1px;
+    white-space: nowrap;
+}
+
+.sg-dashboard-table tbody td {
+    border-color: #f1f5f9;
+    vertical-align: middle;
+}
+
+@media (max-width: 575.98px) {
+    .sg-dashboard-chart {
+        height: 240px;
+    }
+
+    .sg-dashboard-stat .h4 {
+        font-size: 1.125rem;
+    }
 }
 
 @media (max-width: 991.98px) {
