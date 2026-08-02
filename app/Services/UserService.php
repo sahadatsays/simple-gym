@@ -31,6 +31,7 @@ class UserService extends BaseService
 
             $this->activityLogger->log('user.created', $user, 'User account created', [
                 'role' => $role,
+                'username' => $user->username,
             ]);
 
             return $user->load('roles');
@@ -44,13 +45,7 @@ class UserService extends BaseService
     {
         return $this->transaction(function () use ($user, $data): User {
             $role = $data['role'] ?? null;
-            unset($data['role']);
-
-            if (empty($data['password'])) {
-                unset($data['password']);
-            } else {
-                $data['password'] = Hash::make($data['password']);
-            }
+            unset($data['role'], $data['password'], $data['password_confirmation']);
 
             $updatedUser = $this->users->update($user, $data);
 
@@ -67,8 +62,48 @@ class UserService extends BaseService
     public function delete(User $user): void
     {
         $this->transaction(function () use ($user): void {
+            $this->users->update($user, [
+                'username' => $user->username.'-deleted-'.$user->id,
+                'email' => 'deleted-'.$user->id.'@deleted.local',
+            ]);
+
             $this->activityLogger->log('user.deleted', $user, 'User account deleted');
             $this->users->delete($user);
+        });
+    }
+
+    public function activate(User $user): User
+    {
+        return $this->transaction(function () use ($user): User {
+            $updatedUser = $this->users->update($user, ['is_active' => true]);
+
+            $this->activityLogger->log('user.activated', $updatedUser, 'User account activated');
+
+            return $updatedUser;
+        });
+    }
+
+    public function deactivate(User $user): User
+    {
+        return $this->transaction(function () use ($user): User {
+            $updatedUser = $this->users->update($user, ['is_active' => false]);
+
+            $this->activityLogger->log('user.deactivated', $updatedUser, 'User account deactivated');
+
+            return $updatedUser;
+        });
+    }
+
+    public function resetPassword(User $user, string $password): User
+    {
+        return $this->transaction(function () use ($user, $password): User {
+            $updatedUser = $this->users->update($user, [
+                'password' => Hash::make($password),
+            ]);
+
+            $this->activityLogger->log('user.password_reset', $updatedUser, 'User password reset by admin');
+
+            return $updatedUser;
         });
     }
 

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@simplegym.test'],
             [
                 'name' => 'Super Admin',
+                'username' => 'superadmin',
                 'phone' => null,
                 'password' => Hash::make('password'),
                 'is_active' => true,

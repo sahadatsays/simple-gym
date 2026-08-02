@@ -48,6 +48,9 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('users', UserController::class)->except(['show']);
+        Route::patch('users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
+        Route::patch('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+        Route::put('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::resource('roles', RoleController::class)->except(['show']);
         Route::resource('permissions', PermissionController::class)->except(['show']);
 
