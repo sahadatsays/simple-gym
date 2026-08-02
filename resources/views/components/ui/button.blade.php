@@ -1,12 +1,12 @@
 @props([
-    'type' => 'primary',
+    'variant' => 'primary',
     'size' => null,
 ])
 
 @php
     $classes = collect([
         'btn',
-        "btn-{$type}",
+        "btn-{$variant}",
         $size ? "btn-{$size}" : null,
     ])->filter()->implode(' ');
 @endphp

@@ -22,6 +22,8 @@ class LoginController extends Controller
 
     public function store(LoginRequest $request): RedirectResponse
     {
+        $request->ensureIsNotRateLimited();
+
         try {
             $this->authService->attemptLogin([
                 'email' => $request->validated('email'),
@@ -29,10 +31,15 @@ class LoginController extends Controller
                 'remember' => $request->boolean('remember'),
             ]);
         } catch (AuthenticationException $exception) {
+            $request->hitRateLimiter();
+
             return back()
                 ->withInput($request->only('email', 'remember'))
                 ->withErrors(['email' => $exception->getMessage()]);
         }
+
+        $request->session()->regenerate();
+        $request->clearRateLimiter();
 
         Flash::success('Welcome back!');
 

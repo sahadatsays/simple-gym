@@ -25,6 +25,9 @@
         <ul class="dropdown-menu dropdown-menu-end">
             <li><span class="dropdown-item-text text-muted small">{{ auth()->user()->email }}</span></li>
             <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
+            <li><a class="dropdown-item" href="{{ route('profile.password.edit') }}">Change Password</a></li>
+            <li><hr class="dropdown-divider"></li>
             <li>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf

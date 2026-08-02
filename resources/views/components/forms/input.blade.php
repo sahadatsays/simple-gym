@@ -3,6 +3,7 @@
     'name',
     'type' => 'text',
     'value' => null,
+    'placeholder' => null,
     'required' => false,
     'help' => null,
 ])
@@ -19,7 +20,12 @@
         type="{{ $type }}"
         name="{{ $name }}"
         id="{{ $name }}"
-        value="{{ old($name, $value) }}"
+        @if ($type !== 'password')
+            value="{{ old($name, $value) }}"
+        @endif
+        @if ($placeholder)
+            placeholder="{{ $placeholder }}"
+        @endif
         @class(['form-control', 'is-invalid' => $errors->has($name)])
         @if ($required) required @endif
         {{ $attributes }}

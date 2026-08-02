@@ -5,7 +5,7 @@
     'value' => '1',
 ])
 
-<div class="form-check mb-3">
+<div {{ $attributes->class(['form-check mb-3']) }}>
     <input
         type="checkbox"
         name="{{ $name }}"

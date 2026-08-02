@@ -6,8 +6,12 @@ use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Models\User;
 use App\Support\ActivityLogger;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class AuthService extends BaseService
 {
@@ -49,5 +53,63 @@ class AuthService extends BaseService
         }
 
         Auth::logout();
+    }
+
+    public function sendPasswordResetLink(string $email): string
+    {
+        $user = $this->users->findByEmail($email);
+
+        if ($user && ! $user->isActive()) {
+            return Password::RESET_LINK_SENT;
+        }
+
+        return Password::sendResetLink(['email' => $email]);
+    }
+
+    /**
+     * @param  array{token: string, email: string, password: string}  $credentials
+     */
+    public function resetPassword(array $credentials): string
+    {
+        $user = $this->users->findByEmail($credentials['email']);
+
+        if ($user && ! $user->isActive()) {
+            throw new InvalidArgumentException('This account has been deactivated.');
+        }
+
+        return Password::reset(
+            $credentials,
+            function (User $user, string $password): void {
+                $user->forceFill([
+                    'password' => $password,
+                ])->save();
+
+                event(new PasswordReset($user));
+
+                $this->activityLogger->log('auth.password_reset', $user, 'Password reset via email link');
+            },
+        );
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function changePassword(User $user, string $currentPassword, string $newPassword): void
+    {
+        if (! Hash::check($currentPassword, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => 'The current password is incorrect.',
+            ]);
+        }
+
+        $this->transaction(function () use ($user, $newPassword): void {
+            $this->users->update($user, [
+                'password' => $newPassword,
+            ]);
+
+            Auth::logoutOtherDevices($newPassword);
+
+            $this->activityLogger->log('auth.password_changed', $user, 'Password changed from profile');
+        });
     }
 }

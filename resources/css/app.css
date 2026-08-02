@@ -16,15 +16,89 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+    padding: 1.5rem;
+    background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.25), transparent 30%),
+        linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #172554 100%);
 }
 
 .sg-auth-card {
     width: 100%;
-    max-width: 420px;
+    max-width: 440px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.25rem;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+    background: #fff;
+}
+
+.sg-auth-logo {
+    width: 72px;
+    height: 72px;
+}
+
+.sg-auth-logo svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.sg-auth-form .form-label {
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.375rem;
+}
+
+.sg-auth-form .form-control {
+    border-color: #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    background-color: #f8fafc;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.sg-auth-form .form-control::placeholder {
+    color: #94a3b8;
+}
+
+.sg-auth-form .form-control:focus {
+    border-color: #2563eb;
+    background-color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.12);
+}
+
+.sg-auth-link {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.sg-auth-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.sg-auth-btn {
     border: none;
-    border-radius: 1rem;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+    border-radius: 0.75rem;
+    padding: 0.8125rem 1rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.sg-auth-btn:hover,
+.sg-auth-btn:focus {
+    color: #fff;
+    filter: brightness(1.03);
+    box-shadow: 0 14px 28px rgba(37, 99, 235, 0.34);
+}
+
+.sg-auth-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
 }
 
 .sg-admin-wrapper {
