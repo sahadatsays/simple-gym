@@ -210,7 +210,7 @@
                                 <div class="col-6">
                                     <label class="form-label">Payment method</label>
                                     <select name="payment_method" x-model="paymentMethod" class="form-select" required>
-                                        @foreach (App\Enums\PaymentMethod::options() as $value => $label)
+                                        @foreach ($enabledPaymentMethods as $value => $label)
                                             <option value="{{ $value }}">{{ $label }}</option>
                                         @endforeach
                                     </select>

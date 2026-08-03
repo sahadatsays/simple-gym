@@ -4,6 +4,7 @@
     'value' => null,
     'required' => false,
     'rows' => 4,
+    'help' => null,
 ])
 
 <div class="mb-3">
@@ -22,6 +23,10 @@
         @if ($required) required @endif
         {{ $attributes }}
     >{{ old($name, $value) }}</textarea>
+
+    @if ($help)
+        <div class="form-text">{{ $help }}</div>
+    @endif
 
     @error($name)
         <div class="invalid-feedback">{{ $message }}</div>

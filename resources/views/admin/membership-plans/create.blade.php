@@ -9,7 +9,10 @@
         <form action="{{ route('admin.membership-plans.store') }}" method="POST">
             @csrf
 
-            @include('admin.membership-plans.partials.form', ['plan' => null])
+            @include('admin.membership-plans.partials.form', [
+                'plan' => null,
+                'defaultAdmissionFee' => $defaultAdmissionFee ?? 0,
+            ])
 
             <div class="d-flex gap-2">
                 <x-ui.button type="submit">Create Plan</x-ui.button>

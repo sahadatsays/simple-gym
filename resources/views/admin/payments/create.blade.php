@@ -220,7 +220,7 @@
                     <x-forms.select
                         label="Payment method"
                         name="payment_method"
-                        :options="App\Enums\PaymentMethod::options()"
+                        :options="$enabledPaymentMethods"
                         :selected="old('payment_method', App\Enums\PaymentMethod::Cash->value)"
                         required
                     />

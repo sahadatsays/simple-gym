@@ -31,7 +31,7 @@
                 <x-forms.money-input
                     label="Admission fee"
                     name="admission_fee"
-                    :value="$plan?->admission_fee"
+                    :value="$plan?->admission_fee ?? ($defaultAdmissionFee ?? 0)"
                     required
                 />
             </div>

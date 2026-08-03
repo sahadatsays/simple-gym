@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Enums\PaymentMethod;
 use App\Models\GymSetting;
+use App\Policies\GymSettingPolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Support\MenuBuilder;
@@ -37,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(Permission::class, PermissionPolicy::class);
+        Gate::policy(GymSetting::class, GymSettingPolicy::class);
 
         $this->shareGymContext();
 
@@ -48,19 +51,32 @@ class AppServiceProvider extends ServiceProvider
     private function shareGymContext(): void
     {
         $composer = function ($view): void {
-            $currency = config('gym.defaults.currency');
-            $gymName = config('gym.defaults.name');
+            $defaults = config('gym.defaults');
+            $currency = $defaults['currency'];
+            $gymName = $defaults['name'];
+            $gymLogoUrl = null;
+            $receiptFooter = $defaults['receipt_footer'] ?? null;
+            $enabledPaymentMethods = PaymentMethod::options();
 
             if (Schema::hasTable('gym_settings')) {
                 $settings = GymSetting::query()->first();
-                $currency = $settings?->currency ?? $currency;
-                $gymName = $settings?->name ?? $gymName;
+
+                if ($settings !== null) {
+                    $currency = $settings->currency ?? $currency;
+                    $gymName = $settings->name ?? $gymName;
+                    $gymLogoUrl = $settings->logo_url;
+                    $receiptFooter = $settings->receipt_footer ?? $receiptFooter;
+                    $enabledPaymentMethods = $settings->paymentMethodOptions();
+                }
             }
 
             $view->with([
                 'gymName' => $gymName,
                 'gymCurrency' => $currency,
                 'currencySymbol' => MoneyFormatter::symbol($currency),
+                'gymLogoUrl' => $gymLogoUrl,
+                'receiptFooter' => $receiptFooter,
+                'enabledPaymentMethods' => $enabledPaymentMethods,
             ]);
         };
 

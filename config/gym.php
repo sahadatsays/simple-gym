@@ -18,6 +18,10 @@ return [
         'address' => env('GYM_ADDRESS'),
         'timezone' => env('GYM_TIMEZONE', 'UTC'),
         'currency' => env('GYM_CURRENCY', 'BDT'),
+        'receipt_footer' => 'Thank you for choosing us. Stay strong!',
+        'membership_reminder_days' => 7,
+        'default_admission_fee' => 500,
+        'enabled_payment_methods' => ['cash', 'card', 'bank', 'mobile_banking'],
         'is_open' => true,
     ],
 

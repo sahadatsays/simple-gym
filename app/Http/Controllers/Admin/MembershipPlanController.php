@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\IndexMembershipPlanRequest;
 use App\Http\Requests\Admin\StoreMembershipPlanRequest;
 use App\Http\Requests\Admin\UpdateMembershipPlanRequest;
 use App\Models\MembershipPlan;
+use App\Services\GymSettingService;
 use App\Services\MembershipPlanService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
@@ -35,7 +36,9 @@ class MembershipPlanController extends Controller
     {
         $this->authorize('create', MembershipPlan::class);
 
-        return view('admin.membership-plans.create');
+        return view('admin.membership-plans.create', [
+            'defaultAdmissionFee' => app(GymSettingService::class)->get()->default_admission_fee,
+        ]);
     }
 
     public function store(StoreMembershipPlanRequest $request): RedirectResponse

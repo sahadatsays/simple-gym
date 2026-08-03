@@ -19,9 +19,14 @@
     <div class="card border-0 shadow-sm sg-receipt mx-auto" style="max-width: 720px;">
         <div class="card-body p-4 p-md-5">
             <div class="d-flex justify-content-between align-items-start mb-4">
-                <div>
-                    <h1 class="h4 fw-bold mb-1">{{ config('app.name') }}</h1>
-                    <p class="text-muted small mb-0">{{ $payment->type->label() }} Receipt</p>
+                <div class="d-flex align-items-start gap-3">
+                    @if ($gymLogoUrl ?? null)
+                        <img src="{{ $gymLogoUrl }}" alt="{{ $gymName }}" style="max-height: 56px; max-width: 120px; object-fit: contain;">
+                    @endif
+                    <div>
+                        <h1 class="h4 fw-bold mb-1">{{ $gymName ?? config('app.name') }}</h1>
+                        <p class="text-muted small mb-0">{{ $payment->type->label() }} Receipt</p>
+                    </div>
                 </div>
                 <div class="text-end">
                     <div class="fw-semibold">{{ $payment->receipt_number }}</div>
@@ -103,7 +108,7 @@
             @endif
 
             <p class="text-muted small mb-0 text-center">
-                Thank you for your payment to {{ config('app.name') }}.
+                {{ $receiptFooter ?? 'Thank you for your payment to '.($gymName ?? config('app.name')).'.' }}
             </p>
         </div>
     </div>
