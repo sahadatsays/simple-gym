@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\DashboardFilterRequest;
 use App\Services\DashboardAlertService;
 use App\Services\DashboardService;
 use App\Services\GymNotificationService;
 use App\Services\GymSettingService;
-use Illuminate\Http\Request;
+use App\Support\DashboardDateRange;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -19,24 +20,33 @@ class DashboardController extends Controller
         private GymSettingService $gymSettings,
     ) {}
 
-    public function index(Request $request): View
+    public function index(DashboardFilterRequest $request): View
     {
-        $this->authorizePermission('dashboard.view');
-
+        $range = $this->resolveDateRange($request);
         $alerts = $this->dashboardAlerts->alerts();
         $this->notifications->syncForUser($request->user(), $alerts);
 
         $currency = $this->gymSettings->get()->currency;
-        $unreadNotificationsCount = $request->user()->unreadNotifications()->count();
 
         return view('admin.dashboard', [
-            'stats' => $this->dashboard->stats($currency),
-            'recentMembers' => $this->dashboard->recentMembers(),
-            'recentPayments' => $this->dashboard->recentPayments(),
-            'monthlyRevenue' => $this->dashboard->monthlyRevenue(),
-            'membershipGrowth' => $this->dashboard->membershipGrowth(),
-            'alerts' => $alerts,
-            'unreadNotificationsCount' => $unreadNotificationsCount,
+            'stats' => $this->dashboard->stats($range, $currency),
+            'recentRegistrations' => $this->dashboard->recentRegistrations($range),
+            'recentPayments' => $this->dashboard->recentPayments($range),
+            'lowStockProducts' => $this->dashboard->lowStockProducts(),
+            'revenueSeries' => $this->dashboard->revenueSeries($range),
+            'registrationSeries' => $this->dashboard->registrationSeries($range),
+            'dateRange' => $range,
+            'filters' => $range->queryParameters(),
+            'unreadNotificationsCount' => $request->user()->unreadNotifications()->count(),
         ]);
+    }
+
+    private function resolveDateRange(DashboardFilterRequest $request): DashboardDateRange
+    {
+        if ($request->query->count() === 0) {
+            return DashboardDateRange::default();
+        }
+
+        return $request->dateRange();
     }
 }

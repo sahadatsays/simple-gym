@@ -227,6 +227,16 @@ body {
     background: transparent;
 }
 
+.sg-dashboard-filter {
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+}
+
+.sg-dashboard-filter .btn-light {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
 .sg-dashboard-chart {
     position: relative;
     height: 280px;

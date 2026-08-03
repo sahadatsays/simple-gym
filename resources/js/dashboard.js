@@ -33,6 +33,12 @@ const currencyFormatter = (currency) => new Intl.NumberFormat(undefined, {
 
 const initDashboardCharts = () => {
     document.querySelectorAll('[data-chart-labels]').forEach((canvas) => {
+        const existing = Chart.getChart(canvas);
+
+        if (existing) {
+            existing.destroy();
+        }
+
         const labels = JSON.parse(canvas.dataset.chartLabels || '[]');
         const values = JSON.parse(canvas.dataset.chartValues || '[]');
         const type = canvas.dataset.chartType || 'line';

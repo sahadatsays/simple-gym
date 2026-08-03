@@ -24,17 +24,40 @@ it('displays dashboard widgets for authorized users', function () {
     $this->actingAs($this->user)
         ->get(route('admin.dashboard'))
         ->assertSuccessful()
-        ->assertSee('Total Members')
+        ->assertSee('Business Dashboard')
+        ->assertSee('Date Range')
+        ->assertSee('New Registrations')
         ->assertSee('Active Members')
-        ->assertSee('Expired Members')
-        ->assertSee("Today's Collection")
-        ->assertSee('Monthly Collection')
+        ->assertSee('Period Revenue')
         ->assertSee('Product Sales')
-        ->assertSee('Low Stock Products')
-        ->assertSee('Recent Members')
+        ->assertSee('Low Stock Items')
+        ->assertSee('Revenue Trend')
+        ->assertSee('Registration Trend')
         ->assertSee('Recent Payments')
-        ->assertSee('Monthly Revenue')
-        ->assertSee('Membership Growth');
+        ->assertSee('Recent Registrations')
+        ->assertSee('Low Stock Products');
+});
+
+it('filters dashboard metrics by date range preset', function () {
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard', ['preset' => 'today']))
+        ->assertSuccessful()
+        ->assertSee('Today')
+        ->assertSee('Business Dashboard');
+});
+
+it('filters dashboard metrics by custom date range', function () {
+    $from = now()->subDays(10)->toDateString();
+    $to = now()->toDateString();
+
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard', [
+            'preset' => 'custom',
+            'from_date' => $from,
+            'to_date' => $to,
+        ]))
+        ->assertSuccessful()
+        ->assertSee(now()->parse($from)->format('M j, Y'));
 });
 
 it('forbids dashboard access without permission', function () {
