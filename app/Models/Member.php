@@ -129,6 +129,25 @@ class Member extends Model
      * @param  Builder<Member>  $query
      * @return Builder<Member>
      */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        if (! filled($term)) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $nested) use ($term): void {
+            $nested->where('name', 'like', "%{$term}%")
+                ->orWhere('member_code', 'like', "%{$term}%")
+                ->orWhere('phone', 'like', "%{$term}%")
+                ->orWhere('email', 'like', "%{$term}%")
+                ->orWhere('rfid_card', 'like', "%{$term}%");
+        });
+    }
+
+    /**
+     * @param  Builder<Member>  $query
+     * @return Builder<Member>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', MemberStatus::Active)

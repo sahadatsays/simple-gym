@@ -27,11 +27,7 @@ class PaymentRepository extends BaseRepository implements PaymentRepositoryInter
                 $query->where(function ($nested) use ($search): void {
                     $nested->where('receipt_number', 'like', "%{$search}%")
                         ->orWhere('reference', 'like', "%{$search}%")
-                        ->orWhereHas('member', function ($memberQuery) use ($search): void {
-                            $memberQuery->where('name', 'like', "%{$search}%")
-                                ->orWhere('member_code', 'like', "%{$search}%")
-                                ->orWhere('phone', 'like', "%{$search}%");
-                        })
+                        ->orWhereHas('member', fn ($memberQuery) => $memberQuery->search($search))
                         ->orWhereHas('invoice', function ($invoiceQuery) use ($search): void {
                             $invoiceQuery->where('invoice_number', 'like', "%{$search}%");
                         });

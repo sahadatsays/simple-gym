@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\GymNotificationService;
+use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -56,9 +57,9 @@ class NotificationController extends Controller
 
         $request->user()->unreadNotifications->markAsRead();
 
-        return redirect()
-            ->route('admin.notifications.index')
-            ->with('success', 'All notifications marked as read.');
+        Flash::success('All notifications marked as read.');
+
+        return redirect()->route('admin.notifications.index');
     }
 
     private function findNotification(Request $request, string $notificationId): DatabaseNotification

@@ -24,7 +24,7 @@ class StoreMemberRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'phone' => ['required', 'string', 'max:20', Rule::unique('members', 'phone')->whereNull('deleted_at')],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('members', 'email')->whereNull('deleted_at')],
             'gender' => ['nullable', 'string', Rule::enum(Gender::class)],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'address' => ['nullable', 'string', 'max:1000'],

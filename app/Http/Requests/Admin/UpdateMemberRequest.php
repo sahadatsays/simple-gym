@@ -36,7 +36,12 @@ class UpdateMemberRequest extends FormRequest
                 'max:20',
                 Rule::unique('members', 'phone')->whereNull('deleted_at')->ignore($member->id),
             ],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('members', 'email')->whereNull('deleted_at')->ignore($member->id),
+            ],
             'gender' => ['nullable', 'string', Rule::enum(Gender::class)],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'address' => ['nullable', 'string', 'max:1000'],

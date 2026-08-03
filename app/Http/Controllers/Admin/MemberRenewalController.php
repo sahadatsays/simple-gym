@@ -29,14 +29,7 @@ class MemberRenewalController extends Controller
         $members = Member::query()
             ->with('membershipPlan')
             ->where('status', '!=', MemberStatus::Pending)
-            ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($nested) use ($search): void {
-                    $nested->where('name', 'like', "%{$search}%")
-                        ->orWhere('member_code', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                });
-            })
+            ->search($search !== '' ? $search : null)
             ->orderBy('name')
             ->limit(50)
             ->get(['id', 'name', 'member_code', 'phone', 'membership_expires_at', 'status', 'membership_plan_id']);
@@ -80,7 +73,11 @@ class MemberRenewalController extends Controller
     {
         $this->authorize('renew', $member);
 
-        $result = $this->renewalService->renew($member, $request->validated());
+        try {
+            $result = $this->renewalService->renew($member, $request->validated());
+        } catch (\InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['renewal' => $exception->getMessage()]);
+        }
 
         Flash::success('Membership renewed successfully. Receipt generated.');
 

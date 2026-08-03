@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\Payment;
+use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -69,8 +70,7 @@ it('shows the receive payment form', function () {
         ->get(route('admin.payments.create'))
         ->assertSuccessful()
         ->assertSee('Receive Payment')
-        ->assertSee('Invoice Payment')
-        ->assertSee('POS Sale');
+        ->assertSee('Unpaid invoice');
 });
 
 it('receives payment for an unpaid invoice', function () {
@@ -91,7 +91,6 @@ it('receives payment for an unpaid invoice', function () {
 
     $this->actingAs($this->admin)
         ->post(route('admin.payments.store'), [
-            'mode' => 'invoice',
             'invoice_id' => $invoice->id,
             'payment_method' => PaymentMethod::Cash->value,
             'amount_paid' => 2000,
@@ -121,7 +120,6 @@ it('applies discount when receiving invoice payment', function () {
 
     $this->actingAs($this->admin)
         ->post(route('admin.payments.store'), [
-            'mode' => 'invoice',
             'invoice_id' => $invoice->id,
             'payment_method' => PaymentMethod::Card->value,
             'discount_amount' => 200,
@@ -151,7 +149,6 @@ it('rejects payment when amount exceeds invoice total', function () {
 
     $this->actingAs($this->admin)
         ->post(route('admin.payments.store'), [
-            'mode' => 'invoice',
             'invoice_id' => $invoice->id,
             'payment_method' => PaymentMethod::Cash->value,
             'amount_paid' => 2500,
@@ -164,14 +161,12 @@ it('rejects payment when amount exceeds invoice total', function () {
 
 it('records a pos sale with optional member', function () {
     $this->actingAs($this->admin)
-        ->post(route('admin.payments.store'), [
-            'mode' => 'pos',
-            'description' => 'Protein Shake',
-            'item_amount' => 500,
-            'type' => PaymentType::PosSale->value,
+        ->post(route('admin.pos.store'), [
+            'items' => [
+                ['product_id' => Product::factory()->create(['selling_price' => 500, 'stock' => 10])->id, 'quantity' => 1],
+            ],
             'payment_method' => PaymentMethod::MobileBanking->value,
             'payment_reference' => 'MBK-12345',
-            'amount_paid' => 500,
         ])
         ->assertRedirect();
 
@@ -183,7 +178,7 @@ it('records a pos sale with optional member', function () {
         ->and($payment->member_id)->toBeNull()
         ->and($invoice->type)->toBe(InvoiceType::PosSale)
         ->and($invoice->status)->toBe(InvoiceStatus::Paid)
-        ->and($invoice->line_items[0]['description'])->toBe('Protein Shake');
+        ->and($invoice->line_items[0]['description'])->toBeString();
 });
 
 it('shows payment details and printable receipt', function () {

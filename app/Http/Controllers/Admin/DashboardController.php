@@ -23,9 +23,11 @@ class DashboardController extends Controller
     {
         $this->authorizePermission('dashboard.view');
 
-        $this->notifications->syncForUser($request->user());
+        $alerts = $this->dashboardAlerts->alerts();
+        $this->notifications->syncForUser($request->user(), $alerts);
 
         $currency = $this->gymSettings->get()->currency;
+        $unreadNotificationsCount = $request->user()->unreadNotifications()->count();
 
         return view('admin.dashboard', [
             'stats' => $this->dashboard->stats($currency),
@@ -33,8 +35,8 @@ class DashboardController extends Controller
             'recentPayments' => $this->dashboard->recentPayments(),
             'monthlyRevenue' => $this->dashboard->monthlyRevenue(),
             'membershipGrowth' => $this->dashboard->membershipGrowth(),
-            'alerts' => $this->dashboardAlerts->alerts(),
-            'unreadNotificationsCount' => $request->user()->unreadNotifications()->count(),
+            'alerts' => $alerts,
+            'unreadNotificationsCount' => $unreadNotificationsCount,
         ]);
     }
 }

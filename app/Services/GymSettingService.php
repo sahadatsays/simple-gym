@@ -11,6 +11,8 @@ use Illuminate\Http\UploadedFile;
 
 class GymSettingService extends BaseService
 {
+    private ?GymSetting $cachedSettings = null;
+
     public function __construct(
         private GymSettingRepositoryInterface $settings,
         private GymLogoStorage $logoStorage,
@@ -19,7 +21,7 @@ class GymSettingService extends BaseService
 
     public function get(): GymSetting
     {
-        return $this->settings->get();
+        return $this->cachedSettings ??= $this->settings->get();
     }
 
     /**
@@ -45,6 +47,8 @@ class GymSettingService extends BaseService
             }
 
             $updated = $this->settings->update($settings, $data);
+
+            $this->cachedSettings = $updated;
 
             $this->activityLogger->log('gym_settings.updated', $updated, 'Gym settings updated');
 

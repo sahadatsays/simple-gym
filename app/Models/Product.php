@@ -51,6 +51,32 @@ class Product extends Model
     }
 
     /**
+     * @return array{
+     *     id: int,
+     *     sku: string,
+     *     barcode: ?string,
+     *     name: string,
+     *     category: ?string,
+     *     selling_price: float,
+     *     stock: int,
+     *     is_low_stock: bool
+     * }
+     */
+    public function toPosArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'sku' => $this->sku,
+            'barcode' => $this->barcode,
+            'name' => $this->name,
+            'category' => $this->category,
+            'selling_price' => (float) $this->selling_price,
+            'stock' => $this->stock,
+            'is_low_stock' => $this->isLowStock(),
+        ];
+    }
+
+    /**
      * @param  Builder<Product>  $query
      * @return Builder<Product>
      */

@@ -21,17 +21,7 @@ class MemberRepository extends BaseRepository implements MemberRepositoryInterfa
     {
         return $this->newQuery()
             ->with('membershipPlan')
-            ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
-                $search = $filters['search'];
-
-                $query->where(function ($nested) use ($search): void {
-                    $nested->where('name', 'like', "%{$search}%")
-                        ->orWhere('member_code', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('rfid_card', 'like', "%{$search}%");
-                });
-            })
+            ->when(filled($filters['search'] ?? null), fn ($query) => $query->search($filters['search']))
             ->when(filled($filters['status'] ?? null), function ($query) use ($filters): void {
                 $query->where('status', $filters['status']);
             })

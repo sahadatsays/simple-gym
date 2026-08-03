@@ -190,7 +190,7 @@
                                 @forelse ($member->payments as $payment)
                                     <tr>
                                         <td class="ps-4 text-muted">{{ $payment->paid_at->format('M j, Y') }}</td>
-                                        <td>{{ ucfirst($payment->type->value) }}</td>
+                                        <td>{{ $payment->type->label() }}</td>
                                         <td class="text-end pe-4">
                                             {{ App\Support\MoneyFormatter::format($payment->amount, $gymCurrency) }}
                                         </td>

@@ -157,6 +157,46 @@ class InvoiceService extends BaseService
     }
 
     /**
+     * @return array<int, array{
+     *     id: int,
+     *     invoice_number: string,
+     *     member_name: ?string,
+     *     member_code: ?string,
+     *     plan_name: ?string,
+     *     type_label: string,
+     *     payment_type: string,
+     *     subtotal: float,
+     *     discount_amount: float,
+     *     total: float,
+     *     line_items: array<int, array<string, mixed>>
+     * }>
+     */
+    public function unpaidInvoiceOptions(int $limit = 100): array
+    {
+        return Invoice::query()
+            ->with(['member', 'membershipPlan'])
+            ->where('status', InvoiceStatus::Unpaid)
+            ->latest('issued_at')
+            ->limit($limit)
+            ->get()
+            ->map(fn (Invoice $invoice): array => [
+                'id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'member_name' => $invoice->member?->name,
+                'member_code' => $invoice->member?->member_code,
+                'plan_name' => $invoice->membershipPlan?->name,
+                'type_label' => $invoice->type->label(),
+                'payment_type' => $this->resolvePaymentType($invoice)->value,
+                'subtotal' => (float) $invoice->subtotal,
+                'discount_amount' => (float) $invoice->discount_amount,
+                'total' => (float) $invoice->total,
+                'line_items' => $invoice->line_items ?? [],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * @param  array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, total: float}  $charges
      */
     private function createInvoice(

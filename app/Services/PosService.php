@@ -60,10 +60,13 @@ class PosService extends BaseService
      */
     public function buildLineItems(array $cartItems): array
     {
+        $productIds = collect($cartItems)->pluck('product_id')->unique()->values()->all();
+        $products = Product::query()->whereIn('id', $productIds)->get()->keyBy('id');
+
         return collect($cartItems)
             ->groupBy('product_id')
-            ->map(function ($items, $productId): array {
-                $product = Product::query()->find((int) $productId);
+            ->map(function ($items, $productId) use ($products): array {
+                $product = $products->get((int) $productId);
 
                 if ($product === null) {
                     throw new InvalidArgumentException('One or more products in the cart no longer exist.');

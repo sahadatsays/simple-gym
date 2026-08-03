@@ -49,14 +49,14 @@ class DashboardAlertService
      */
     public function buildExpiredMembershipAlert(): array
     {
-        $members = Member::query()
+        $query = Member::query()->expired();
+        $count = (clone $query)->count();
+
+        $members = (clone $query)
             ->with('membershipPlan')
-            ->expired()
             ->orderBy('membership_expires_at')
             ->limit(5)
             ->get();
-
-        $count = Member::query()->expired()->count();
 
         return [
             'type' => AlertType::MembershipExpired,
@@ -86,13 +86,14 @@ class DashboardAlertService
      */
     public function buildExpiringMembershipAlert(int $days = 7): array
     {
-        $members = $this->expiringSoonQuery($days)
+        $query = $this->expiringSoonQuery($days);
+        $count = (clone $query)->count();
+
+        $members = (clone $query)
             ->with('membershipPlan')
             ->orderBy('membership_expires_at')
             ->limit(5)
             ->get();
-
-        $count = $this->expiringSoonQuery($days)->count();
 
         return [
             'type' => AlertType::MembershipExpiring,
@@ -124,13 +125,13 @@ class DashboardAlertService
      */
     public function buildLowStockAlert(): array
     {
-        $products = Product::query()
-            ->lowStock()
+        $query = Product::query()->lowStock();
+        $count = (clone $query)->count();
+
+        $products = (clone $query)
             ->orderBy('stock')
             ->limit(5)
             ->get();
-
-        $count = Product::query()->lowStock()->count();
 
         return [
             'type' => AlertType::LowStock,
@@ -167,13 +168,13 @@ class DashboardAlertService
             return $this->emptyAlert(AlertType::Birthday);
         }
 
-        $members = Member::query()
-            ->birthdayToday()
+        $query = Member::query()->birthdayToday();
+        $count = (clone $query)->count();
+
+        $members = (clone $query)
             ->orderBy('name')
             ->limit(5)
             ->get();
-
-        $count = Member::query()->birthdayToday()->count();
 
         return [
             'type' => AlertType::Birthday,

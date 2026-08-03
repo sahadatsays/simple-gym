@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\InvoiceType;
-use App\Enums\PaymentType;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Product;
@@ -127,13 +126,11 @@ it('records product sale and decrements stock from pos payment', function () {
     ]);
 
     $this->actingAs($this->admin)
-        ->post(route('admin.payments.store'), [
-            'mode' => 'pos',
-            'product_id' => $product->id,
-            'quantity' => 3,
-            'type' => PaymentType::PosSale->value,
+        ->post(route('admin.pos.store'), [
+            'items' => [
+                ['product_id' => $product->id, 'quantity' => 3],
+            ],
             'payment_method' => 'cash',
-            'amount_paid' => 150,
         ])
         ->assertRedirect();
 

@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
@@ -69,12 +70,14 @@ class DashboardService
     public function monthlyRevenue(int $months = 12): array
     {
         $start = now()->subMonths($months - 1)->startOfMonth();
+        $monthExpression = $this->monthExpression('paid_at');
 
         $totals = Payment::query()
             ->where('paid_at', '>=', $start)
-            ->get(['paid_at', 'amount'])
-            ->groupBy(fn (Payment $payment) => $payment->paid_at->format('Y-m'))
-            ->map(fn (Collection $group) => (float) $group->sum('amount'));
+            ->selectRaw("{$monthExpression} as month, SUM(amount) as total")
+            ->groupBy('month')
+            ->pluck('total', 'month')
+            ->map(fn ($total): float => (float) $total);
 
         return $this->buildMonthlySeries($months, $start, $totals, 0.0);
     }
@@ -85,14 +88,25 @@ class DashboardService
     public function membershipGrowth(int $months = 12): array
     {
         $start = now()->subMonths($months - 1)->startOfMonth();
+        $monthExpression = $this->monthExpression('joined_at');
 
         $totals = Member::query()
             ->where('joined_at', '>=', $start->toDateString())
-            ->get(['joined_at'])
-            ->groupBy(fn (Member $member) => $member->joined_at->format('Y-m'))
-            ->map(fn (Collection $group) => $group->count());
+            ->selectRaw("{$monthExpression} as month, COUNT(*) as total")
+            ->groupBy('month')
+            ->pluck('total', 'month')
+            ->map(fn ($total): int => (int) $total);
 
         return $this->buildMonthlySeries($months, $start, $totals, 0);
+    }
+
+    private function monthExpression(string $column): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'sqlite' => "strftime('%Y-%m', {$column})",
+            'pgsql' => "to_char({$column}, 'YYYY-MM')",
+            default => "DATE_FORMAT({$column}, '%Y-%m')",
+        };
     }
 
     /**

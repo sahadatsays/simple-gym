@@ -13,13 +13,16 @@ class GymNotificationService
         private DashboardAlertService $dashboardAlerts,
     ) {}
 
-    public function syncForUser(User $user): void
+    /**
+     * @param  Collection<int, array<string, mixed>>|null  $alerts
+     */
+    public function syncForUser(User $user, ?Collection $alerts = null): void
     {
         if (! $user->can('dashboard.view')) {
             return;
         }
 
-        $alerts = $this->dashboardAlerts->alerts();
+        $alerts ??= $this->dashboardAlerts->alerts();
 
         foreach ($alerts as $alert) {
             $this->syncAlert($user, $alert);
@@ -30,12 +33,13 @@ class GymNotificationService
 
     public function syncForAllUsers(): int
     {
+        $alerts = $this->dashboardAlerts->alerts();
         $count = 0;
 
         User::query()
             ->where('is_active', true)
-            ->each(function (User $user) use (&$count): void {
-                $this->syncForUser($user);
+            ->each(function (User $user) use ($alerts, &$count): void {
+                $this->syncForUser($user, $alerts);
                 $count++;
             });
 

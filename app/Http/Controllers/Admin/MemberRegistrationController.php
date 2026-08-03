@@ -46,10 +46,14 @@ class MemberRegistrationController extends Controller
     {
         $this->authorize('create', Member::class);
 
-        $result = $this->registrationService->register(
-            $request->validated(),
-            $request->file('photo'),
-        );
+        try {
+            $result = $this->registrationService->register(
+                $request->validated(),
+                $request->file('photo'),
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['registration' => $exception->getMessage()]);
+        }
 
         Flash::success('Member registered successfully. Membership activated and receipt generated.');
 

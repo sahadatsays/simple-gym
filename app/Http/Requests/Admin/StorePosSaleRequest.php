@@ -56,8 +56,11 @@ class StorePosSaleRequest extends FormRequest
                 $validator->errors()->add('discount_amount', 'Discount cannot exceed the cart subtotal.');
             }
 
+            $productIds = collect($lineItems)->pluck('product_id')->filter()->unique()->values()->all();
+            $products = Product::query()->whereIn('id', $productIds)->get()->keyBy('id');
+
             foreach ($this->input('items', []) as $index => $item) {
-                $product = Product::query()->find($item['product_id']);
+                $product = $products->get((int) $item['product_id']);
 
                 if ($product === null) {
                     continue;

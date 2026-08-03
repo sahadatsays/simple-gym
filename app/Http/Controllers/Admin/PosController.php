@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ScanPosProductRequest;
+use App\Http\Requests\Admin\SearchPosProductsRequest;
 use App\Http\Requests\Admin\StorePosSaleRequest;
 use App\Models\Member;
 use App\Models\Payment;
@@ -12,7 +14,6 @@ use App\Services\PosService;
 use App\Support\Flash;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 use InvalidArgumentException;
 
@@ -31,40 +32,29 @@ class PosController extends Controller
             'categories' => $this->products->categories(),
             'members' => Member::query()->orderBy('name')->get(['id', 'name', 'member_code', 'phone']),
             'initialProducts' => $this->products->searchForPos(null, null, 24)
-                ->map(fn (Product $product): array => $this->formatProduct($product))
+                ->map(fn (Product $product): array => $product->toPosArray())
                 ->values()
                 ->all(),
         ]);
     }
 
-    public function search(Request $request): JsonResponse
+    public function search(SearchPosProductsRequest $request): JsonResponse
     {
-        $this->authorize('create', Payment::class);
-
-        $request->validate([
-            'search' => ['nullable', 'string', 'max:100'],
-            'category' => ['nullable', 'string', 'max:100'],
-        ]);
+        $validated = $request->validated();
 
         $products = $this->products->searchForPos(
-            $request->string('search')->toString() ?: null,
-            $request->string('category')->toString() ?: null,
+            $validated['search'] ?? null,
+            $validated['category'] ?? null,
         );
 
         return response()->json([
-            'data' => $products->map(fn (Product $product): array => $this->formatProduct($product))->values(),
+            'data' => $products->map(fn (Product $product): array => $product->toPosArray())->values(),
         ]);
     }
 
-    public function scan(Request $request): JsonResponse
+    public function scan(ScanPosProductRequest $request): JsonResponse
     {
-        $this->authorize('create', Payment::class);
-
-        $request->validate([
-            'code' => ['required', 'string', 'max:100'],
-        ]);
-
-        $code = trim($request->string('code')->toString());
+        $code = trim($request->validated('code'));
         $product = $this->products->findActiveForPosByBarcode($code)
             ?? $this->products->findActiveForPosBySku($code);
 
@@ -75,14 +65,12 @@ class PosController extends Controller
         }
 
         return response()->json([
-            'data' => $this->formatProduct($product),
+            'data' => $product->toPosArray(),
         ]);
     }
 
     public function store(StorePosSaleRequest $request): RedirectResponse
     {
-        $this->authorize('create', Payment::class);
-
         $data = $request->validated();
         $member = isset($data['member_id']) ? Member::query()->find($data['member_id']) : null;
 
@@ -99,35 +87,11 @@ class PosController extends Controller
 
         Flash::success('Sale completed successfully.');
 
+        $payment->load('invoice');
+
         return redirect()->route('admin.invoices.thermal', [
             'invoice' => $payment->invoice,
             'autoprint' => 1,
         ]);
-    }
-
-    /**
-     * @return array{
-     *     id: int,
-     *     sku: string,
-     *     barcode: ?string,
-     *     name: string,
-     *     category: ?string,
-     *     selling_price: float,
-     *     stock: int,
-     *     is_low_stock: bool
-     * }
-     */
-    private function formatProduct(Product $product): array
-    {
-        return [
-            'id' => $product->id,
-            'sku' => $product->sku,
-            'barcode' => $product->barcode,
-            'name' => $product->name,
-            'category' => $product->category,
-            'selling_price' => (float) $product->selling_price,
-            'stock' => $product->stock,
-            'is_low_stock' => $product->isLowStock(),
-        ];
     }
 }
