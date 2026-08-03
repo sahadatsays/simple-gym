@@ -86,7 +86,7 @@
                 <dd class="col-sm-8">{{ $invoice->invoice_number }}</dd>
 
                 <dt class="col-sm-4">Payment method</dt>
-                <dd class="col-sm-8">{{ ucwords(str_replace('_', ' ', $payment->payment_method)) }}</dd>
+                <dd class="col-sm-8">{{ $payment->payment_method->label() }}</dd>
 
                 @if ($payment->reference)
                     <dt class="col-sm-4">Reference</dt>

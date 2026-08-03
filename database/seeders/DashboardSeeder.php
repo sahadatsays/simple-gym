@@ -40,15 +40,15 @@ class DashboardSeeder extends Seeder
                 ->create();
         }
 
-        Payment::factory()->count(8)->product()->thisMonth()->create([
+        Payment::factory()->count(8)->posSale()->thisMonth()->create([
             'member_id' => null,
         ]);
 
         Payment::factory()->count(5)->today()->create([
-            'type' => PaymentType::Membership,
+            'type' => PaymentType::MembershipFee,
         ]);
 
-        Payment::factory()->count(3)->product()->today()->create([
+        Payment::factory()->count(3)->posSale()->today()->create([
             'member_id' => null,
         ]);
 

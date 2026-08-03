@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Repositories\MemberRepositoryInterface;
 use App\Data\MemberRenewalResult;
 use App\Enums\MemberStatus;
+use App\Enums\PaymentType;
 use App\Enums\PlanStatus;
 use App\Models\Member;
 use App\Models\MembershipPlan;
@@ -49,8 +50,10 @@ class MembershipRenewalService extends BaseService
             $payment = $this->paymentService->receive(
                 invoice: $invoice,
                 member: $member,
-                amountReceived: (float) $data['amount_received'],
+                amountPaid: (float) $data['amount_received'],
                 paymentMethod: $data['payment_method'],
+                type: PaymentType::MembershipFee,
+                discountAmount: (float) ($data['discount_amount'] ?? 0),
                 reference: $data['payment_reference'] ?? null,
             );
 

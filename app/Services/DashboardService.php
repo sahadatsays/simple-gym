@@ -32,7 +32,7 @@ class DashboardService
             'todays_collection' => (float) Payment::query()->paidToday()->sum('amount'),
             'monthly_collection' => (float) Payment::query()->paidThisMonth()->sum('amount'),
             'product_sales' => (float) Payment::query()
-                ->where('type', PaymentType::Product)
+                ->where('type', PaymentType::PosSale)
                 ->paidThisMonth()
                 ->sum('amount'),
             'low_stock_products' => Product::query()->lowStock()->count(),

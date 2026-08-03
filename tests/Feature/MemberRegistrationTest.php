@@ -96,7 +96,7 @@ it('completes the full registration workflow', function () {
 
     expect($payment)->not->toBeNull()
         ->and($payment->status)->toBe(PaymentStatus::Completed)
-        ->and($payment->type)->toBe(PaymentType::Membership)
+        ->and($payment->type)->toBe(PaymentType::MembershipFee)
         ->and((float) $payment->amount)->toBe(2000.0)
         ->and($payment->receipt_number)->toStartWith('RCP-')
         ->and($payment->invoice_id)->toBe($invoice->id);
@@ -120,7 +120,7 @@ it('shows the receipt after registration', function () {
         'total' => 2000,
     ]);
 
-    $payment = Payment::factory()->membership()->create([
+    $payment = Payment::factory()->membershipFee()->create([
         'member_id' => $member->id,
         'invoice_id' => $invoice->id,
         'amount' => 2000,

@@ -50,6 +50,12 @@ return [
             'match' => 'admin.members.*',
         ],
         [
+            'label' => 'Payments',
+            'route' => 'admin.payments.index',
+            'permission' => 'payments.view',
+            'match' => 'admin.payments.*',
+        ],
+        [
             'label' => 'RFID Cards',
             'route' => 'admin.rfid-cards.index',
             'permission' => 'rfid-cards.view',

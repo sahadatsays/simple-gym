@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\MemberRegistrationController;
 use App\Http\Controllers\Admin\MemberRenewalController;
 use App\Http\Controllers\Admin\MembershipPlanController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RfidCardController;
 use App\Http\Controllers\Admin\RoleController;
@@ -66,6 +67,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('members/{member}/renew', [MemberRenewalController::class, 'store'])->name('members.renew.store');
         Route::get('members/{member}/receipt/{invoice}', [MemberRegistrationController::class, 'receipt'])->name('members.receipt');
         Route::resource('members', MemberController::class);
+        Route::get('payments/create', [PaymentController::class, 'create'])->name('payments.create');
+        Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
+        Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+        Route::resource('payments', PaymentController::class)->only(['index', 'show']);
         Route::post('rfid-cards', [RfidCardController::class, 'store'])->name('rfid-cards.store');
         Route::get('rfid-cards', [RfidCardController::class, 'index'])->name('rfid-cards.index');
         Route::post('rfid-cards/replace', [RfidCardController::class, 'replace'])->name('rfid-cards.replace');

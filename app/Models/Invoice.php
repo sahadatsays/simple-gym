@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'type',
     'invoice_number',
     'subtotal',
+    'discount_amount',
     'total',
     'status',
     'line_items',
@@ -35,6 +36,7 @@ class Invoice extends Model
     {
         return [
             'subtotal' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'total' => 'decimal:2',
             'status' => InvoiceStatus::class,
             'type' => InvoiceType::class,
@@ -84,5 +86,15 @@ class Invoice extends Model
     public function isPaid(): bool
     {
         return $this->status === InvoiceStatus::Paid;
+    }
+
+    public function isPosSale(): bool
+    {
+        return $this->type === InvoiceType::PosSale;
+    }
+
+    public function amountDue(): float
+    {
+        return max(0, (float) $this->total);
     }
 }

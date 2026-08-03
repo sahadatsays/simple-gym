@@ -3,11 +3,13 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\Gender;
+use App\Enums\PaymentMethod;
 use App\Enums\PlanStatus;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreMemberRegistrationRequest extends FormRequest
 {
@@ -45,9 +47,10 @@ class StoreMemberRegistrationRequest extends FormRequest
                 Rule::exists('membership_plans', 'id')->where('status', PlanStatus::Active->value),
             ],
             'joined_at' => ['required', 'date'],
-            'payment_method' => ['required', 'string', Rule::in(['cash', 'card', 'mobile_banking'])],
+            'payment_method' => ['required', 'string', Rule::enum(PaymentMethod::class)],
             'payment_reference' => ['nullable', 'string', 'max:100'],
-            'amount_received' => ['required', 'numeric', 'min:'.$planTotal],
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'amount_received' => ['required', 'numeric', 'min:0'],
             'rfid_card_id' => ['nullable', 'integer', Rule::exists('rfid_cards', 'id')],
         ];
     }
@@ -61,6 +64,38 @@ class StoreMemberRegistrationRequest extends FormRequest
             'amount_received.min' => 'Payment amount must cover the full invoice total.',
             'membership_plan_id.required' => 'Please select a membership plan.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $plan = MembershipPlan::query()->find($this->integer('membership_plan_id'));
+
+            if ($plan === null) {
+                return;
+            }
+
+            $subtotal = (float) $plan->admission_fee + (float) $plan->membership_fee;
+            $discountAmount = (float) ($this->input('discount_amount') ?? 0);
+            $amountReceived = (float) $this->input('amount_received');
+            $invoiceTotal = max(0, $subtotal - $discountAmount);
+
+            if ($discountAmount > $subtotal) {
+                $validator->errors()->add('discount_amount', 'Discount cannot exceed the invoice subtotal.');
+            }
+
+            if ($amountReceived > $invoiceTotal) {
+                $validator->errors()->add('amount_received', 'Paid amount cannot exceed the invoice total.');
+            }
+
+            if ($amountReceived < $invoiceTotal) {
+                $validator->errors()->add('amount_received', 'Payment amount must cover the full invoice total.');
+            }
+        });
     }
 
     protected function prepareForValidation(): void

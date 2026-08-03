@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use Database\Factories\PaymentFactory;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'type',
     'status',
     'amount',
+    'discount_amount',
     'paid_at',
     'payment_method',
     'reference',
@@ -37,7 +39,9 @@ class Payment extends Model
             'type' => PaymentType::class,
             'status' => PaymentStatus::class,
             'amount' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'paid_at' => 'datetime',
+            'payment_method' => PaymentMethod::class,
         ];
     }
 

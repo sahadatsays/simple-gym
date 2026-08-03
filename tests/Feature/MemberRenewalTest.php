@@ -166,7 +166,7 @@ it('shows renewal receipt', function () {
         'invoice_id' => $invoice->id,
     ]);
 
-    Payment::factory()->membership()->create([
+    Payment::factory()->membershipFee()->create([
         'member_id' => $member->id,
         'invoice_id' => $invoice->id,
         'amount' => 1500,

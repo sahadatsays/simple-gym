@@ -31,6 +31,7 @@ class InvoiceFactory extends Factory
             'type' => InvoiceType::Registration,
             'invoice_number' => 'INV-'.now()->format('Ymd').'-'.fake()->unique()->numerify('#####'),
             'subtotal' => $total,
+            'discount_amount' => 0,
             'total' => $total,
             'status' => InvoiceStatus::Unpaid,
             'line_items' => [
