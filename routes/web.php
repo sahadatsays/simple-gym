@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\MemberRenewalController;
 use App\Http\Controllers\Admin\MembershipPlanController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\RfidCardController;
 use App\Http\Controllers\Admin\RoleController;
@@ -72,6 +73,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
         Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
         Route::resource('payments', PaymentController::class)->only(['index', 'show']);
+        Route::get('pos', [PosController::class, 'index'])->name('pos.index');
+        Route::post('pos', [PosController::class, 'store'])->name('pos.store');
+        Route::get('pos/products/search', [PosController::class, 'search'])->name('pos.products.search');
+        Route::post('pos/products/scan', [PosController::class, 'scan'])->name('pos.products.scan');
         Route::get('products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
         Route::patch('products/{product}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjust-stock');
         Route::resource('products', ProductController::class)->except(['show']);

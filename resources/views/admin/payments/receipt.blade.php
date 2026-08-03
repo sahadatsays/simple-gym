@@ -9,6 +9,9 @@
     >
         <x-slot:actions>
             <button type="button" class="btn btn-light d-print-none" onclick="window.print()">Print Receipt</button>
+            @if (request()->boolean('pos'))
+                <a href="{{ route('admin.pos.index') }}" class="btn btn-outline-primary d-print-none">New Sale</a>
+            @endif
             <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-primary d-print-none">Payment Details</a>
         </x-slot:actions>
     </x-ui.page-header>
@@ -126,3 +129,13 @@
         }
     </style>
 @endpush
+
+@if (request()->boolean('pos'))
+    @push('scripts')
+        <script>
+            window.addEventListener('load', () => {
+                window.print();
+            });
+        </script>
+    @endpush
+@endif

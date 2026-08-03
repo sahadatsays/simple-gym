@@ -4,6 +4,7 @@ namespace App\Contracts\Repositories;
 
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 interface ProductRepositoryInterface extends RepositoryInterface
 {
@@ -27,4 +28,9 @@ interface ProductRepositoryInterface extends RepositoryInterface
      * @return list<string>
      */
     public function categories(): array;
+
+    /**
+     * @return Collection<int, Product>
+     */
+    public function searchForPos(?string $search, ?string $category, int $limit = 24): Collection;
 }

@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Support\ActivityLogger;
+use App\Support\Money;
 
 class PaymentService extends BaseService
 {
@@ -72,20 +73,20 @@ class PaymentService extends BaseService
                 $invoice = $this->invoiceService->applyDiscount($invoice, $discountAmount);
             }
 
-            $amountPaid = (float) $data['amount_paid'];
-            $invoiceTotal = (float) $invoice->total;
+            $amountPaid = Money::round((float) $data['amount_paid']);
+            $invoiceTotal = Money::round((float) $invoice->total);
 
             if ($amountPaid <= 0) {
                 throw PaymentFailedException::declined();
             }
 
-            if ($amountPaid > $invoiceTotal) {
+            if (Money::greaterThan($amountPaid, $invoiceTotal)) {
                 throw PaymentFailedException::exceedsInvoiceAmount($invoiceTotal, $amountPaid);
             }
 
             $requireFullPayment = $data['require_full_payment'] ?? true;
 
-            if ($requireFullPayment && $amountPaid < $invoiceTotal) {
+            if ($requireFullPayment && Money::lessThan($amountPaid, $invoiceTotal)) {
                 throw PaymentFailedException::insufficientAmount($invoiceTotal, $amountPaid);
             }
 

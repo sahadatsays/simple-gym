@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class ProductRepository extends BaseRepository implements ProductRepositoryInterface
 {
@@ -65,11 +66,50 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
             ->first();
     }
 
+    public function findActiveForPosByBarcode(string $barcode): ?Product
+    {
+        return $this->newQuery()
+            ->active()
+            ->where('barcode', $barcode)
+            ->where('stock', '>', 0)
+            ->first();
+    }
+
+    public function findActiveForPosBySku(string $sku): ?Product
+    {
+        return $this->newQuery()
+            ->active()
+            ->where('sku', $sku)
+            ->where('stock', '>', 0)
+            ->first();
+    }
+
     public function findBySku(string $sku): ?Product
     {
         return $this->newQuery()
             ->where('sku', $sku)
             ->first();
+    }
+
+    /**
+     * @return Collection<int, Product>
+     */
+    public function searchForPos(?string $search, ?string $category, int $limit = 24): Collection
+    {
+        return $this->newQuery()
+            ->active()
+            ->where('stock', '>', 0)
+            ->when(filled($search), function ($query) use ($search): void {
+                $query->where(function ($nested) use ($search): void {
+                    $nested->where('name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
+                        ->orWhere('barcode', 'like', "%{$search}%");
+                });
+            })
+            ->when(filled($category), fn ($query) => $query->where('category', $category))
+            ->orderBy('name')
+            ->limit($limit)
+            ->get();
     }
 
     /**

@@ -25,6 +25,38 @@ class ProductSaleService extends BaseService
      *     unit_price?: float
      * }>  $lineItems
      */
+    public function validateStockAvailability(array $lineItems): void
+    {
+        $productLines = collect($lineItems)
+            ->filter(fn (array $item): bool => ! empty($item['product_id']))
+            ->groupBy('product_id')
+            ->map(fn ($items) => [
+                'product_id' => (int) $items->first()['product_id'],
+                'quantity' => (int) $items->sum(fn (array $item): int => (int) ($item['quantity'] ?? 1)),
+            ]);
+
+        foreach ($productLines as $line) {
+            $product = Product::query()->find($line['product_id']);
+
+            if ($product === null) {
+                throw new InvalidArgumentException('One or more products in this sale no longer exist.');
+            }
+
+            if ($product->stock < $line['quantity']) {
+                throw new InvalidArgumentException("Insufficient stock for {$product->name}. Available: {$product->stock}.");
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, array{
+     *     product_id?: int|null,
+     *     description: string,
+     *     amount: float,
+     *     quantity?: int,
+     *     unit_price?: float
+     * }>  $lineItems
+     */
     public function recordFromPosPayment(Payment $payment, Invoice $invoice, array $lineItems): void
     {
         $productLines = collect($lineItems)
@@ -34,6 +66,8 @@ class ProductSaleService extends BaseService
         if ($productLines->isEmpty()) {
             return;
         }
+
+        $this->validateStockAvailability($lineItems);
 
         $invoiceDiscount = (float) $invoice->discount_amount;
         $invoiceSubtotal = collect($lineItems)->sum('amount');

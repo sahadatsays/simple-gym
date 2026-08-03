@@ -9,6 +9,7 @@ use App\Enums\PaymentType;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\MembershipPlan;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
@@ -185,13 +186,13 @@ class InvoiceService extends BaseService
      */
     private function buildChargeSummary(array $lineItems, float $discountAmount = 0): array
     {
-        $subtotal = collect($lineItems)->sum('amount');
-        $discountAmount = max(0, min($discountAmount, $subtotal));
+        $subtotal = Money::round(collect($lineItems)->sum('amount'));
+        $discountAmount = Money::round(max(0, min($discountAmount, $subtotal)));
 
         return [
             'line_items' => $lineItems,
             'subtotal' => $subtotal,
-            'total' => max(0, $subtotal - $discountAmount),
+            'total' => Money::round(max(0, $subtotal - $discountAmount)),
         ];
     }
 }

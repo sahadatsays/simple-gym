@@ -50,6 +50,12 @@ return [
             'match' => 'admin.members.*',
         ],
         [
+            'label' => 'POS',
+            'route' => 'admin.pos.index',
+            'permission' => 'payments.create',
+            'match' => 'admin.pos.*',
+        ],
+        [
             'label' => 'Payments',
             'route' => 'admin.payments.index',
             'permission' => 'payments.view',
