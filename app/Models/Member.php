@@ -110,6 +110,14 @@ class Member extends Model
     }
 
     /**
+     * @return HasMany<Invoice, $this>
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
      * @param  Builder<Member>  $query
      * @return Builder<Member>
      */

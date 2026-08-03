@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use App\Models\Member;
 use App\Models\Payment;
@@ -22,6 +23,7 @@ class PaymentFactory extends Factory
         return [
             'member_id' => Member::factory(),
             'type' => fake()->randomElement(PaymentType::cases()),
+            'status' => PaymentStatus::Completed,
             'amount' => fake()->randomFloat(2, 10, 500),
             'paid_at' => fake()->dateTimeBetween('-6 months', 'now'),
             'payment_method' => fake()->randomElement(['cash', 'card', 'mobile_banking']),

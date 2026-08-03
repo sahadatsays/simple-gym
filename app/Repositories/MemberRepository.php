@@ -51,6 +51,11 @@ class MemberRepository extends BaseRepository implements MemberRepositoryInterfa
         return $this->newQuery()->where('member_code', $memberCode)->first();
     }
 
+    public function findByPhone(string $phone): ?Member
+    {
+        return $this->newQuery()->where('phone', $phone)->first();
+    }
+
     public function nextMemberCode(): string
     {
         $nextNumber = (int) $this->newQuery()->withTrashed()->max('id') + 1;

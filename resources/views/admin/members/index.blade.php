@@ -6,7 +6,7 @@
     <x-ui.page-header title="Members" subtitle="Manage gym members and memberships">
         <x-slot:actions>
             @can('create', App\Models\Member::class)
-                <a href="{{ route('admin.members.create') }}" class="btn btn-primary">Add Member</a>
+                <a href="{{ route('admin.members.register.create') }}" class="btn btn-primary">Register Member</a>
             @endcan
         </x-slot:actions>
     </x-ui.page-header>

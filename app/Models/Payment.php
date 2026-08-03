@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use Database\Factories\PaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -12,11 +13,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'member_id',
+    'invoice_id',
     'type',
+    'status',
     'amount',
     'paid_at',
     'payment_method',
     'reference',
+    'receipt_number',
     'notes',
 ])]
 class Payment extends Model
@@ -31,6 +35,7 @@ class Payment extends Model
     {
         return [
             'type' => PaymentType::class,
+            'status' => PaymentStatus::class,
             'amount' => 'decimal:2',
             'paid_at' => 'datetime',
         ];
@@ -42,6 +47,19 @@ class Payment extends Model
     public function member(): BelongsTo
     {
         return $this->belongsTo(Member::class);
+    }
+
+    /**
+     * @return BelongsTo<Invoice, $this>
+     */
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === PaymentStatus::Completed;
     }
 
     /**

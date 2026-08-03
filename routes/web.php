@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GymSettingController;
 use App\Http\Controllers\Admin\MemberController;
+use App\Http\Controllers\Admin\MemberRegistrationController;
 use App\Http\Controllers\Admin\MembershipPlanController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RfidCardController;
@@ -57,6 +58,9 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::resource('roles', RoleController::class)->except(['show']);
         Route::resource('permissions', PermissionController::class)->except(['show']);
         Route::resource('membership-plans', MembershipPlanController::class)->except(['show']);
+        Route::get('members/register/create', [MemberRegistrationController::class, 'create'])->name('members.register.create');
+        Route::post('members/register', [MemberRegistrationController::class, 'store'])->name('members.register.store');
+        Route::get('members/{member}/receipt/{invoice}', [MemberRegistrationController::class, 'receipt'])->name('members.receipt');
         Route::resource('members', MemberController::class);
         Route::post('rfid-cards', [RfidCardController::class, 'store'])->name('rfid-cards.store');
         Route::get('rfid-cards', [RfidCardController::class, 'index'])->name('rfid-cards.index');

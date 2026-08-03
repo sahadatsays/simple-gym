@@ -32,14 +32,11 @@ class MemberController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(): RedirectResponse|View
     {
         $this->authorize('create', Member::class);
 
-        return view('admin.members.create', [
-            'plans' => MembershipPlan::query()->orderBy('name')->get(['id', 'name', 'duration_days']),
-            'nextMemberCode' => $this->members->nextMemberCode(),
-        ]);
+        return redirect()->route('admin.members.register.create');
     }
 
     public function store(StoreMemberRequest $request): RedirectResponse

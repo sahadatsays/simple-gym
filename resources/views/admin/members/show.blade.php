@@ -27,6 +27,7 @@
                     @php
                         $badgeClass = match ($member->status) {
                             App\Enums\MemberStatus::Active => 'sg-status-badge-active',
+                            App\Enums\MemberStatus::Pending => 'sg-status-badge-inactive',
                             App\Enums\MemberStatus::Suspended => 'sg-status-badge-warning',
                             default => 'sg-status-badge-inactive',
                         };

@@ -15,5 +15,7 @@ interface MemberRepositoryInterface extends RepositoryInterface
 
     public function findByMemberCode(string $memberCode): ?Member;
 
+    public function findByPhone(string $phone): ?Member;
+
     public function nextMemberCode(): string;
 }
