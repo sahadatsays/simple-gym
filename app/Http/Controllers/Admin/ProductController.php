@@ -38,6 +38,31 @@ class ProductController extends Controller
         ]);
     }
 
+    public function categories(): View
+    {
+        $this->authorize('viewAny', Product::class);
+
+        $summaries = $this->products->categorySummaries()->keyBy('category');
+        $configuredCategories = collect(config('gym.product_categories', []))
+            ->map(function (string $category) use ($summaries): object {
+                $summary = $summaries->get($category);
+
+                return (object) [
+                    'category' => $category,
+                    'products_count' => (int) ($summary->products_count ?? 0),
+                    'active_count' => (int) ($summary->active_count ?? 0),
+                ];
+            });
+
+        $extraCategories = $summaries
+            ->reject(fn (object $summary): bool => in_array($summary->category, config('gym.product_categories', []), true))
+            ->values();
+
+        return view('admin.categories.index', [
+            'categories' => $configuredCategories->concat($extraCategories),
+        ]);
+    }
+
     public function show(ShowProductRequest $request, Product $product): View
     {
         $filters = $request->validated();

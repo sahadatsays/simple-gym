@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ProductRepositoryInterface;
+use App\Enums\ProductStatus;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -124,5 +125,19 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
             ->orderBy('category')
             ->pluck('category')
             ->all();
+    }
+
+    /**
+     * @return Collection<int, object{category: string, products_count: int, active_count: int}>
+     */
+    public function categorySummaries(): Collection
+    {
+        return $this->newQuery()
+            ->selectRaw('category, COUNT(*) as products_count, SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_count', [ProductStatus::Active->value])
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->groupBy('category')
+            ->orderBy('category')
+            ->get();
     }
 }

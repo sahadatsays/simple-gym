@@ -23,7 +23,7 @@ beforeEach(function () {
     $this->plan = MembershipPlan::factory()->create();
 });
 
-it('shows dashboard alerts for expired and expiring memberships', function () {
+it('syncs membership alert notifications when visiting the dashboard', function () {
     Member::factory()->create([
         'membership_plan_id' => $this->plan->id,
         'status' => MemberStatus::Expired,
@@ -41,14 +41,12 @@ it('shows dashboard alerts for expired and expiring memberships', function () {
     $this->actingAs($this->user)
         ->get(route('admin.dashboard'))
         ->assertSuccessful()
-        ->assertSee('Alerts')
+        ->assertDontSee('Alerts')
         ->assertSee('Expired Membership')
-        ->assertSee('Membership Expiring in 7 Days')
-        ->assertSee('Expired Alert Member')
-        ->assertSee('Expiring Alert Member');
+        ->assertSee('Membership Expiring in 7 Days');
 });
 
-it('shows low stock and birthday dashboard alerts', function () {
+it('shows low stock on the dashboard and birthday alerts in notifications', function () {
     Product::factory()->lowStock()->create([
         'name' => 'Low Stock Alert Product',
         'stock' => 2,
@@ -66,8 +64,9 @@ it('shows low stock and birthday dashboard alerts', function () {
         ->assertSuccessful()
         ->assertSee('Low Stock Products')
         ->assertSee('Low Stock Alert Product')
+        ->assertDontSee('Alerts')
         ->assertSee("Today's Birthdays")
-        ->assertSee('Birthday Alert Member');
+        ->assertDontSee('Birthday Alert Member');
 });
 
 it('syncs laravel notifications for dashboard alerts', function () {

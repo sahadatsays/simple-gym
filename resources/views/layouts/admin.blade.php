@@ -3,7 +3,15 @@
 @section('title', ($title ?? 'Admin').' | '.config('app.name'))
 
 @section('body')
-    <div class="sg-admin-wrapper" x-data="{ sidebarOpen: false }">
+    <div
+        class="sg-admin-wrapper"
+        x-data="{
+            sidebarOpen: false,
+            sidebarCollapsed: localStorage.getItem('sgSidebarCollapsed') === '1',
+        }"
+        x-init="$watch('sidebarCollapsed', value => localStorage.setItem('sgSidebarCollapsed', value ? '1' : '0'))"
+        :class="{ 'sg-sidebar-is-collapsed': sidebarCollapsed }"
+    >
         @include('layouts.partials.sidebar')
 
         <div class="sg-main">
@@ -16,11 +24,11 @@
         </div>
 
         <div
-            class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-lg-none"
+            class="sg-sidebar-backdrop d-lg-none"
             x-show="sidebarOpen"
-            x-transition
+            x-transition.opacity
             @click="sidebarOpen = false"
-            style="z-index: 1025;"
+            aria-hidden="true"
         ></div>
     </div>
 @endsection

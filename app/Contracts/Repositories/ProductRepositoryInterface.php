@@ -30,6 +30,11 @@ interface ProductRepositoryInterface extends RepositoryInterface
     public function categories(): array;
 
     /**
+     * @return Collection<int, object{category: string, products_count: int, active_count: int}>
+     */
+    public function categorySummaries(): Collection;
+
+    /**
      * @return Collection<int, Product>
      */
     public function searchForPos(?string $search, ?string $category, int $limit = 24): Collection;

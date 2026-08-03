@@ -46,8 +46,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->shareGymContext();
 
-        View::composer('layouts.admin', function ($view): void {
-            $view->with('menuItems', MenuBuilder::authorizedItems());
+        View::composer(['layouts.admin', 'layouts.partials.sidebar'], function ($view): void {
+            $view->with('menuGroups', MenuBuilder::authorizedGroups());
         });
     }
 

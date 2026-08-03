@@ -1,7 +1,9 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
 
 :root {
-    --sg-sidebar-width: 260px;
+    --sg-sidebar-width: 270px;
+    --sg-sidebar-collapsed-width: 84px;
     --sg-primary: #2563eb;
     --sg-sidebar-bg: #0f172a;
     --sg-sidebar-text: #cbd5e1;
@@ -143,39 +145,238 @@ body {
 .sg-sidebar {
     width: var(--sg-sidebar-width);
     min-height: 100vh;
-    background: var(--sg-sidebar-bg);
+    background-color: var(--sg-sidebar-bg);
     color: var(--sg-sidebar-text);
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 1030;
-    transition: transform 0.2s ease-in-out;
+    z-index: 1040;
+    transition: width 0.25s ease, transform 0.25s ease;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 2px 0 12px rgba(15, 23, 42, 0.12);
+}
+
+.sg-sidebar-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .sg-sidebar-brand {
-    font-weight: 700;
-    font-size: 1.125rem;
-    color: #fff;
-    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1rem 1rem 1.125rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 4rem;
 }
 
-.sg-sidebar-nav .nav-link {
+.sg-sidebar-brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #fff;
+    min-width: 0;
+}
+
+.sg-sidebar-brand-logo {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.sg-sidebar-brand-text {
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sg-sidebar-close {
     color: var(--sg-sidebar-text);
-    border-radius: 0.5rem;
-    margin: 0.125rem 0.75rem;
-    padding: 0.625rem 0.875rem;
+    padding: 0.25rem;
+    text-decoration: none;
 }
 
-.sg-sidebar-nav .nav-link:hover,
-.sg-sidebar-nav .nav-link.active {
+.sg-sidebar-close.btn-link:hover,
+.sg-sidebar-close.btn-link:focus {
+    color: #fff;
+}
+
+.sg-sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-inline: 0.625rem;
+}
+
+.sg-sidebar-link,
+.sg-sidebar-group-toggle,
+.sg-sidebar-sublink,
+.sg-sidebar-collapse-btn {
+    color: var(--sg-sidebar-text);
+    border: 0;
+    background: transparent;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sg-sidebar-link,
+.sg-sidebar-group-toggle,
+.sg-sidebar-collapse-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border-radius: 0.625rem;
+    margin: 0.125rem 0;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+}
+
+.sg-sidebar-link,
+.sg-sidebar-collapse-btn {
+    justify-content: flex-start;
+}
+
+.sg-sidebar-group-toggle {
+    justify-content: space-between;
+}
+
+.sg-sidebar-link-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.sg-sidebar-link-icon,
+.sg-sidebar-sublink-icon {
+    width: 1.125rem;
+    text-align: center;
+    flex-shrink: 0;
+    font-size: 1.05rem;
+}
+
+.sg-sidebar-link-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sg-sidebar-link:hover,
+.sg-sidebar-group-toggle:hover,
+.sg-sidebar-sublink:hover,
+.sg-sidebar-collapse-btn:hover,
+.sg-sidebar-link.active,
+.sg-sidebar-group-toggle.active,
+.sg-sidebar-sublink.active {
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
+}
+
+.sg-sidebar-group-toggle.active,
+.sg-sidebar-link.active,
+.sg-sidebar-sublink.active {
+    background: rgba(37, 99, 235, 0.28);
+    color: #fff;
+    font-weight: 600;
+}
+
+.sg-sidebar-group-chevron {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+    opacity: 0.75;
+}
+
+.sg-sidebar-group-toggle.is-open .sg-sidebar-group-chevron {
+    transform: rotate(180deg);
+}
+
+.sg-sidebar-submenu {
+    padding-left: 0.35rem;
+    margin-bottom: 0.25rem;
+}
+
+.sg-sidebar-sublink {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem 0.5rem 2.35rem;
+    border-radius: 0.5rem;
+    margin: 0.0625rem 0;
+    font-size: 0.875rem;
+}
+
+.sg-sidebar-footer {
+    padding: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sg-sidebar-collapse-btn {
+    justify-content: flex-start;
+    gap: 0.75rem;
+    color: #94a3b8;
+}
+
+.sg-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 1035;
+}
+
+.sg-topbar-icon-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
 .sg-main {
     margin-left: var(--sg-sidebar-width);
     min-height: 100vh;
+    transition: margin-left 0.25s ease;
+}
+
+@media (min-width: 992px) {
+    .sg-sidebar-is-collapsed .sg-sidebar {
+        width: var(--sg-sidebar-collapsed-width);
+    }
+
+    .sg-sidebar-is-collapsed .sg-main {
+        margin-left: var(--sg-sidebar-collapsed-width);
+    }
+
+    .sg-sidebar-is-collapsed .sg-sidebar-brand-text,
+    .sg-sidebar-is-collapsed .sg-sidebar-link-label,
+    .sg-sidebar-is-collapsed .sg-sidebar-group-chevron,
+    .sg-sidebar-is-collapsed .sg-sidebar-submenu {
+        display: none !important;
+    }
+
+    .sg-sidebar-is-collapsed .sg-sidebar-link,
+    .sg-sidebar-is-collapsed .sg-sidebar-group-toggle,
+    .sg-sidebar-is-collapsed .sg-sidebar-collapse-btn {
+        justify-content: center;
+        padding-inline: 0.5rem;
+    }
+
+    .sg-sidebar-is-collapsed .sg-sidebar-brand-link {
+        justify-content: center;
+    }
+
+    .sg-sidebar-is-collapsed .sg-sidebar-brand {
+        justify-content: center;
+        padding-inline: 0.5rem;
+    }
 }
 
 .sg-topbar {
@@ -679,6 +880,7 @@ body {
 @media (max-width: 991.98px) {
     .sg-sidebar {
         transform: translateX(-100%);
+        width: min(var(--sg-sidebar-width), 88vw);
     }
 
     .sg-sidebar.show {
@@ -686,6 +888,6 @@ body {
     }
 
     .sg-main {
-        margin-left: 0;
+        margin-left: 0 !important;
     }
 }

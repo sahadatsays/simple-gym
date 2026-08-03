@@ -80,6 +80,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
         Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
         Route::resource('payments', PaymentController::class)->only(['index', 'show']);
+        Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
         Route::get('invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
         Route::get('invoices/{invoice}/thermal', [InvoiceController::class, 'thermal'])->name('invoices.thermal');
@@ -89,6 +90,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('pos/products/search', [PosController::class, 'search'])->name('pos.products.search');
         Route::post('pos/products/scan', [PosController::class, 'scan'])->name('pos.products.scan');
         Route::get('products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
+        Route::get('categories', [ProductController::class, 'categories'])->name('categories.index');
         Route::patch('products/{product}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjust-stock');
         Route::resource('products', ProductController::class)->except(['show']);
         Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
