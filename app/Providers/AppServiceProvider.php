@@ -80,6 +80,24 @@ class AppServiceProvider extends ServiceProvider
             ]);
         };
 
+        View::composer('layouts.partials.topbar', function ($view): void {
+            $user = auth()->user();
+
+            if ($user === null || ! $user->can('dashboard.view')) {
+                $view->with([
+                    'unreadNotificationsCount' => 0,
+                    'recentNotifications' => collect(),
+                ]);
+
+                return;
+            }
+
+            $view->with([
+                'unreadNotificationsCount' => $user->unreadNotifications()->count(),
+                'recentNotifications' => $user->unreadNotifications()->latest()->limit(5)->get(),
+            ]);
+        });
+
         View::composer([
             'layouts.admin',
             'admin.*',

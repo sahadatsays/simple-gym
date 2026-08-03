@@ -8,6 +8,8 @@
         subtitle="Real-time overview of members, revenue, and inventory"
     />
 
+    <x-dashboard.alerts :alerts="$alerts" />
+
     <div class="row g-3 g-xl-4 mb-4">
         <div class="col-6 col-xl-3">
             <x-dashboard.stat-card

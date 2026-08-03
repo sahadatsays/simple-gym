@@ -3,20 +3,27 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\DashboardAlertService;
 use App\Services\DashboardService;
+use App\Services\GymNotificationService;
 use App\Services\GymSettingService;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
     public function __construct(
         private DashboardService $dashboard,
+        private DashboardAlertService $dashboardAlerts,
+        private GymNotificationService $notifications,
         private GymSettingService $gymSettings,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorizePermission('dashboard.view');
+
+        $this->notifications->syncForUser($request->user());
 
         $currency = $this->gymSettings->get()->currency;
 
@@ -26,6 +33,8 @@ class DashboardController extends Controller
             'recentPayments' => $this->dashboard->recentPayments(),
             'monthlyRevenue' => $this->dashboard->monthlyRevenue(),
             'membershipGrowth' => $this->dashboard->membershipGrowth(),
+            'alerts' => $this->dashboardAlerts->alerts(),
+            'unreadNotificationsCount' => $request->user()->unreadNotifications()->count(),
         ]);
     }
 }

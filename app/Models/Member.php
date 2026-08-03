@@ -153,6 +153,18 @@ class Member extends Model
         });
     }
 
+    /**
+     * @param  Builder<Member>  $query
+     * @return Builder<Member>
+     */
+    public function scopeBirthdayToday(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('date_of_birth')
+            ->whereMonth('date_of_birth', now()->month)
+            ->whereDay('date_of_birth', now()->day);
+    }
+
     public function isActive(): bool
     {
         if ($this->status !== MemberStatus::Active) {

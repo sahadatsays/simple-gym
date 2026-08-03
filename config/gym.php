@@ -63,6 +63,10 @@ return [
         'per_page' => 15,
     ],
 
+    'notifications' => [
+        'birthdays_enabled' => env('GYM_BIRTHDAY_NOTIFICATIONS', true),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Product Categories
