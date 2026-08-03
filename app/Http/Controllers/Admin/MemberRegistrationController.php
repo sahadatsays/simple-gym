@@ -65,7 +65,7 @@ class MemberRegistrationController extends Controller
 
         abort_unless($invoice->member_id === $member->id, 404);
 
-        $invoice->load(['membershipPlan', 'payment']);
+        $invoice->load(['membershipPlan', 'payment', 'membershipRenewal']);
         $member->load(['membershipPlan', 'activeRfidCard']);
 
         return view('admin.members.receipt', [

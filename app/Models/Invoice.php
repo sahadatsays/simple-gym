@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\InvoiceType;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable([
     'member_id',
     'membership_plan_id',
+    'type',
     'invoice_number',
     'subtotal',
     'total',
@@ -35,6 +37,7 @@ class Invoice extends Model
             'subtotal' => 'decimal:2',
             'total' => 'decimal:2',
             'status' => InvoiceStatus::class,
+            'type' => InvoiceType::class,
             'line_items' => 'array',
             'issued_at' => 'datetime',
             'paid_at' => 'datetime',
@@ -63,6 +66,19 @@ class Invoice extends Model
     public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
+    }
+
+    /**
+     * @return HasOne<MembershipRenewal, $this>
+     */
+    public function membershipRenewal(): HasOne
+    {
+        return $this->hasOne(MembershipRenewal::class);
+    }
+
+    public function isRenewal(): bool
+    {
+        return $this->type === InvoiceType::Renewal;
     }
 
     public function isPaid(): bool

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\InvoiceType;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\MembershipPlan;
@@ -27,6 +28,7 @@ class InvoiceFactory extends Factory
         return [
             'member_id' => Member::factory(),
             'membership_plan_id' => MembershipPlan::factory(),
+            'type' => InvoiceType::Registration,
             'invoice_number' => 'INV-'.now()->format('Ymd').'-'.fake()->unique()->numerify('#####'),
             'subtotal' => $total,
             'total' => $total,

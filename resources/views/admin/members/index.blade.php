@@ -8,6 +8,9 @@
             @can('create', App\Models\Member::class)
                 <a href="{{ route('admin.members.register.create') }}" class="btn btn-primary">Register Member</a>
             @endcan
+            @can('viewAny', App\Models\Member::class)
+                <a href="{{ route('admin.members.renew.create') }}" class="btn btn-light">Renew Membership</a>
+            @endcan
         </x-slot:actions>
     </x-ui.page-header>
 

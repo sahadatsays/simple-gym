@@ -3,7 +3,10 @@
 @section('title', 'Receipt '.$payment->receipt_number)
 
 @section('content')
-    <x-ui.page-header title="Registration Receipt" :subtitle="$payment->receipt_number">
+    <x-ui.page-header
+        :title="$invoice->isRenewal() ? 'Renewal Receipt' : 'Registration Receipt'"
+        :subtitle="$payment->receipt_number"
+    >
         <x-slot:actions>
             <button type="button" class="btn btn-light d-print-none" onclick="window.print()">Print Receipt</button>
             <a href="{{ route('admin.members.show', $member) }}" class="btn btn-primary d-print-none">View Member</a>
@@ -15,7 +18,9 @@
             <div class="d-flex justify-content-between align-items-start mb-4">
                 <div>
                     <h1 class="h4 fw-bold mb-1">{{ config('app.name') }}</h1>
-                    <p class="text-muted small mb-0">Member Registration Receipt</p>
+                    <p class="text-muted small mb-0">
+                        {{ $invoice->isRenewal() ? 'Membership Renewal Receipt' : 'Member Registration Receipt' }}
+                    </p>
                 </div>
                 <div class="text-end">
                     <div class="fw-semibold">{{ $payment->receipt_number }}</div>
@@ -39,6 +44,11 @@
                     <div class="text-muted small">
                         Expires {{ $member->membership_expires_at?->format('M j, Y') ?? '—' }}
                     </div>
+                    @if ($invoice->isRenewal() && $invoice->membershipRenewal)
+                        <div class="text-muted small">
+                            Previous expiry {{ $invoice->membershipRenewal->previous_expires_at?->format('M j, Y') ?? '—' }}
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -95,7 +105,7 @@
             </dl>
 
             <p class="text-muted small mb-0 text-center">
-                Thank you for registering with {{ config('app.name') }}.
+                Thank you for your payment to {{ config('app.name') }}.
             </p>
         </div>
     </div>

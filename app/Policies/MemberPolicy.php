@@ -31,4 +31,9 @@ class MemberPolicy
     {
         return $user->can('members.delete');
     }
+
+    public function renew(User $user, Member $member): bool
+    {
+        return $user->can('members.edit') || $user->can('payments.create');
+    }
 }

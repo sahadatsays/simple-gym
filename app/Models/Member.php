@@ -118,6 +118,14 @@ class Member extends Model
     }
 
     /**
+     * @return HasMany<MembershipRenewal, $this>
+     */
+    public function membershipRenewals(): HasMany
+    {
+        return $this->hasMany(MembershipRenewal::class);
+    }
+
+    /**
      * @param  Builder<Member>  $query
      * @return Builder<Member>
      */
@@ -153,5 +161,10 @@ class Member extends Model
 
         return $this->membership_expires_at === null
             || $this->membership_expires_at->gte(today());
+    }
+
+    public function isRenewable(): bool
+    {
+        return $this->status !== MemberStatus::Pending;
     }
 }

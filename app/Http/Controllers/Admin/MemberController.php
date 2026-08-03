@@ -58,7 +58,12 @@ class MemberController extends Controller
         $this->authorize('view', $member);
 
         return view('admin.members.show', [
-            'member' => $member->load(['membershipPlan', 'activeRfidCard', 'payments' => fn ($query) => $query->latest()->limit(10)]),
+            'member' => $member->load([
+                'membershipPlan',
+                'activeRfidCard',
+                'payments' => fn ($query) => $query->latest()->limit(10),
+                'membershipRenewals' => fn ($query) => $query->with(['membershipPlan', 'invoice.payment'])->latest('renewed_at')->limit(10),
+            ]),
         ]);
     }
 

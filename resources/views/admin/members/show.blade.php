@@ -125,6 +125,55 @@
 
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
+                    <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h3 class="h6 fw-semibold mb-0">Renewal History</h3>
+                        @can('renew', $member)
+                            <a href="{{ route('admin.members.renew.edit', $member) }}" class="btn btn-sm btn-light">Renew</a>
+                        @endcan
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Plan</th>
+                                    <th>Previous Expiry</th>
+                                    <th>New Expiry</th>
+                                    <th class="text-end pe-4">Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($member->membershipRenewals as $renewal)
+                                    <tr>
+                                        <td class="ps-4 text-muted">{{ $renewal->renewed_at->format('M j, Y') }}</td>
+                                        <td>{{ $renewal->membershipPlan->name }}</td>
+                                        <td class="text-muted">
+                                            {{ $renewal->previous_expires_at?->format('M j, Y') ?? '—' }}
+                                        </td>
+                                        <td>{{ $renewal->new_expires_at->format('M j, Y') }}</td>
+                                        <td class="text-end pe-4">
+                                            @if ($renewal->invoice?->payment)
+                                                <a href="{{ route('admin.members.receipt', [$member, $renewal->invoice]) }}">
+                                                    {{ $renewal->invoice->payment->receipt_number }}
+                                                </a>
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted">No renewals recorded yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body p-0">
                     <div class="px-4 py-3 border-bottom">
                         <h3 class="h6 fw-semibold mb-0">Recent Payments</h3>
                     </div>
