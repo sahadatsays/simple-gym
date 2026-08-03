@@ -129,6 +129,10 @@ it('shows the receipt after registration', function () {
 
     $this->actingAs($this->admin)
         ->get(route('admin.members.receipt', [$member, $invoice]))
+        ->assertRedirect(route('admin.invoices.show', $invoice));
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.invoices.print', $invoice))
         ->assertSuccessful()
         ->assertSee('RCP-TEST-00001')
         ->assertSee($member->name)

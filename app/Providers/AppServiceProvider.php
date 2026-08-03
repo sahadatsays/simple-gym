@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Enums\PaymentMethod;
 use App\Models\GymSetting;
+use App\Models\Invoice;
 use App\Policies\GymSettingPolicy;
+use App\Policies\InvoicePolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Support\MenuBuilder;
@@ -40,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(Permission::class, PermissionPolicy::class);
         Gate::policy(GymSetting::class, GymSettingPolicy::class);
+        Gate::policy(Invoice::class, InvoicePolicy::class);
 
         $this->shareGymContext();
 

@@ -209,9 +209,13 @@ it('shows payment details and printable receipt', function () {
 
     $this->actingAs($this->admin)
         ->get(route('admin.payments.receipt', $payment))
+        ->assertRedirect(route('admin.invoices.thermal', $payment->invoice));
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.invoices.thermal', $payment->invoice))
         ->assertSuccessful()
         ->assertSee('RCP-DETAIL-00001')
-        ->assertSee('Print Receipt');
+        ->assertSee('Print');
 });
 
 it('denies payment management without permission', function () {

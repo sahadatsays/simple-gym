@@ -153,7 +153,7 @@
                                         <td>{{ $renewal->new_expires_at->format('M j, Y') }}</td>
                                         <td class="text-end pe-4">
                                             @if ($renewal->invoice?->payment)
-                                                <a href="{{ route('admin.members.receipt', [$member, $renewal->invoice]) }}">
+                                                <a href="{{ route('admin.invoices.show', $renewal->invoice) }}">
                                                     {{ $renewal->invoice->payment->receipt_number }}
                                                 </a>
                                             @else

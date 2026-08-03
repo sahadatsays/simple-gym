@@ -99,8 +99,10 @@ class PosController extends Controller
 
         Flash::success('Sale completed successfully.');
 
-        return redirect()
-            ->route('admin.payments.receipt', ['payment' => $payment, 'pos' => 1]);
+        return redirect()->route('admin.invoices.thermal', [
+            'invoice' => $payment->invoice,
+            'autoprint' => 1,
+        ]);
     }
 
     /**

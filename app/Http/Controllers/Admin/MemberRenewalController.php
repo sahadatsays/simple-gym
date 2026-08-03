@@ -84,9 +84,6 @@ class MemberRenewalController extends Controller
 
         Flash::success('Membership renewed successfully. Receipt generated.');
 
-        return redirect()->route('admin.members.receipt', [
-            'member' => $result->member,
-            'invoice' => $result->invoice,
-        ]);
+        return redirect()->route('admin.invoices.show', $result->invoice);
     }
 }

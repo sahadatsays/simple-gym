@@ -129,19 +129,21 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function receipt(Payment $payment): View
+    public function receipt(Payment $payment): RedirectResponse
     {
         $this->authorize('view', $payment);
 
-        $payment->load(['member', 'invoice.membershipPlan', 'invoice.membershipRenewal']);
-        $invoice = $payment->invoice;
-        $member = $payment->member;
+        $payment->load('invoice');
 
-        return view('admin.payments.receipt', [
-            'payment' => $payment,
-            'invoice' => $invoice,
-            'member' => $member,
-        ]);
+        abort_if($payment->invoice === null, 404);
+
+        $params = ['invoice' => $payment->invoice];
+
+        if (request()->boolean('pos')) {
+            $params['autoprint'] = 1;
+        }
+
+        return redirect()->route('admin.invoices.thermal', $params);
     }
 
     /**

@@ -5,7 +5,13 @@
 @section('content')
     <x-ui.page-header :title="$payment->receipt_number" subtitle="Payment and invoice details">
         <x-slot:actions>
-            <a href="{{ route('admin.payments.receipt', $payment) }}" class="btn btn-light" target="_blank">Print Receipt</a>
+            @if ($invoice)
+                <a href="{{ route('admin.invoices.show', $invoice) }}" class="btn btn-light">View Invoice</a>
+                <a href="{{ route('admin.invoices.print', $invoice) }}" class="btn btn-light" target="_blank">Print A4</a>
+                <a href="{{ route('admin.invoices.thermal', $invoice) }}" class="btn btn-light" target="_blank">Thermal Receipt</a>
+            @else
+                <a href="{{ route('admin.payments.receipt', $payment) }}" class="btn btn-light" target="_blank">Thermal Receipt</a>
+            @endif
             @can('create', App\Models\Payment::class)
                 <a href="{{ route('admin.payments.create') }}" class="btn btn-primary">Receive Payment</a>
             @endcan
@@ -97,6 +103,16 @@
                                 <dt class="col-sm-4">Plan</dt>
                                 <dd class="col-sm-8">{{ $invoice->membershipPlan->name }}</dd>
                             @endif
+
+                            <dt class="col-sm-4">Status</dt>
+                            <dd class="col-sm-8">
+                                <span class="sg-status-badge sg-status-badge-active">{{ $invoice->status->label() }}</span>
+                            </dd>
+
+                            <dt class="col-sm-4">Outstanding</dt>
+                            <dd class="col-sm-8">
+                                {{ App\Support\MoneyFormatter::format($invoice->outstandingBalance(), $gymCurrency) }}
+                            </dd>
                         </dl>
 
                         <div class="table-responsive">

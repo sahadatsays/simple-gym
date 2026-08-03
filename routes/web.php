@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GymSettingController;
+use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\MemberRegistrationController;
 use App\Http\Controllers\Admin\MemberRenewalController;
@@ -79,6 +80,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
         Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
         Route::resource('payments', PaymentController::class)->only(['index', 'show']);
+        Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
+        Route::get('invoices/{invoice}/thermal', [InvoiceController::class, 'thermal'])->name('invoices.thermal');
+        Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
         Route::get('pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('pos', [PosController::class, 'store'])->name('pos.store');
         Route::get('pos/products/search', [PosController::class, 'search'])->name('pos.products.search');

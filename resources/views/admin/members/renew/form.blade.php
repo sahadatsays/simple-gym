@@ -64,7 +64,7 @@
                                     </div>
                                     @if ($renewal->invoice?->payment)
                                         <a
-                                            href="{{ route('admin.members.receipt', [$member, $renewal->invoice]) }}"
+                                            href="{{ route('admin.invoices.show', $renewal->invoice) }}"
                                             class="small"
                                         >
                                             {{ $renewal->invoice->payment->receipt_number }}

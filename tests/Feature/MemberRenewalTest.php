@@ -175,8 +175,16 @@ it('shows renewal receipt', function () {
 
     $this->actingAs($this->admin)
         ->get(route('admin.members.receipt', [$member, $invoice]))
+        ->assertRedirect(route('admin.invoices.show', $invoice));
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.invoices.show', $invoice))
         ->assertSuccessful()
-        ->assertSee('Renewal Receipt')
+        ->assertSee('Renewal invoice');
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.invoices.print', $invoice))
+        ->assertSuccessful()
         ->assertSee('RCP-RENEW-00001');
 });
 

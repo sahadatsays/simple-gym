@@ -118,7 +118,7 @@ it('completes a pos sale and reduces stock after payment', function () {
     $payment = Payment::query()->latest('id')->first();
 
     $response
-        ->assertRedirect(route('admin.payments.receipt', ['payment' => $payment, 'pos' => 1]));
+        ->assertRedirect(route('admin.invoices.thermal', ['invoice' => $payment->invoice, 'autoprint' => 1]));
 
     expect($payment)->not->toBeNull()
         ->and($payment->type)->toBe(PaymentType::PosSale)

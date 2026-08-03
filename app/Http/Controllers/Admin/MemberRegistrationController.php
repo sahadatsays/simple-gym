@@ -53,25 +53,15 @@ class MemberRegistrationController extends Controller
 
         Flash::success('Member registered successfully. Membership activated and receipt generated.');
 
-        return redirect()->route('admin.members.receipt', [
-            'member' => $result->member,
-            'invoice' => $result->invoice,
-        ]);
+        return redirect()->route('admin.invoices.show', $result->invoice);
     }
 
-    public function receipt(Member $member, Invoice $invoice): View
+    public function receipt(Member $member, Invoice $invoice): RedirectResponse
     {
         $this->authorize('view', $member);
 
         abort_unless($invoice->member_id === $member->id, 404);
 
-        $invoice->load(['membershipPlan', 'payment', 'membershipRenewal']);
-        $member->load(['membershipPlan', 'activeRfidCard']);
-
-        return view('admin.members.receipt', [
-            'member' => $member,
-            'invoice' => $invoice,
-            'payment' => $invoice->payment,
-        ]);
+        return redirect()->route('admin.invoices.show', $invoice);
     }
 }
