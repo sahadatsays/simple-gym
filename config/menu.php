@@ -74,6 +74,12 @@ return [
             'match' => 'admin.rfid-cards.*',
         ],
         [
+            'label' => 'Reports',
+            'route' => 'admin.reports.index',
+            'permission' => 'reports.view',
+            'match' => 'admin.reports.*',
+        ],
+        [
             'label' => 'Gym Settings',
             'route' => 'admin.settings.edit',
             'permission' => 'settings.view',
