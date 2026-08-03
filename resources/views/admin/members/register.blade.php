@@ -23,26 +23,61 @@
                 ])->values()->all()),
                 selectedPlanId: @js(old('membership_plan_id')),
                 amountReceived: @js(old('amount_received')),
+                currencySymbol: @js(App\Support\MoneyFormatter::symbol($gymCurrency)),
             })"
         >
             @csrf
 
             <div class="row g-4">
                 <div class="col-lg-4">
-                    <div class="card border-0 shadow-sm h-100">
+                    <div class="card border-0 shadow-sm">
                         <div class="card-body">
                             <h2 class="h6 fw-semibold mb-3">Photo</h2>
+
+                            <div class="sg-member-photo-preview mb-3" x-show="photoPreview" x-cloak>
+                                <img
+                                    :src="photoPreview"
+                                    alt="Selected member photo preview"
+                                    class="sg-member-photo-preview-image"
+                                >
+                            </div>
+
+                            <div class="sg-member-photo-placeholder mb-3" x-show="! photoPreview && ! photoProcessing">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                                    <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/>
+                                    <path d="M2 4a2 2 0 0 1 2-2h6l2 2h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/>
+                                </svg>
+                                <span class="small text-muted">Preview appears after selection</span>
+                            </div>
+
+                            <div class="text-muted small mb-3" x-show="photoProcessing" x-cloak>
+                                Optimizing image...
+                            </div>
+
                             <input
                                 type="file"
                                 name="photo"
                                 id="photo"
                                 accept="image/jpeg,image/png,image/webp"
+                                @change="handlePhotoChange($event)"
                                 @class(['form-control', 'is-invalid' => $errors->has('photo')])
+                                :class="{ 'is-invalid': photoError }"
                             >
                             @error('photo')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
-                            <div class="form-text">JPG, PNG or WebP. Max 2 MB.</div>
+                            <div class="invalid-feedback d-block" x-show="photoError" x-text="photoError" x-cloak></div>
+                            <div class="form-text">JPG, PNG or WebP. Optimized automatically on upload.</div>
+
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-light mt-2"
+                                x-show="photoPreview"
+                                @click="clearPhoto(document.getElementById('photo'))"
+                                x-cloak
+                            >
+                                Remove photo
+                            </button>
                         </div>
                     </div>
 
@@ -168,12 +203,8 @@
                             <x-forms.select
                                 label="Payment method"
                                 name="payment_method"
-                                :options="[
-                                    'cash' => 'Cash',
-                                    'card' => 'Card',
-                                    'mobile_banking' => 'Mobile Banking',
-                                ]"
-                                :selected="old('payment_method', 'cash')"
+                                :options="App\Enums\PaymentMethod::options()"
+                                :selected="old('payment_method', App\Enums\PaymentMethod::Cash->value)"
                                 required
                             />
                         </div>
@@ -223,63 +254,55 @@
                             placeholder="Search card number..."
                         />
                     @endif
-                </div>
-            </div>
 
-            <div class="d-flex flex-wrap gap-2 mt-4">
-                <x-ui.button type="submit">Complete Registration</x-ui.button>
-                <a href="{{ route('admin.members.index') }}" class="btn btn-light">Cancel</a>
+                    <div class="sg-form-actions d-flex flex-wrap gap-2 pt-4 mt-4 border-top">
+                        <x-ui.button type="submit">Complete Registration</x-ui.button>
+                        <a href="{{ route('admin.members.index') }}" class="btn btn-light">Cancel</a>
+                    </div>
+                </div>
             </div>
         </form>
     </x-ui.card>
 @endsection
 
-@push('scripts')
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('memberRegistration', (config) => ({
-                plans: config.plans,
-                selectedPlanId: config.selectedPlanId ? String(config.selectedPlanId) : '',
-                amountReceived: config.amountReceived ?? '',
-                currencySymbol: @js(App\Support\MoneyFormatter::symbol($gymCurrency)),
+@push('styles')
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
 
-                init() {
-                    this.syncAmount();
-                },
+        .sg-member-photo-preview,
+        .sg-member-photo-placeholder {
+            aspect-ratio: 1;
+            border: 1px dashed #cbd5e1;
+            border-radius: 0.875rem;
+            background: #f8fafc;
+            overflow: hidden;
+        }
 
-                get selectedPlan() {
-                    return this.plans.find((plan) => String(plan.id) === String(this.selectedPlanId)) ?? null;
-                },
+        .sg-member-photo-preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
 
-                get totalDue() {
-                    if (! this.selectedPlan) {
-                        return 0;
-                    }
+        .sg-member-photo-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+        }
 
-                    return this.selectedPlan.admission_fee + this.selectedPlan.membership_fee;
-                },
-
-                get expiryLabel() {
-                    if (! this.selectedPlan) {
-                        return '';
-                    }
-
-                    return `${this.selectedPlan.duration_days} days`;
-                },
-
-                syncAmount() {
-                    if (this.selectedPlan) {
-                        this.amountReceived = this.totalDue.toFixed(2);
-                    }
-                },
-
-                formatMoney(amount) {
-                    return this.currencySymbol + Number(amount).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                    });
-                },
-            }));
-        });
-    </script>
+        .sg-form-actions {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            background: #fff;
+            margin-bottom: -0.25rem;
+            padding-bottom: 0.25rem;
+        }
+    </style>
 @endpush

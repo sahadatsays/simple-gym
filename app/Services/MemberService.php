@@ -6,9 +6,9 @@ use App\Contracts\Repositories\MemberRepositoryInterface;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Support\ActivityLogger;
+use App\Support\MemberPhotoStorage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 
 class MemberService extends BaseService
 {
@@ -16,6 +16,7 @@ class MemberService extends BaseService
         private MemberRepositoryInterface $members,
         private ActivityLogger $activityLogger,
         private RfidCardService $rfidCardService,
+        private MemberPhotoStorage $photoStorage,
     ) {}
 
     /**
@@ -114,13 +115,11 @@ class MemberService extends BaseService
 
     private function storePhoto(UploadedFile $photo): string
     {
-        return $photo->store('members/photos', 'public');
+        return $this->photoStorage->store($photo);
     }
 
     private function deletePhoto(?string $path): void
     {
-        if ($path !== null) {
-            Storage::disk('public')->delete($path);
-        }
+        $this->photoStorage->delete($path);
     }
 }

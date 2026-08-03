@@ -11,6 +11,7 @@ use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\RfidCard;
 use App\Support\ActivityLogger;
+use App\Support\MemberPhotoStorage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
@@ -23,6 +24,7 @@ class MemberRegistrationService extends BaseService
         private PaymentService $paymentService,
         private RfidCardService $rfidCardService,
         private ActivityLogger $activityLogger,
+        private MemberPhotoStorage $photoStorage,
     ) {}
 
     /**
@@ -144,6 +146,6 @@ class MemberRegistrationService extends BaseService
 
     private function storePhoto(UploadedFile $photo): string
     {
-        return $photo->store('members/photos', 'public');
+        return $this->photoStorage->store($photo);
     }
 }
