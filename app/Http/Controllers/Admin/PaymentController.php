@@ -12,11 +12,13 @@ use App\Http\Requests\Admin\StorePaymentRequest;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\Payment;
+use App\Models\Product;
 use App\Services\InvoiceService;
 use App\Services\PaymentService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class PaymentController extends Controller
 {
@@ -76,13 +78,11 @@ class PaymentController extends Controller
             if ($data['mode'] === 'pos') {
                 $member = isset($data['member_id']) ? Member::query()->find($data['member_id']) : null;
                 $discountAmount = (float) ($data['discount_amount'] ?? 0);
+                $lineItems = $this->buildPosLineItems($data);
 
                 $payment = $this->paymentService->receivePosSale(
                     $member,
-                    [[
-                        'description' => $data['description'],
-                        'amount' => (float) $data['item_amount'],
-                    ]],
+                    $lineItems,
                     [
                         'type' => PaymentType::PosSale,
                         'amount_paid' => (float) $data['amount_paid'],
@@ -108,7 +108,7 @@ class PaymentController extends Controller
                     'require_full_payment' => true,
                 ]);
             }
-        } catch (PaymentFailedException $exception) {
+        } catch (PaymentFailedException|InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['amount_paid' => $exception->getMessage()]);
         }
 
@@ -142,5 +142,31 @@ class PaymentController extends Controller
             'invoice' => $invoice,
             'member' => $member,
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<int, array{product_id?: int, description: string, amount: float, quantity?: int, unit_price?: float}>
+     */
+    private function buildPosLineItems(array $data): array
+    {
+        if (! empty($data['product_id'])) {
+            $product = Product::query()->findOrFail($data['product_id']);
+            $quantity = (int) $data['quantity'];
+            $unitPrice = (float) $product->selling_price;
+
+            return [[
+                'product_id' => $product->id,
+                'description' => $product->name,
+                'amount' => round($unitPrice * $quantity, 2),
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+            ]];
+        }
+
+        return [[
+            'description' => $data['description'],
+            'amount' => (float) $data['item_amount'],
+        ]];
     }
 }

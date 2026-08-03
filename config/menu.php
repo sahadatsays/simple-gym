@@ -56,6 +56,12 @@ return [
             'match' => 'admin.payments.*',
         ],
         [
+            'label' => 'Products',
+            'route' => 'admin.products.index',
+            'permission' => 'products.view',
+            'match' => 'admin.products.*',
+        ],
+        [
             'label' => 'RFID Cards',
             'route' => 'admin.rfid-cards.index',
             'permission' => 'rfid-cards.view',

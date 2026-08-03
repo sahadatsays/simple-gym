@@ -2,20 +2,25 @@
 
 namespace App\Models;
 
+use App\Enums\ProductStatus;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
-    'name',
     'sku',
-    'price',
-    'stock_quantity',
-    'low_stock_threshold',
-    'is_active',
+    'barcode',
+    'name',
+    'category',
+    'purchase_price',
+    'selling_price',
+    'stock',
+    'minimum_stock',
+    'status',
 ])]
 class Product extends Model
 {
@@ -28,9 +33,21 @@ class Product extends Model
     protected function casts(): array
     {
         return [
-            'price' => 'decimal:2',
-            'is_active' => 'boolean',
+            'purchase_price' => 'decimal:2',
+            'selling_price' => 'decimal:2',
+            'status' => ProductStatus::class,
         ];
+    }
+
+    public function isLowStock(): bool
+    {
+        return $this->status === ProductStatus::Active
+            && $this->stock <= $this->minimum_stock;
+    }
+
+    public function isOutOfStock(): bool
+    {
+        return $this->stock <= 0;
     }
 
     /**
@@ -39,7 +56,24 @@ class Product extends Model
      */
     public function scopeLowStock(Builder $query): Builder
     {
-        return $query->where('is_active', true)
-            ->whereColumn('stock_quantity', '<=', 'low_stock_threshold');
+        return $query->where('status', ProductStatus::Active)
+            ->whereColumn('stock', '<=', 'minimum_stock');
+    }
+
+    /**
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', ProductStatus::Active);
+    }
+
+    /**
+     * @return HasMany<ProductSale, $this>
+     */
+    public function sales(): HasMany
+    {
+        return $this->hasMany(ProductSale::class);
     }
 }

@@ -8,6 +8,7 @@ use App\Contracts\Repositories\InvoiceRepositoryInterface;
 use App\Contracts\Repositories\MemberRepositoryInterface;
 use App\Contracts\Repositories\MembershipPlanRepositoryInterface;
 use App\Contracts\Repositories\PaymentRepositoryInterface;
+use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Contracts\Repositories\RfidCardRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Repositories\ActivityLogRepository;
@@ -16,6 +17,7 @@ use App\Repositories\InvoiceRepository;
 use App\Repositories\MemberRepository;
 use App\Repositories\MembershipPlanRepository;
 use App\Repositories\PaymentRepository;
+use App\Repositories\ProductRepository;
 use App\Repositories\RfidCardRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Support\ServiceProvider;
@@ -31,6 +33,7 @@ class RepositoryServiceProvider extends ServiceProvider
         MemberRepositoryInterface::class => MemberRepository::class,
         InvoiceRepositoryInterface::class => InvoiceRepository::class,
         PaymentRepositoryInterface::class => PaymentRepository::class,
+        ProductRepositoryInterface::class => ProductRepository::class,
         RfidCardRepositoryInterface::class => RfidCardRepository::class,
         GymSettingRepositoryInterface::class => GymSettingRepository::class,
         ActivityLogRepositoryInterface::class => ActivityLogRepository::class,

@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentType;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\Product;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -29,8 +30,10 @@ class StorePaymentRequest extends FormRequest
             return [
                 'mode' => ['required', 'in:pos'],
                 'member_id' => ['nullable', 'integer', Rule::exists('members', 'id')],
-                'description' => ['required', 'string', 'max:255'],
-                'item_amount' => ['required', 'numeric', 'min:0.01'],
+                'product_id' => ['nullable', 'integer', Rule::exists('products', 'id')],
+                'quantity' => ['nullable', 'integer', 'min:1', 'required_with:product_id'],
+                'description' => ['nullable', 'string', 'max:255', 'required_without:product_id'],
+                'item_amount' => ['nullable', 'numeric', 'min:0.01', 'required_without:product_id'],
                 'type' => ['required', 'string', Rule::in([PaymentType::PosSale->value])],
                 'payment_method' => ['required', 'string', Rule::enum(PaymentMethod::class)],
                 'payment_reference' => ['nullable', 'string', 'max:100'],
@@ -102,6 +105,38 @@ class StorePaymentRequest extends FormRequest
 
     private function validatePosPayment(Validator $validator): void
     {
+        if ($this->filled('product_id')) {
+            $product = Product::query()->find($this->integer('product_id'));
+
+            if ($product === null) {
+                return;
+            }
+
+            $quantity = (int) $this->input('quantity');
+            $itemAmount = (float) $product->selling_price * $quantity;
+            $discountAmount = (float) ($this->input('discount_amount') ?? 0);
+            $amountPaid = (float) $this->input('amount_paid');
+            $invoiceTotal = max(0, $itemAmount - $discountAmount);
+
+            if ($quantity > $product->stock) {
+                $validator->errors()->add('quantity', "Only {$product->stock} units available in stock.");
+            }
+
+            if ($discountAmount > $itemAmount) {
+                $validator->errors()->add('discount_amount', 'Discount cannot exceed the item amount.');
+            }
+
+            if ($amountPaid > $invoiceTotal) {
+                $validator->errors()->add('amount_paid', 'Paid amount cannot exceed the invoice total.');
+            }
+
+            if ($amountPaid < $invoiceTotal) {
+                $validator->errors()->add('amount_paid', 'Paid amount must cover the full invoice total.');
+            }
+
+            return;
+        }
+
         $itemAmount = (float) $this->input('item_amount');
         $discountAmount = (float) ($this->input('discount_amount') ?? 0);
         $amountPaid = (float) $this->input('amount_paid');

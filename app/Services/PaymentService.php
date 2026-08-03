@@ -17,6 +17,7 @@ class PaymentService extends BaseService
     public function __construct(
         private PaymentRepositoryInterface $payments,
         private InvoiceService $invoiceService,
+        private ProductSaleService $productSaleService,
         private ActivityLogger $activityLogger,
     ) {}
 
@@ -52,7 +53,8 @@ class PaymentService extends BaseService
      *     discount_amount?: float,
      *     reference?: string|null,
      *     notes?: string|null,
-     *     require_full_payment?: bool
+     *     require_full_payment?: bool,
+     *     line_items?: array<int, array{product_id?: int|null, description: string, amount: float, quantity?: int, unit_price?: float}>
      * }  $data
      */
     public function receiveForInvoice(Invoice $invoice, array $data): Payment
@@ -103,6 +105,14 @@ class PaymentService extends BaseService
 
             $this->invoiceService->markPaid($invoice);
 
+            if ($invoice->isPosSale() && ! empty($data['line_items'] ?? null)) {
+                $this->productSaleService->recordFromPosPayment(
+                    $payment,
+                    $invoice,
+                    $data['line_items'],
+                );
+            }
+
             $this->activityLogger->log('payment.received', $payment, 'Payment received', [
                 'invoice_number' => $invoice->invoice_number,
                 'receipt_number' => $payment->receipt_number,
@@ -115,7 +125,7 @@ class PaymentService extends BaseService
     }
 
     /**
-     * @param  array<int, array{description: string, amount: float}>  $lineItems
+     * @param  array<int, array{product_id?: int|null, description: string, amount: float, quantity?: int, unit_price?: float}>  $lineItems
      * @param  array{
      *     type: PaymentType,
      *     amount_paid: float,
@@ -140,6 +150,7 @@ class PaymentService extends BaseService
                 'reference' => $paymentData['reference'] ?? null,
                 'notes' => $paymentData['notes'] ?? null,
                 'require_full_payment' => true,
+                'line_items' => $lineItems,
             ]);
         });
     }
