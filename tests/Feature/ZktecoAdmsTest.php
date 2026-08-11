@@ -5,6 +5,7 @@ use App\Models\AttendanceLog;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 uses(RefreshDatabase::class);
@@ -228,6 +229,33 @@ it('ingests f22 key value attlog lines', function () {
         ->and($attendance->timestamp->format('Y-m-d H:i:s'))->toBe('2026-08-11 21:47:45')
         ->and($attendance->punch_status)->toBe('0')
         ->and($attendance->verify_mode)->toBe('4');
+});
+
+it('stores failed card verifications separately from successful attendance logs', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => 'active',
+    ]);
+
+    $body = implode("\n", [
+        "time=2026-08-11 21:47:45\tpin=1\tcardno=1233447\tverifytype=4\tinoutstatus=0",
+        "time=2026-08-11 21:48:00\tpin=1\tcardno=\tverifytype=0\tinoutstatus=0",
+    ]);
+
+    $this->call(
+        'POST',
+        '/iclock/cdata?SN=JJA1254800833&table=ATTLOG',
+        [],
+        [],
+        [],
+        ['CONTENT_TYPE' => 'text/plain'],
+        $body,
+    )->assertSuccessful();
+
+    expect(AttendanceLog::query()->count())->toBe(1)
+        ->and(AttendanceLog::query()->first()->verify_mode)->toBe('4')
+        ->and(DB::table('attendance_log_failures')->count())->toBe(1)
+        ->and(DB::table('attendance_log_failures')->value('verify_mode'))->toBe('0');
 });
 
 it('accepts unknown cdata tables as a no-op', function () {

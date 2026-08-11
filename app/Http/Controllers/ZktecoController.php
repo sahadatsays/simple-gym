@@ -7,6 +7,7 @@ use App\Services\ZktecoAdmsService;
 use App\Services\ZktecoCdataService;
 use App\Services\ZktecoDeviceService;
 use App\Support\ZktecoAdmsResponseBuilder;
+use App\Support\ZktecoAttendanceVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
@@ -178,7 +179,7 @@ class ZktecoController extends Controller
     }
 
     /**
-     * @return array{user_id: string, timestamp: Carbon, punch_status: string, verify_mode: string}|null
+     * @return array{user_id: string, timestamp: Carbon, punch_status: string, verify_mode: string, card_number: string|null}|null
      */
     private function parseKeyValueAttlogLine(string $line): ?array
     {
@@ -229,11 +230,14 @@ class ZktecoController extends Controller
             'timestamp' => $timestamp,
             'punch_status' => $punchStatus,
             'verify_mode' => $verifyMode,
+            'card_number' => $fields['cardno']
+                ?? $fields['card']
+                ?? null,
         ];
     }
 
     /**
-     * @return array{user_id: string, timestamp: Carbon, punch_status: string, verify_mode: string}|null
+     * @return array{user_id: string, timestamp: Carbon, punch_status: string, verify_mode: string, card_number: string|null}|null
      */
     private function parsePositionalAttlogLine(string $line): ?array
     {
@@ -254,6 +258,7 @@ class ZktecoController extends Controller
             'timestamp' => $timestamp,
             'punch_status' => trim($fields[2] ?? ''),
             'verify_mode' => trim($fields[3] ?? ''),
+            'card_number' => null,
         ];
     }
 
@@ -291,6 +296,7 @@ class ZktecoController extends Controller
         }
 
         $rows = [];
+        $failedRows = [];
         $now = now();
 
         foreach (preg_split('/\r\n|\n|\r/', $body) ?: [] as $line) {
@@ -311,7 +317,7 @@ class ZktecoController extends Controller
                 continue;
             }
 
-            $rows[] = [
+            $record = [
                 'sn' => $serialNumber,
                 'user_id' => $parsed['user_id'],
                 'timestamp' => $parsed['timestamp']->toDateTimeString(),
@@ -320,17 +326,39 @@ class ZktecoController extends Controller
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
+
+            if (ZktecoAttendanceVerifier::isVerified($parsed)) {
+                $rows[] = $record;
+
+                continue;
+            }
+
+            Log::info('[ATT_REJECT]', [
+                'serial_number' => $serialNumber,
+                'line' => $line,
+                'parsed' => $parsed,
+            ]);
+
+            $failedRows[] = array_merge($record, [
+                'card_number' => $parsed['card_number'],
+            ]);
         }
 
-        if ($rows === []) {
-            return;
+        if ($rows !== []) {
+            DB::table('attendance_logs')->upsert(
+                $rows,
+                ['sn', 'user_id', 'timestamp'],
+                ['punch_status', 'verify_mode', 'updated_at'],
+            );
         }
 
-        DB::table('attendance_logs')->upsert(
-            $rows,
-            ['sn', 'user_id', 'timestamp'],
-            ['punch_status', 'verify_mode', 'updated_at'],
-        );
+        if ($failedRows !== []) {
+            DB::table('attendance_log_failures')->upsert(
+                $failedRows,
+                ['sn', 'user_id', 'timestamp'],
+                ['punch_status', 'verify_mode', 'card_number', 'updated_at'],
+            );
+        }
     }
 
     private function attlogOkResponse(): Response

@@ -137,7 +137,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($device->commands as $command)
+                                @forelse ($commands as $command)
                                     <tr>
                                         <td class="ps-4">
                                             <code class="small">{{ $command->command }}</code>
@@ -180,14 +180,20 @@
                         </table>
                     </div>
                 </div>
+
+                @if ($commands->hasPages())
+                    <div class="card-footer bg-white border-top-0 px-4 py-3">
+                        {{ $commands->withQueryString()->links() }}
+                    </div>
+                @endif
             </div>
 
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
                     <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-start gap-3">
                         <div>
-                            <h3 class="h6 fw-semibold mb-0">Recent Attendance</h3>
-                            <p class="text-muted small mb-0">Latest punches received from this device.</p>
+                            <h3 class="h6 fw-semibold mb-0">Attendance</h3>
+                            <p class="text-muted small mb-0">Verified punches are saved to attendance logs. Failed card reads are tracked separately.</p>
                         </div>
                         @can('viewAny', App\Models\AttendanceLog::class)
                             <a href="{{ route('admin.attendance-logs.index', ['sn' => $device->serial_number]) }}" class="btn btn-sm btn-light">
@@ -199,23 +205,48 @@
                         <table class="table table-hover align-middle mb-0 sg-data-table">
                             <thead>
                                 <tr>
-                                    <th class="ps-4">User ID</th>
+                                    <th class="ps-4">Member</th>
                                     <th>Recorded At</th>
                                     <th class="d-none d-md-table-cell">Punch</th>
                                     <th class="d-none d-lg-table-cell">Verify</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($recentAttendance as $record)
+                                @forelse ($attendanceEvents as $record)
+                                    @php
+                                        $member = $members->get($record->user_id);
+                                        $recordedAt = \Illuminate\Support\Carbon::parse($record->timestamp);
+                                    @endphp
                                     <tr>
-                                        <td class="ps-4 fw-semibold">{{ $record->user_id }}</td>
-                                        <td>{{ $record->timestamp->format('M j, Y g:i A') }}</td>
-                                        <td class="d-none d-md-table-cell text-muted">{{ App\Enums\ZktecoPunchStatus::labelFor($record->punch_status) }}</td>
-                                        <td class="d-none d-lg-table-cell text-muted">{{ App\Enums\ZktecoVerifyMode::labelFor($record->verify_mode) }}</td>
+                                        <td class="ps-4">
+                                            @if ($member)
+                                                <a href="{{ route('admin.members.show', $member) }}" class="text-decoration-none fw-semibold">
+                                                    {{ $member->name }}
+                                                </a>
+                                                <div class="text-muted small">PIN {{ $record->user_id }}</div>
+                                            @else
+                                                <div class="fw-semibold">PIN {{ $record->user_id }}</div>
+                                                <div class="text-muted small">Unknown member</div>
+                                            @endif
+                                        </td>
+                                        <td>{{ $recordedAt->format('M j, Y g:i A') }}</td>
+                                        <td class="d-none d-md-table-cell text-muted">{{ App\Enums\ZktecoPunchStatus::labelFor($record->punch_status ?? '') }}</td>
+                                        <td class="d-none d-lg-table-cell text-muted">{{ App\Enums\ZktecoVerifyMode::labelFor($record->verify_mode ?? '') }}</td>
+                                        <td>
+                                            @if ($record->verification_status === 'success')
+                                                <span class="sg-status-badge sg-status-badge-active">Verified</span>
+                                            @else
+                                                <span class="sg-status-badge sg-status-badge-inactive">Failed</span>
+                                                @if ($record->card_number)
+                                                    <div class="text-muted small">Card {{ $record->card_number }}</div>
+                                                @endif
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center py-4 text-muted">
+                                        <td colspan="5" class="text-center py-4 text-muted">
                                             No attendance records yet.
                                         </td>
                                     </tr>
@@ -224,6 +255,12 @@
                         </table>
                     </div>
                 </div>
+
+                @if ($attendanceEvents->hasPages())
+                    <div class="card-footer bg-white border-top-0 px-4 py-3">
+                        {{ $attendanceEvents->withQueryString()->links() }}
+                    </div>
+                @endif
             </div>
         </div>
     </div>

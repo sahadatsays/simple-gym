@@ -65,7 +65,7 @@ class ZktecoCommandBuilder
         $segments = [];
 
         foreach ($fields as $key => $value) {
-            $segments[] = $key.'='. trim($value);
+            $segments[] = $key.'='.$value;
         }
 
         return implode("\t", $segments);

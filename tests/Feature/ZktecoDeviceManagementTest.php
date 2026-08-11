@@ -90,7 +90,7 @@ it('queues a delete user command', function () {
         ])
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
-    expect(ZktecoCommand::query()->first()->command)->toBe('DATA DELETE User Pin=1005');
+    expect(ZktecoCommand::query()->first()->command)->toBe('DATA DELETE user Pin=1005');
 });
 
 it('queues a user upsert command', function () {
@@ -105,7 +105,7 @@ it('queues a user upsert command', function () {
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
     expect(ZktecoCommand::query()->first()->command)
-        ->toBe("DATA USER PIN=1005\tName=Asma\tCard=123456\tPri=0");
+        ->toBe("DATA UPDATE user Pin=1005\tName=Asma\tCardNo=123456\tPri=0\tGrp=1");
 });
 
 it('returns not found for an invalid device id', function () {

@@ -7,11 +7,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DeleteZktecoDeviceUserRequest;
 use App\Http\Requests\Admin\IndexZktecoDeviceRequest;
 use App\Http\Requests\Admin\StoreZktecoDeviceUserRequest;
-use App\Models\AttendanceLog;
+use App\Models\Member;
+use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
 use App\Services\ZktecoDeviceService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use InvalidArgumentException;
 
@@ -49,23 +52,67 @@ class ZktecoDeviceController extends Controller
         ]);
     }
 
-    public function show(ZktecoDevice $device): View
+    public function show(Request $request, ZktecoDevice $device): View
     {
         $this->authorize('view', $device);
 
-        $device->load([
-            'commands' => fn ($query) => $query->latest()->limit(25),
-        ]);
+        $perPage = config('gym.pagination.per_page');
 
-        $recentAttendance = AttendanceLog::query()
-            ->where('sn', $device->serial_number)
-            ->latest('timestamp')
-            ->limit(15)
-            ->get();
+        $commands = ZktecoCommand::query()
+            ->where('serial_number', $device->serial_number)
+            ->latest('id')
+            ->paginate($perPage, ['*'], 'commands_page')
+            ->withQueryString();
+
+        $successQuery = DB::table('attendance_logs')
+            ->select(
+                'id',
+                'sn',
+                'user_id',
+                'timestamp',
+                'punch_status',
+                'verify_mode',
+                DB::raw('NULL as card_number'),
+                DB::raw("'success' as verification_status"),
+            )
+            ->where('sn', $device->serial_number);
+
+        $failureQuery = DB::table('attendance_log_failures')
+            ->select(
+                'id',
+                'sn',
+                'user_id',
+                'timestamp',
+                'punch_status',
+                'verify_mode',
+                'card_number',
+                DB::raw("'failed' as verification_status"),
+            )
+            ->where('sn', $device->serial_number);
+
+        $attendanceEvents = DB::query()
+            ->fromSub($successQuery->unionAll($failureQuery), 'attendance_events')
+            ->orderByDesc('timestamp')
+            ->orderByDesc('id')
+            ->paginate($perPage, ['*'], 'attendance_page')
+            ->withQueryString();
+
+        $memberCodes = collect($attendanceEvents->items())
+            ->pluck('user_id')
+            ->unique()
+            ->filter()
+            ->values();
+
+        $members = Member::query()
+            ->whereIn('member_code', $memberCodes)
+            ->get(['id', 'name', 'member_code'])
+            ->keyBy('member_code');
 
         return view('admin.zkteco-devices.show', [
             'device' => $device,
-            'recentAttendance' => $recentAttendance,
+            'commands' => $commands,
+            'attendanceEvents' => $attendanceEvents,
+            'members' => $members,
         ]);
     }
 
