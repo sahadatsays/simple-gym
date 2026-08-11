@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ZktecoDevice;
+use App\Services\ZktecoAdmsService;
 use App\Services\ZktecoCdataService;
 use App\Services\ZktecoDeviceService;
 use App\Support\ZktecoAdmsResponseBuilder;
@@ -16,6 +16,7 @@ class ZktecoController extends Controller
     public function __construct(
         private ZktecoDeviceService $devices,
         private ZktecoCdataService $cdata,
+        private ZktecoAdmsService $adms,
     ) {}
 
     public function registry(Request $request): Response
@@ -34,39 +35,7 @@ class ZktecoController extends Controller
     public function push(Request $request): Response
     {
         try {
-            $serialNumber = $this->devices->resolveSerialNumber($request);
-
-            if ($serialNumber === null) {
-                Log::warning('ZKTeco push request missing serial number', [
-                    'method' => $request->method(),
-                    'query' => $request->query(),
-                ]);
-
-                return $this->rawAdmsResponse(ZktecoAdmsResponseBuilder::push());
-            }
-
-            $device = ZktecoDevice::query()->firstOrCreate(
-                ['serial_number' => $serialNumber],
-                ['status' => 'pending'],
-            );
-
-            $this->devices->touchDevice($device);
-
-            if ($request->isMethod('post')) {
-                if ($request->hasAny(['ID', 'id', 'Return', 'return'])) {
-                    $this->devices->acknowledgeCommandFromRequest($request);
-                } elseif (! $request->filled('table')) {
-                    $this->devices->logUnexpectedPushRequest($request);
-                }
-            }
-
-            $content = ZktecoAdmsResponseBuilder::push();
-
-            if ($command = $this->devices->pullNextPendingCommand($device)) {
-                $content .= ZktecoAdmsResponseBuilder::command($command->id, $command->command);
-            }
-
-            return $this->rawAdmsResponse($content);
+            return $this->rawAdmsResponse($this->adms->handlePush($request));
         } catch (Throwable $exception) {
             Log::error('ZKTeco push failed', [
                 'message' => $exception->getMessage(),
@@ -79,7 +48,7 @@ class ZktecoController extends Controller
     public function getRequest(Request $request): Response
     {
         try {
-            return $this->rawAdmsResponse($this->devices->getRequestResponse($request));
+            return $this->rawAdmsResponse($this->adms->handleGetRequest($request));
         } catch (Throwable $exception) {
             Log::error('ZKTeco getrequest failed', [
                 'message' => $exception->getMessage(),
@@ -87,6 +56,21 @@ class ZktecoController extends Controller
 
             return $this->rawAdmsResponse(ZktecoAdmsResponseBuilder::ok());
         }
+    }
+
+    public function deviceCmd(Request $request): Response
+    {
+        try {
+            $this->adms->handleDeviceCmd($request);
+        } catch (Throwable $exception) {
+            Log::error('ZKTeco devicecmd failed', [
+                'message' => $exception->getMessage(),
+                'content_type' => $request->header('Content-Type'),
+                'raw_content' => $request->getContent(),
+            ]);
+        }
+
+        return response("OK\n", 200)->header('Content-Type', 'text/plain');
     }
 
     public function cdata(Request $request): Response

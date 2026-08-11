@@ -49,35 +49,13 @@ it('returns a plain text push response and updates last seen', function () {
     $response->assertSuccessful();
     $response->assertHeader('Content-Type', 'text/plain; charset=utf-8');
     expect($response->getContent())->toContain("RegistryCode=0\r\n")
-        ->and($response->getContent())->toContain('ServerName=ADMS_Laravel');
+        ->and($response->getContent())->toContain('ServerName=ADMS_Laravel')
+        ->and($response->getContent())->not->toContain('C:');
 
     expect($device->fresh()->last_seen_at?->greaterThan(now()->subMinute()))->toBeTrue();
 });
 
-it('delivers a pending command on push and marks it as sent', function () {
-    ZktecoDevice::query()->create([
-        'serial_number' => 'JJA1254800833',
-        'status' => 'active',
-    ]);
-
-    $command = ZktecoCommand::query()->create([
-        'serial_number' => 'JJA1254800833',
-        'command' => 'REBOOT',
-        'status' => 'pending',
-    ]);
-
-    $response = $this->get('/iclock/push?SN=JJA1254800833');
-
-    $response->assertSuccessful();
-    expect($response->getContent())->toContain('C:'.$command->id.':REBOOT');
-
-    $command->refresh();
-
-    expect($command->status)->toBe('sent')
-        ->and($command->sent_at)->not->toBeNull();
-});
-
-it('acknowledges a command from a push post request', function () {
+it('does not acknowledge a command from push post', function () {
     ZktecoDevice::query()->create([
         'serial_number' => 'JJA1254800833',
         'status' => 'active',
@@ -95,9 +73,8 @@ it('acknowledges a command from a push post request', function () {
 
     $command->refresh();
 
-    expect($command->status)->toBe('acknowledged')
-        ->and($command->return_code)->toBe(0)
-        ->and($command->acknowledged_at)->not->toBeNull();
+    expect($command->status)->toBe('sent')
+        ->and($command->acknowledged_at)->toBeNull();
 });
 
 it('returns a cdata config block on get handshake and registers a pending device', function () {
@@ -234,7 +211,7 @@ it('delivers a pending command on getrequest and marks it as sent', function () 
     $response = $this->get('/iclock/getrequest?SN=JJA1254800833');
 
     $response->assertSuccessful();
-    expect(trim($response->getContent()))->toBe('REBOOT');
+    expect($response->getContent())->toContain('C:'.$command->id.':REBOOT');
 
     $command->refresh();
 

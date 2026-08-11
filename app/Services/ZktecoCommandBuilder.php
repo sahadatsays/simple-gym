@@ -1,41 +1,49 @@
 <?php
 
-namespace App\Services\Zkteco;
+namespace App\Services;
 
-use App\Contracts\Zkteco\ZktecoClientInterface;
 use InvalidArgumentException;
 
-class AdmsZktecoClient implements ZktecoClientInterface
+/**
+ * Builds ZKTeco ADMS command wire strings.
+ *
+ * Command syntax matches the existing standalone ADMS client and common Push SDK
+ * formats. Verify against your physical device firmware if a command is rejected.
+ */
+class ZktecoCommandBuilder
 {
-    public function reboot(string $serialNumber): string
+    public function reboot(): string
     {
-        $this->assertSerialNumber($serialNumber);
-
         return 'REBOOT';
     }
 
-    public function restart(string $serialNumber): string
+    public function restart(): string
     {
-        $this->assertSerialNumber($serialNumber);
-
         return 'RESTART';
     }
 
-    public function deleteUser(string $serialNumber, string $userId): string
+    public function deleteUser(string $userId): string
     {
-        $this->assertSerialNumber($serialNumber);
         $this->assertUserId($userId);
 
-        return 'DATA DELETE USERINFO PIN='.$userId;
+        return 'DATA DELETE User Pin='.$userId;
     }
 
-    public function upsertUser(string $serialNumber, array $user): string
+    /**
+     * @param  array{
+     *     uid?: int|null,
+     *     user_id: string,
+     *     name?: string|null,
+     *     privilege?: int|null,
+     *     card_number?: string|null
+     * }  $user
+     */
+    public function upsertUser(array $user): string
     {
-        $this->assertSerialNumber($serialNumber);
         $this->assertUserId($user['user_id'] ?? '');
 
         $fields = [
-            'PIN' => $user['user_id'],
+            'Pin' => $user['user_id'],
             'Name' => $user['name'] ?? '',
             'Pri' => (string) ($user['privilege'] ?? 0),
         ];
@@ -48,7 +56,7 @@ class AdmsZktecoClient implements ZktecoClientInterface
             $fields['Card'] = $user['card_number'];
         }
 
-        return 'DATA UPDATE USERINFO '.$this->formatFields($fields);
+        return 'DATA User '.$this->formatFields($fields);
     }
 
     /**
@@ -63,13 +71,6 @@ class AdmsZktecoClient implements ZktecoClientInterface
         }
 
         return implode("\t", $segments);
-    }
-
-    private function assertSerialNumber(string $serialNumber): void
-    {
-        if (trim($serialNumber) === '') {
-            throw new InvalidArgumentException('A device serial number is required.');
-        }
     }
 
     private function assertUserId(string $userId): void

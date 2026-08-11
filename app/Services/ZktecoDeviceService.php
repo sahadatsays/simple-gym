@@ -2,17 +2,16 @@
 
 namespace App\Services;
 
-use App\Contracts\Zkteco\ZktecoClientInterface;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
-use App\Support\ZktecoAdmsResponseBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class ZktecoDeviceService extends BaseService
 {
     public function __construct(
-        private ZktecoClientInterface $client,
+        private ZktecoCommandBuilder $commandBuilder,
+        private ZktecoDeviceCommandService $commands,
     ) {}
 
     public function resolveSerialNumber(Request $request): ?string
@@ -170,46 +169,27 @@ class ZktecoDeviceService extends BaseService
         return $device;
     }
 
-    public function queueCommand(ZktecoDevice $device, string $command): ZktecoCommand
-    {
-        return $this->transaction(function () use ($device, $command): ZktecoCommand {
-            $queued = ZktecoCommand::query()->create([
-                'serial_number' => $device->serial_number,
-                'command' => $command,
-                'status' => 'pending',
-            ]);
-
-            Log::info('ZKTeco command queued', [
-                'serial_number' => $device->serial_number,
-                'command_id' => $queued->id,
-                'command' => $command,
-            ]);
-
-            return $queued;
-        });
-    }
-
     public function reboot(ZktecoDevice $device): ZktecoCommand
     {
-        return $this->queueCommand(
+        return $this->commands->queue(
             $device,
-            $this->client->reboot($device->serial_number),
+            $this->commandBuilder->reboot(),
         );
     }
 
     public function restart(ZktecoDevice $device): ZktecoCommand
     {
-        return $this->queueCommand(
+        return $this->commands->queue(
             $device,
-            $this->client->restart($device->serial_number),
+            $this->commandBuilder->restart(),
         );
     }
 
     public function deleteUser(ZktecoDevice $device, string $userId): ZktecoCommand
     {
-        return $this->queueCommand(
+        return $this->commands->queue(
             $device,
-            $this->client->deleteUser($device->serial_number, $userId),
+            $this->commandBuilder->deleteUser($userId),
         );
     }
 
@@ -224,105 +204,10 @@ class ZktecoDeviceService extends BaseService
      */
     public function upsertUser(ZktecoDevice $device, array $userData): ZktecoCommand
     {
-        return $this->queueCommand(
+        return $this->commands->queue(
             $device,
-            $this->client->upsertUser($device->serial_number, $userData),
+            $this->commandBuilder->upsertUser($userData),
         );
-    }
-
-    public function pullNextPendingCommand(ZktecoDevice $device): ?ZktecoCommand
-    {
-        return $this->transaction(function () use ($device): ?ZktecoCommand {
-            $command = ZktecoCommand::query()
-                ->where('serial_number', $device->serial_number)
-                ->where('status', 'pending')
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->first();
-
-            if ($command === null) {
-                return null;
-            }
-
-            $command->update([
-                'status' => 'sent',
-                'sent_at' => now(),
-            ]);
-
-            Log::info('ZKTeco command sent to device', [
-                'serial_number' => $device->serial_number,
-                'command_id' => $command->id,
-            ]);
-
-            return $command->fresh();
-        });
-    }
-
-    public function getRequestResponse(Request $request): string
-    {
-        $serialNumber = $this->resolveSerialNumber($request);
-
-        if ($serialNumber === null) {
-            return ZktecoAdmsResponseBuilder::ok();
-        }
-
-        $device = ZktecoDevice::query()
-            ->where('serial_number', $serialNumber)
-            ->first();
-
-        if ($device === null) {
-            Log::warning('Unknown ZKTeco device requested command', [
-                'serial_number' => $serialNumber,
-            ]);
-
-            return ZktecoAdmsResponseBuilder::ok();
-        }
-
-        $this->touchDevice($device);
-
-        $command = $this->pullNextPendingCommand($device);
-
-        if ($command === null) {
-            return ZktecoAdmsResponseBuilder::ok();
-        }
-
-        return $command->command;
-    }
-
-    public function acknowledgeCommandFromRequest(Request $request): void
-    {
-        $commandId = $this->resolveCommandId($request);
-        $returnCode = $this->resolveReturnCode($request);
-
-        if ($commandId === null || $returnCode === null) {
-            return;
-        }
-
-        $command = ZktecoCommand::query()->find($commandId);
-
-        if ($command === null) {
-            Log::warning('ZKTeco command acknowledgment for unknown command', [
-                'command_id' => $commandId,
-                'return_code' => $returnCode,
-            ]);
-
-            return;
-        }
-
-        $status = $returnCode === 0 ? 'acknowledged' : 'failed';
-
-        $command->update([
-            'return_code' => $returnCode,
-            'status' => $status,
-            'acknowledged_at' => now(),
-        ]);
-
-        Log::info('ZKTeco command acknowledged', [
-            'serial_number' => $command->serial_number,
-            'command_id' => $command->id,
-            'return_code' => $returnCode,
-            'status' => $status,
-        ]);
     }
 
     public function logUnexpectedPushRequest(Request $request): void
@@ -367,31 +252,5 @@ class ZktecoDeviceService extends BaseService
         }
 
         return $capabilities === [] ? null : $capabilities;
-    }
-
-    private function resolveCommandId(Request $request): ?int
-    {
-        foreach (['ID', 'id', 'CmdID', 'cmdid'] as $key) {
-            $value = $request->query($key) ?? $request->input($key);
-
-            if (is_numeric($value)) {
-                return (int) $value;
-            }
-        }
-
-        return null;
-    }
-
-    private function resolveReturnCode(Request $request): ?int
-    {
-        foreach (['Return', 'return', 'Ret', 'ret'] as $key) {
-            $value = $request->query($key) ?? $request->input($key);
-
-            if (is_numeric($value)) {
-                return (int) $value;
-            }
-        }
-
-        return null;
     }
 }

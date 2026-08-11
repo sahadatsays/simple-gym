@@ -145,7 +145,7 @@
                                         <td>
                                             @php
                                                 $commandBadge = match ($command->status) {
-                                                    'acknowledged' => 'sg-status-badge-active',
+                                                    'completed', 'acknowledged' => 'sg-status-badge-active',
                                                     'failed' => 'sg-status-badge-inactive',
                                                     'sent' => 'sg-status-badge-warning',
                                                     default => 'sg-status-badge-inactive',

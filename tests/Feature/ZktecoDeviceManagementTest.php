@@ -90,7 +90,7 @@ it('queues a delete user command', function () {
         ])
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
-    expect(ZktecoCommand::query()->first()->command)->toBe('DATA DELETE USERINFO PIN=1005');
+    expect(ZktecoCommand::query()->first()->command)->toBe('DATA DELETE User Pin=1005');
 });
 
 it('queues a user upsert command', function () {
@@ -105,8 +105,8 @@ it('queues a user upsert command', function () {
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
     expect(ZktecoCommand::query()->first()->command)
-        ->toContain('DATA UPDATE USERINFO')
-        ->toContain('PIN=1005')
+        ->toContain('DATA User')
+        ->toContain('Pin=1005')
         ->toContain('Name=Asma');
 });
 

@@ -32,6 +32,7 @@ Route::get('/', function () {
 
 Route::prefix('iclock')->group(function (): void {
     Route::match(['get', 'post'], 'cdata', [ZktecoController::class, 'cdata']);
+    Route::match(['get', 'post'], 'devicecmd', [ZktecoController::class, 'deviceCmd']);
     Route::match(['get', 'post'], 'getrequest', [ZktecoController::class, 'getRequest']);
     Route::match(['get', 'post'], 'push', [ZktecoController::class, 'push']);
     Route::match(['get', 'post'], 'registry', [ZktecoController::class, 'registry']);
