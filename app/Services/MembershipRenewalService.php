@@ -7,6 +7,7 @@ use App\Data\MemberRenewalResult;
 use App\Enums\MemberStatus;
 use App\Enums\PaymentType;
 use App\Enums\PlanStatus;
+use App\Jobs\MemberAccessJob;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\MembershipRenewal;
@@ -22,6 +23,7 @@ class MembershipRenewalService extends BaseService
         private InvoiceService $invoiceService,
         private PaymentService $paymentService,
         private GymSettingService $gymSettings,
+        private RfidCardService $rfidCardService,
         private ActivityLogger $activityLogger,
     ) {}
 
@@ -81,6 +83,9 @@ class MembershipRenewalService extends BaseService
                 'previous_expires_at' => $previousExpiresAt?->toDateString(),
                 'new_expires_at' => $newExpiresAt->toDateString(),
             ]);
+
+            $this->rfidCardService->reactivateLatestCardForMember($member);
+            MemberAccessJob::dispatch($member->id)->afterCommit();
 
             return new MemberRenewalResult(
                 member: $member->load('membershipPlan'),

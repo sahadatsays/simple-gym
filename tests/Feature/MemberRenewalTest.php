@@ -4,13 +4,18 @@ use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
 use App\Enums\MemberStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\RfidCardStatus;
+use App\Enums\ZktecoDeviceStatus;
 use App\Models\GymSetting;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\MembershipRenewal;
 use App\Models\Payment;
+use App\Models\RfidCard;
 use App\Models\User;
+use App\Models\ZktecoCommand;
+use App\Models\ZktecoDevice;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +38,8 @@ beforeEach(function () {
         'admission_fee' => 500,
         'membership_fee' => 1500,
     ]);
+
+    config(['queue.default' => 'sync']);
 });
 
 it('shows member search page for renewal', function () {
@@ -360,4 +367,78 @@ it('allows staff with payments permission to renew', function () {
         ->assertRedirect();
 
     expect(MembershipRenewal::query()->where('member_id', $member->id)->exists())->toBeTrue();
+});
+
+it('reactivates a disabled card and syncs the member to the device after renewal', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => ZktecoDeviceStatus::Active,
+    ]);
+
+    $member = Member::factory()->expired()->create([
+        'member_code' => 'M30001',
+        'name' => 'Renewed Member',
+        'phone' => '01760006666',
+        'membership_plan_id' => $this->plan->id,
+        'membership_expires_at' => now()->subDays(10),
+        'rfid_card' => null,
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => '1233447',
+        'status' => RfidCardStatus::Disabled,
+        'member_id' => $member->id,
+        'assigned_at' => now()->subMonths(2),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.renew.store', $member), [
+            'membership_plan_id' => $this->plan->id,
+            'payment_method' => 'cash',
+            'amount_received' => 1500,
+        ])
+        ->assertRedirect();
+
+    expect($member->fresh()->status)->toBe(MemberStatus::Active)
+        ->and($member->fresh()->rfid_card)->toBe('1233447')
+        ->and($card->fresh()->status)->toBe(RfidCardStatus::Active)
+        ->and(ZktecoCommand::query()->count())->toBe(1)
+        ->and(ZktecoCommand::query()->value('command'))
+        ->toBe("DATA UPDATE user Pin=M30001\tName=Renewed Member\tCardNo=1233447\tPri=0\tGrp=1");
+});
+
+it('syncs an already active card to the device when a member renews early', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => ZktecoDeviceStatus::Active,
+    ]);
+
+    $member = Member::factory()->create([
+        'member_code' => 'M30002',
+        'name' => 'Early Renewer',
+        'phone' => '01770007777',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(5),
+        'rfid_card' => '7654321',
+    ]);
+
+    RfidCard::factory()->create([
+        'card_number' => '7654321',
+        'status' => RfidCardStatus::Active,
+        'member_id' => $member->id,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.renew.store', $member), [
+            'membership_plan_id' => $this->plan->id,
+            'payment_method' => 'cash',
+            'amount_received' => 1500,
+        ])
+        ->assertRedirect();
+
+    expect(ZktecoCommand::query()->count())->toBe(1)
+        ->and(ZktecoCommand::query()->value('command'))
+        ->toContain('Pin=M30002')
+        ->toContain('CardNo=7654321');
 });

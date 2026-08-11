@@ -50,6 +50,26 @@ class RfidCard extends Model
         return $this->status === RfidCardStatus::Active;
     }
 
+    public function isDisabled(): bool
+    {
+        return $this->status === RfidCardStatus::Disabled;
+    }
+
+    public function canBeEnabled(): bool
+    {
+        if (! $this->isDisabled() || $this->member_id === null) {
+            return false;
+        }
+
+        $member = $this->relationLoaded('member') ? $this->member : $this->member()->first();
+
+        if ($member === null || ! $member->isActive()) {
+            return false;
+        }
+
+        return ! $member->rfidCards()->where('status', RfidCardStatus::Active)->exists();
+    }
+
     /**
      * @param  Builder<RfidCard>  $query
      * @return Builder<RfidCard>

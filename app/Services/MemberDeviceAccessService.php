@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Contracts\Repositories\MemberRepositoryInterface;
+use App\Contracts\Repositories\RfidCardRepositoryInterface;
 use App\Enums\MemberStatus;
 use App\Enums\ZktecoDeviceStatus;
 use App\Models\Member;
@@ -16,7 +18,8 @@ class MemberDeviceAccessService extends BaseService
 {
     public function __construct(
         private ZktecoDeviceService $devices,
-        private RfidCardService $rfidCards,
+        private RfidCardRepositoryInterface $rfidCards,
+        private MemberRepositoryInterface $members,
         private ZktecoCommandBuilder $commandBuilder,
     ) {}
 
@@ -161,7 +164,42 @@ class MemberDeviceAccessService extends BaseService
         return $processed;
     }
 
+    public function revokeMemberDeviceAccess(int $memberId): bool
+    {
+        $member = Member::query()->find($memberId);
+
+        if ($member === null) {
+            Log::warning('Skipping ZKTeco access removal for missing member', [
+                'member_id' => $memberId,
+            ]);
+
+            return false;
+        }
+
+        return $this->queueDeviceAccessRemoval($member);
+    }
+
     public function revokeMemberAccess(Member $member): bool
+    {
+        $activeDevices = ZktecoDevice::query()
+            ->where('status', ZktecoDeviceStatus::Active)
+            ->orderBy('serial_number')
+            ->get();
+
+        $queuedAnyCommand = $this->queueDeviceAccessRemoval($member);
+
+        $this->transaction(function () use ($member): void {
+            if ($member->activeRfidCard !== null) {
+                $this->disableAllCardsForMember($member);
+            }
+
+            $this->markMemberExpired($member);
+        });
+
+        return $queuedAnyCommand || $this->hasRevokedAccessOnAllDevices($member, $activeDevices);
+    }
+
+    private function queueDeviceAccessRemoval(Member $member): bool
     {
         $userPin = trim($member->member_code);
 
@@ -221,19 +259,13 @@ class MemberDeviceAccessService extends BaseService
 
                 $queuedAnyCommand = true;
 
-                Log::info('Queued ZKTeco user removal for expired member', [
+                Log::info('Queued ZKTeco user removal for member', [
                     'member_id' => $member->id,
                     'member_code' => $userPin,
                     'serial_number' => $device->serial_number,
                     'command_id' => $command->id,
                 ]);
             }
-
-            if ($member->activeRfidCard !== null) {
-                $this->rfidCards->disableAllForMember($member);
-            }
-
-            $this->markMemberExpired($member);
         });
 
         return $queuedAnyCommand || $this->hasRevokedAccessOnAllDevices($member, $activeDevices);
@@ -273,6 +305,15 @@ class MemberDeviceAccessService extends BaseService
             ->where('command', $deleteCommand)
             ->whereIn('status', ['pending', 'sent'])
             ->exists();
+    }
+
+    private function disableAllCardsForMember(Member $member): void
+    {
+        $this->rfidCards->disableActiveCardsForMember($member);
+
+        $this->members->update($member, [
+            'rfid_card' => null,
+        ]);
     }
 
     private function markMemberExpired(Member $member): void

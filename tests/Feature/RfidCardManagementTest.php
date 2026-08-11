@@ -1,12 +1,18 @@
 <?php
 
+use App\Enums\MemberStatus;
 use App\Enums\RfidCardStatus;
+use App\Enums\ZktecoDeviceStatus;
+use App\Jobs\MemberAccessRevokeJob;
 use App\Models\Member;
 use App\Models\RfidCard;
 use App\Models\User;
+use App\Models\ZktecoCommand;
+use App\Models\ZktecoDevice;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -19,6 +25,8 @@ beforeEach(function () {
         'is_active' => true,
     ]);
     $this->admin->assignRole('super-admin');
+
+    config(['queue.default' => 'sync']);
 });
 
 it('lists rfid cards with search and status filter', function () {
@@ -124,6 +132,176 @@ it('disables an active card and clears member rfid reference', function () {
 
     expect($card->fresh()->status)->toBe(RfidCardStatus::Disabled)
         ->and($member->fresh()->rfid_card)->toBeNull();
+});
+
+it('queues device user delete when disabling an active card', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => ZktecoDeviceStatus::Active,
+    ]);
+
+    $member = Member::factory()->create([
+        'member_code' => 'M20010',
+        'rfid_card' => 'RFIDDISABLE010',
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addMonth(),
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDDISABLE010',
+        'status' => RfidCardStatus::Active,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.rfid-cards.disable', $card))
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    expect(ZktecoCommand::query()->count())->toBe(1)
+        ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin=M20010');
+});
+
+it('dispatches member access revoke job when disabling a card', function () {
+    Queue::fake();
+
+    $member = Member::factory()->create([
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addMonth(),
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'status' => RfidCardStatus::Active,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.rfid-cards.disable', $card))
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    Queue::assertPushed(MemberAccessRevokeJob::class, fn (MemberAccessRevokeJob $job): bool => $job->memberId === $member->id);
+});
+
+it('enables a disabled card for a non-expired member and queues device sync', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => ZktecoDeviceStatus::Active,
+    ]);
+
+    $member = Member::factory()->create([
+        'member_code' => 'M20011',
+        'name' => 'Enabled Member',
+        'rfid_card' => null,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addMonth(),
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDENABLE011',
+        'status' => RfidCardStatus::Disabled,
+        'member_id' => $member->id,
+        'assigned_at' => now()->subWeek(),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.rfid-cards.enable', $card))
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    expect($card->fresh()->status)->toBe(RfidCardStatus::Active)
+        ->and($member->fresh()->rfid_card)->toBe('RFIDENABLE011')
+        ->and(ZktecoCommand::query()->count())->toBe(1)
+        ->and(ZktecoCommand::query()->value('command'))
+        ->toContain('Pin=M20011')
+        ->toContain('CardNo=RFIDENABLE011');
+});
+
+it('prevents enabling a card for an expired member', function () {
+    $member = Member::factory()->create([
+        'status' => MemberStatus::Expired,
+        'membership_expires_at' => now()->subDay(),
+        'rfid_card' => null,
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'status' => RfidCardStatus::Disabled,
+        'member_id' => $member->id,
+        'assigned_at' => now()->subMonth(),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.rfid-cards.enable', $card))
+        ->assertRedirect();
+
+    expect($card->fresh()->status)->toBe(RfidCardStatus::Disabled)
+        ->and($member->fresh()->rfid_card)->toBeNull();
+});
+
+it('removes an unassigned rfid card without device sync', function () {
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDREMOVE001',
+        'status' => RfidCardStatus::Unassigned,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.rfid-cards.destroy', $card))
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    expect(RfidCard::query()->whereKey($card->id)->exists())->toBeFalse()
+        ->and(ZktecoCommand::query()->count())->toBe(0);
+});
+
+it('removes an active card and queues device user delete', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => ZktecoDeviceStatus::Active,
+    ]);
+
+    $member = Member::factory()->create([
+        'member_code' => 'M20020',
+        'rfid_card' => 'RFIDREMOVE020',
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addMonth(),
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDREMOVE020',
+        'status' => RfidCardStatus::Active,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.rfid-cards.destroy', $card))
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    expect(RfidCard::query()->whereKey($card->id)->exists())->toBeFalse()
+        ->and($member->fresh()->rfid_card)->toBeNull()
+        ->and(ZktecoCommand::query()->count())->toBe(1)
+        ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin=M20020');
+});
+
+it('dispatches member access revoke job when removing an active card', function () {
+    Queue::fake();
+
+    $member = Member::factory()->create([
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addMonth(),
+        'rfid_card' => 'RFIDREMOVE021',
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDREMOVE021',
+        'status' => RfidCardStatus::Active,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.rfid-cards.destroy', $card))
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    Queue::assertPushed(MemberAccessRevokeJob::class, fn (MemberAccessRevokeJob $job): bool => $job->memberId === $member->id);
 });
 
 it('prevents assigning a card that is not unassigned', function () {

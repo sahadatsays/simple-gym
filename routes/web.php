@@ -110,6 +110,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('rfid-cards/replace', [RfidCardController::class, 'replace'])->name('rfid-cards.replace');
         Route::post('rfid-cards/{rfid_card}/assign', [RfidCardController::class, 'assign'])->name('rfid-cards.assign');
         Route::patch('rfid-cards/{rfid_card}/disable', [RfidCardController::class, 'disable'])->name('rfid-cards.disable');
+        Route::patch('rfid-cards/{rfid_card}/enable', [RfidCardController::class, 'enable'])->name('rfid-cards.enable');
+        Route::delete('rfid-cards/{rfid_card}', [RfidCardController::class, 'destroy'])->name('rfid-cards.destroy');
 
         Route::get('settings', [GymSettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [GymSettingController::class, 'update'])->name('settings.update');

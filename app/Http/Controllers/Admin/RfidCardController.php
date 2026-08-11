@@ -95,4 +95,38 @@ class RfidCardController extends Controller
 
         return redirect()->route('admin.rfid-cards.index');
     }
+
+    public function enable(RfidCard $rfidCard): RedirectResponse
+    {
+        $this->authorize('enable', $rfidCard);
+
+        try {
+            $this->rfidCardService->enable($rfidCard);
+        } catch (InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
+
+        Flash::success('RFID card enabled successfully.');
+
+        return redirect()->route('admin.rfid-cards.index');
+    }
+
+    public function destroy(RfidCard $rfidCard): RedirectResponse
+    {
+        $this->authorize('delete', $rfidCard);
+
+        try {
+            $this->rfidCardService->remove($rfidCard);
+        } catch (InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
+
+        Flash::success('RFID card removed successfully.');
+
+        return redirect()->route('admin.rfid-cards.index');
+    }
 }

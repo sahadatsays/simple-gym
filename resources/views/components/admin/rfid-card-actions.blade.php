@@ -47,7 +47,7 @@
                     <form
                         action="{{ route('admin.rfid-cards.disable', $card) }}"
                         method="POST"
-                        onsubmit="return confirm('Disable this RFID card?');"
+                        onsubmit="return confirm('Disable this RFID card? The member will be removed from all access devices.');"
                     >
                         @csrf
                         @method('PATCH')
@@ -56,6 +56,37 @@
                 </li>
             @endcan
         @endif
+
+        @if ($card->canBeEnabled())
+            @can('enable', $card)
+                <li>
+                    <form
+                        action="{{ route('admin.rfid-cards.enable', $card) }}"
+                        method="POST"
+                        onsubmit="return confirm('Enable this RFID card and restore device access?');"
+                    >
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="dropdown-item text-success">Enable Card</button>
+                    </form>
+                </li>
+            @endcan
+        @endif
+
+        @can('delete', $card)
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <form
+                    action="{{ route('admin.rfid-cards.destroy', $card) }}"
+                    method="POST"
+                    onsubmit="return confirm(@js($card->isActive() && $card->member ? 'Remove this RFID card permanently? The member will be removed from all access devices.' : 'Remove this RFID card permanently?'));"
+                >
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="dropdown-item text-danger">Remove Card</button>
+                </form>
+            </li>
+        @endcan
     </ul>
 </div>
 
