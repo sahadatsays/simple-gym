@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Enums\PaymentMethod;
+use App\Models\AttendanceLog;
 use App\Models\GymSetting;
 use App\Models\Invoice;
 use App\Models\ZktecoDevice;
+use App\Policies\AttendanceLogPolicy;
 use App\Policies\GymSettingPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\PermissionPolicy;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
 
         Password::defaults(fn () => Password::min(8)->mixedCase()->numbers());
 
+        Gate::policy(AttendanceLog::class, AttendanceLogPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(Permission::class, PermissionPolicy::class);
         Gate::policy(GymSetting::class, GymSettingPolicy::class);

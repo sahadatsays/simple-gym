@@ -6,24 +6,21 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
-    'connection',
-    'uid',
+    'sn',
     'user_id',
-    'recorded_at',
+    'timestamp',
+    'punch_status',
     'verify_mode',
-    'punch_state',
 ])]
-class ZktecoAttendance extends Model
+class AttendanceLog extends Model
 {
-    protected $table = 'zkteco_attendance';
-
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
-            'recorded_at' => 'datetime',
+            'timestamp' => 'datetime',
         ];
     }
 }

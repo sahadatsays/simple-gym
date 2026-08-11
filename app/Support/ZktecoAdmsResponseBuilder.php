@@ -60,6 +60,7 @@ class ZktecoAdmsResponseBuilder
             'ATTLOGStamp='.($stamps['ATTLOG'] ?? 'None'),
             'OPERLOGStamp='.($stamps['OPERLOG'] ?? 'None'),
             'ATTPHOTOStamp='.($stamps['ATTPHOTO'] ?? 'None'),
+            'AttLogFunOn=1',
             'ErrorDelay=30',
             'Delay=15',
             'TransTimes=00:00;23:59',
@@ -68,7 +69,9 @@ class ZktecoAdmsResponseBuilder
             'Realtime=1',
             'Encrypt=0',
             'TimeZone=8',
-            'ServerVer=3.1.1',
+            'ServerVer=2.4.1',
+            'ServerVersion=2.4.1',
+            'PushVersion=2.0.33S',
         ];
 
         return implode(self::LINE_ENDING, $lines).self::LINE_ENDING;

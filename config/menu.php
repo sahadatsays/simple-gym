@@ -172,6 +172,13 @@ return [
                     'match' => 'admin.zkteco-devices.*',
                     'icon' => 'fingerprint',
                 ],
+                [
+                    'label' => 'Attendance Logs',
+                    'route' => 'admin.attendance-logs.index',
+                    'permission' => 'attendance-logs.view',
+                    'match' => 'admin.attendance-logs.*',
+                    'icon' => 'clock-history',
+                ],
             ],
         ],
     ],

@@ -1,10 +1,11 @@
 <?php
 
 use App\Enums\ZktecoDeviceStatus;
-use App\Models\ZktecoAttendance;
+use App\Models\AttendanceLog;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 
 uses(RefreshDatabase::class);
 
@@ -84,6 +85,9 @@ it('returns a cdata config block on get handshake and registers a pending device
     $response->assertHeader('Content-Type', 'text/plain; charset=utf-8');
     expect($response->getContent())->toContain("GET OPTION FROM: JJA1254800833\r\n")
         ->and($response->getContent())->toContain("ATTLOGStamp=None\r\n")
+        ->and($response->getContent())->toContain('AttLogFunOn=1')
+        ->and($response->getContent())->toContain('ServerVersion=2.4.1')
+        ->and($response->getContent())->toContain('PushVersion=2.0.33S')
         ->and($response->getContent())->toContain('Realtime=1');
 
     $device = ZktecoDevice::query()->where('serial_number', 'JJA1254800833')->first();
@@ -124,7 +128,7 @@ it('rejects cdata uploads from pending devices', function () {
         ->assertStatus(503)
         ->assertSee('Device pending approval.');
 
-    expect(ZktecoAttendance::query()->count())->toBe(0);
+    expect(AttendanceLog::query()->count())->toBe(0);
 });
 
 it('ingests attlog data from an approved device and advances the stamp', function () {
@@ -144,20 +148,86 @@ it('ingests attlog data from an approved device and advances the stamp', functio
     );
 
     $response->assertSuccessful();
-    expect($response->getContent())->toBe('OK: 2');
+    expect($response->getContent())->toBe("OK\n");
 
-    expect(ZktecoAttendance::query()->count())->toBe(2);
+    expect(AttendanceLog::query()->count())->toBe(2);
 
-    $attendance = ZktecoAttendance::query()->where('user_id', '1005')->first();
+    $attendance = AttendanceLog::query()->where('user_id', '1005')->first();
 
     expect($attendance)->not->toBeNull()
-        ->and($attendance->connection)->toBe('JJA1254800833')
-        ->and($attendance->punch_state)->toBe('0')
+        ->and($attendance->sn)->toBe('JJA1254800833')
+        ->and($attendance->punch_status)->toBe('0')
         ->and($attendance->verify_mode)->toBe('1');
 
     $device = ZktecoDevice::query()->where('serial_number', 'JJA1254800833')->first();
 
     expect($device->stamps)->toBe(['ATTLOG' => '2026-08-11T10:00:00']);
+});
+
+it('captures attlog payloads without an explicit table query parameter', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => 'active',
+    ]);
+
+    Log::spy();
+
+    $response = $this->call(
+        'POST',
+        '/iclock/cdata?SN=JJA1254800833',
+        [],
+        [],
+        [],
+        ['CONTENT_TYPE' => 'text/plain'],
+        "1005\t2026-08-11 10:00:00\t0\t4\r\n",
+    );
+
+    $response->assertSuccessful();
+    expect($response->getContent())->toBe("OK\n");
+
+    Log::shouldHaveReceived('info')
+        ->once()
+        ->with('[ATT_DUMP]', Mockery::on(function (array $context): bool {
+            return $context['serial_number'] === 'JJA1254800833'
+                && str_contains($context['content'], '2026-08-11 10:00:00');
+        }));
+
+    expect(AttendanceLog::query()->count())->toBe(1);
+
+    $attendance = AttendanceLog::query()->first();
+
+    expect($attendance->user_id)->toBe('1005')
+        ->and($attendance->verify_mode)->toBe('4');
+});
+
+it('ingests f22 key value attlog lines', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => 'active',
+    ]);
+
+    $line = "time=2026-08-11 21:47:45\tpin=1\tcardno=1233447\teventaddr=1\tevent=0\tinoutstatus=0\tverifytype=4\tindex=353";
+
+    $response = $this->call(
+        'POST',
+        '/iclock/cdata?SN=JJA1254800833&table=ATTLOG',
+        [],
+        [],
+        [],
+        ['CONTENT_TYPE' => 'text/plain'],
+        $line,
+    );
+
+    $response->assertSuccessful();
+    expect($response->getContent())->toBe("OK\n");
+    expect(AttendanceLog::query()->count())->toBe(1);
+
+    $attendance = AttendanceLog::query()->first();
+
+    expect($attendance->user_id)->toBe('1')
+        ->and($attendance->timestamp->format('Y-m-d H:i:s'))->toBe('2026-08-11 21:47:45')
+        ->and($attendance->punch_status)->toBe('0')
+        ->and($attendance->verify_mode)->toBe('4');
 });
 
 it('accepts unknown cdata tables as a no-op', function () {

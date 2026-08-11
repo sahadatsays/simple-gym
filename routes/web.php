@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AttendanceLogController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GymSettingController;
 use App\Http\Controllers\Admin\InvoiceController;
@@ -123,6 +124,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::post('/{device}/users', 'storeUser')->name('users.store');
             Route::delete('/{device}/users', 'destroyUser')->name('users.destroy');
         });
+
+        Route::get('attendance-logs', [AttendanceLogController::class, 'index'])->name('attendance-logs.index');
 
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/{report}', [ReportController::class, 'show'])->name('reports.show');

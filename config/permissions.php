@@ -57,6 +57,9 @@ return [
             'zkteco-devices.view',
             'zkteco-devices.manage',
         ],
+        'attendance-logs' => [
+            'attendance-logs.view',
+        ],
         'roles' => [
             'roles.view',
             'roles.create',
@@ -101,6 +104,7 @@ return [
             'settings.update',
             'zkteco-devices.view',
             'zkteco-devices.manage',
+            'attendance-logs.view',
         ],
         'staff' => [
             'dashboard.view',
@@ -110,6 +114,7 @@ return [
             'payments.create',
             'products.view',
             'reports.view',
+            'attendance-logs.view',
         ],
         'trainer' => [
             'dashboard.view',

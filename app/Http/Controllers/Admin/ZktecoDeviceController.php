@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DeleteZktecoDeviceUserRequest;
 use App\Http\Requests\Admin\IndexZktecoDeviceRequest;
 use App\Http\Requests\Admin\StoreZktecoDeviceUserRequest;
-use App\Models\ZktecoAttendance;
+use App\Models\AttendanceLog;
 use App\Models\ZktecoDevice;
 use App\Services\ZktecoDeviceService;
 use App\Support\Flash;
@@ -57,9 +57,9 @@ class ZktecoDeviceController extends Controller
             'commands' => fn ($query) => $query->latest()->limit(25),
         ]);
 
-        $recentAttendance = ZktecoAttendance::query()
-            ->where('connection', $device->serial_number)
-            ->latest('recorded_at')
+        $recentAttendance = AttendanceLog::query()
+            ->where('sn', $device->serial_number)
+            ->latest('timestamp')
             ->limit(15)
             ->get();
 

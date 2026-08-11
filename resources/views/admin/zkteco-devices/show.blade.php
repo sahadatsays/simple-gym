@@ -184,9 +184,16 @@
 
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
-                    <div class="px-4 py-3 border-bottom">
-                        <h3 class="h6 fw-semibold mb-0">Recent Attendance</h3>
-                        <p class="text-muted small mb-0">Latest punches received from this device.</p>
+                    <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <h3 class="h6 fw-semibold mb-0">Recent Attendance</h3>
+                            <p class="text-muted small mb-0">Latest punches received from this device.</p>
+                        </div>
+                        @can('viewAny', App\Models\AttendanceLog::class)
+                            <a href="{{ route('admin.attendance-logs.index', ['sn' => $device->serial_number]) }}" class="btn btn-sm btn-light">
+                                View all
+                            </a>
+                        @endcan
                     </div>
                     <div class="table-responsive sg-data-table-wrapper">
                         <table class="table table-hover align-middle mb-0 sg-data-table">
@@ -202,9 +209,9 @@
                                 @forelse ($recentAttendance as $record)
                                     <tr>
                                         <td class="ps-4 fw-semibold">{{ $record->user_id }}</td>
-                                        <td>{{ $record->recorded_at->format('M j, Y g:i A') }}</td>
-                                        <td class="d-none d-md-table-cell text-muted">{{ $record->punch_state }}</td>
-                                        <td class="d-none d-lg-table-cell text-muted">{{ $record->verify_mode }}</td>
+                                        <td>{{ $record->timestamp->format('M j, Y g:i A') }}</td>
+                                        <td class="d-none d-md-table-cell text-muted">{{ App\Enums\ZktecoPunchStatus::labelFor($record->punch_status) }}</td>
+                                        <td class="d-none d-lg-table-cell text-muted">{{ App\Enums\ZktecoVerifyMode::labelFor($record->verify_mode) }}</td>
                                     </tr>
                                 @empty
                                     <tr>
