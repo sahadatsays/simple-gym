@@ -52,6 +52,7 @@ class ZktecoCommandBuilder
         }
 
         $fields['Pri'] = (string) ($user['privilege'] ?? 0);
+        $fields['Grp'] = (string) ($user['group'] ?? 1);
 
         return 'DATA UPDATE user '.$this->formatFields($fields);
     }
