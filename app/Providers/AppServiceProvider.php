@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Contracts\Zkteco\ZktecoClientInterface;
 use App\Enums\PaymentMethod;
 use App\Models\GymSetting;
 use App\Models\Invoice;
@@ -9,6 +10,7 @@ use App\Policies\GymSettingPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
+use App\Services\Zkteco\AdmsZktecoClient;
 use App\Support\MenuBuilder;
 use App\Support\MoneyFormatter;
 use Illuminate\Pagination\Paginator;
@@ -27,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(ZktecoClientInterface::class, AdmsZktecoClient::class);
     }
 
     /**

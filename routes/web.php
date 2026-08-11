@@ -20,12 +20,28 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ZktecoController;
+use App\Http\Controllers\ZktecoDeviceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('admin.dashboard')
         : redirect()->route('login');
+});
+
+Route::prefix('iclock')->group(function (): void {
+    Route::match(['get', 'post'], 'registry', [ZktecoController::class, 'registry']);
+    Route::match(['get', 'post'], 'push', [ZktecoController::class, 'push']);
+});
+
+Route::middleware(['auth', 'active'])->prefix('zkteco/devices')->controller(ZktecoDeviceController::class)->group(function (): void {
+    Route::get('/', 'index');
+    Route::get('/{device}', 'show');
+    Route::post('/{device}/reboot', 'reboot');
+    Route::post('/{device}/restart', 'restart');
+    Route::post('/{device}/users', 'storeUser');
+    Route::delete('/{device}/users/{userId}', 'deleteUser');
 });
 
 Route::middleware('guest')->group(function (): void {
