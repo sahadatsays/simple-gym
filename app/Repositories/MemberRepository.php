@@ -36,6 +36,24 @@ class MemberRepository extends BaseRepository implements MemberRepositoryInterfa
             ->withQueryString();
     }
 
+    /**
+     * @param  array{search?: string|null, direction?: string|null}  $filters
+     * @return LengthAwarePaginator<Member>
+     */
+    public function paginateRenewalReview(array $filters, int $reminderDays, int $perPage): LengthAwarePaginator
+    {
+        $direction = ($filters['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+
+        return $this->newQuery()
+            ->with('membershipPlan')
+            ->renewalReview($reminderDays)
+            ->when(filled($filters['search'] ?? null), fn ($query) => $query->search($filters['search']))
+            ->orderBy('membership_expires_at', $direction)
+            ->orderBy('name')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
     public function findByMemberCode(string $memberCode): ?Member
     {
         return $this->newQuery()->where('member_code', $memberCode)->first();

@@ -11,6 +11,7 @@ use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\MembershipRenewal;
 use App\Support\ActivityLogger;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
@@ -20,6 +21,7 @@ class MembershipRenewalService extends BaseService
         private MemberRepositoryInterface $members,
         private InvoiceService $invoiceService,
         private PaymentService $paymentService,
+        private GymSettingService $gymSettings,
         private ActivityLogger $activityLogger,
     ) {}
 
@@ -92,5 +94,20 @@ class MembershipRenewalService extends BaseService
     public function previewExpiry(Member $member, MembershipPlan $plan): Carbon
     {
         return $this->invoiceService->calculateRenewedExpiry($member, $plan);
+    }
+
+    /**
+     * @param  array{search?: string|null, per_page?: int|null, direction?: string|null}  $filters
+     * @return LengthAwarePaginator<Member>
+     */
+    public function paginateReview(array $filters): LengthAwarePaginator
+    {
+        $perPage = (int) ($filters['per_page'] ?? config('gym.pagination.per_page'));
+
+        return $this->members->paginateRenewalReview(
+            $filters,
+            $this->gymSettings->membershipReminderDays(),
+            $perPage,
+        );
     }
 }

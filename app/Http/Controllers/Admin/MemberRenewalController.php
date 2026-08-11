@@ -2,41 +2,34 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\MemberStatus;
 use App\Enums\PlanStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\IndexRenewalReviewRequest;
 use App\Http\Requests\Admin\StoreMemberRenewalRequest;
 use App\Models\Member;
 use App\Models\MembershipPlan;
+use App\Services\GymSettingService;
 use App\Services\MembershipRenewalService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class MemberRenewalController extends Controller
 {
     public function __construct(
         private MembershipRenewalService $renewalService,
+        private GymSettingService $gymSettings,
     ) {}
 
-    public function create(Request $request): View
+    public function create(IndexRenewalReviewRequest $request): View
     {
-        $this->authorize('viewAny', Member::class);
-
-        $search = $request->string('search')->trim()->toString();
-
-        $members = Member::query()
-            ->with('membershipPlan')
-            ->where('status', '!=', MemberStatus::Pending)
-            ->search($search !== '' ? $search : null)
-            ->orderBy('name')
-            ->limit(50)
-            ->get(['id', 'name', 'member_code', 'phone', 'membership_expires_at', 'status', 'membership_plan_id']);
+        $filters = $request->validated();
 
         return view('admin.members.renew.search', [
-            'members' => $members,
-            'search' => $search,
+            'members' => $this->renewalService->paginateReview($filters),
+            'filters' => $filters,
+            'reminderDays' => $this->gymSettings->membershipReminderDays(),
+            'perPageOptions' => config('gym.pagination.per_page_options', [15]),
         ]);
     }
 

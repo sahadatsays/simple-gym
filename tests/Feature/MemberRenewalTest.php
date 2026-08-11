@@ -4,6 +4,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
 use App\Enums\MemberStatus;
 use App\Enums\PaymentStatus;
+use App\Models\GymSetting;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\MembershipPlan;
@@ -40,7 +41,147 @@ it('shows member search page for renewal', function () {
         'phone' => '01710001111',
         'membership_plan_id' => $this->plan->id,
         'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(5),
+    ]);
+
+    Member::factory()->create([
+        'name' => 'Future Member',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(60),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.renew.create'))
+        ->assertSuccessful()
+        ->assertSee('Renewal Candidate')
+        ->assertSee('Renew')
+        ->assertDontSee('Future Member');
+});
+
+it('shows expired members in the renewal review queue', function () {
+    Member::factory()->expired()->create([
+        'name' => 'Expired Review Member',
+        'membership_plan_id' => $this->plan->id,
+        'membership_expires_at' => now()->subDays(3),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.renew.create'))
+        ->assertSuccessful()
+        ->assertSee('Expired Review Member')
+        ->assertSee('Expired 3 days ago');
+});
+
+it('includes members expiring exactly on the reminder day boundary', function () {
+    GymSetting::query()->first()?->update(['membership_reminder_days' => 7]);
+
+    Member::factory()->create([
+        'name' => 'Boundary Member',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(7),
+    ]);
+
+    Member::factory()->create([
+        'name' => 'Outside Boundary Member',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(8),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.renew.create'))
+        ->assertSuccessful()
+        ->assertSee('Boundary Member')
+        ->assertDontSee('Outside Boundary Member');
+});
+
+it('respects membership reminder days from settings', function () {
+    GymSetting::query()->first()?->update(['membership_reminder_days' => 3]);
+
+    Member::factory()->create([
+        'name' => 'Inside Window',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(2),
+    ]);
+
+    Member::factory()->create([
+        'name' => 'Outside Window',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
         'membership_expires_at' => now()->addDays(10),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.renew.create'))
+        ->assertSuccessful()
+        ->assertSee('Inside Window')
+        ->assertDontSee('Outside Window');
+});
+
+it('paginates renewal review results', function () {
+    Member::factory()->count(15)->create([
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(2),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.renew.create', ['per_page' => 10]))
+        ->assertSuccessful()
+        ->assertSee('page=2', false);
+});
+
+it('preserves search query in renewal review filters', function () {
+    Member::factory()->create([
+        'name' => 'Searchable Renewal Member',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(1),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.renew.create', [
+            'search' => 'Searchable',
+            'per_page' => 10,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Searchable Renewal Member')
+        ->assertSee('value="Searchable"', false);
+});
+
+it('sorts renewal review members by expiry date descending', function () {
+    $later = Member::factory()->create([
+        'name' => 'Later Expiry Member',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(5),
+    ]);
+
+    $sooner = Member::factory()->create([
+        'name' => 'Sooner Expiry Member',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDay(),
+    ]);
+
+    $response = $this->actingAs($this->admin)
+        ->get(route('admin.members.renew.create', ['direction' => 'desc']))
+        ->assertSuccessful();
+
+    expect(mb_strpos($response->getContent(), $later->name))
+        ->toBeLessThan(mb_strpos($response->getContent(), $sooner->name));
+});
+
+it('filters renewal review members by search term', function () {
+    Member::factory()->create([
+        'name' => 'Renewal Candidate',
+        'phone' => '01710001111',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(5),
     ]);
 
     $this->actingAs($this->admin)

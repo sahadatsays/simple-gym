@@ -13,6 +13,12 @@ interface MemberRepositoryInterface extends RepositoryInterface
      */
     public function paginateWithFilters(array $filters, int $perPage): LengthAwarePaginator;
 
+    /**
+     * @param  array{search?: string|null, direction?: string|null}  $filters
+     * @return LengthAwarePaginator<Member>
+     */
+    public function paginateRenewalReview(array $filters, int $reminderDays, int $perPage): LengthAwarePaginator;
+
     public function findByMemberCode(string $memberCode): ?Member;
 
     public function findByPhone(string $phone): ?Member;

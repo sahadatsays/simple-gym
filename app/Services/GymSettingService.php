@@ -71,4 +71,9 @@ class GymSettingService extends BaseService
     {
         return array_column(PaymentMethod::cases(), 'value');
     }
+
+    public function membershipReminderDays(): int
+    {
+        return (int) $this->get()->membership_reminder_days;
+    }
 }

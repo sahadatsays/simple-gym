@@ -184,6 +184,32 @@ class Member extends Model
             ->whereDay('date_of_birth', now()->day);
     }
 
+    /**
+     * Members who should appear on the renewal review queue.
+     *
+     * When reminder days is 7, this includes:
+     * - already expired members
+     * - members expiring today through 7 days from today (renewable before expiry)
+     *
+     * @param  Builder<Member>  $query
+     * @return Builder<Member>
+     */
+    public function scopeRenewalReview(Builder $query, int $reminderDays): Builder
+    {
+        $reviewUntil = today()->addDays($reminderDays);
+
+        return $query
+            ->where('status', '!=', MemberStatus::Pending)
+            ->whereNotNull('membership_expires_at')
+            ->where(function (Builder $builder) use ($reviewUntil): void {
+                $builder->whereDate('membership_expires_at', '<', today())
+                    ->orWhere(function (Builder $nested) use ($reviewUntil): void {
+                        $nested->whereDate('membership_expires_at', '>=', today())
+                            ->whereDate('membership_expires_at', '<=', $reviewUntil);
+                    });
+            });
+    }
+
     public function isActive(): bool
     {
         if ($this->status !== MemberStatus::Active) {
@@ -197,5 +223,14 @@ class Member extends Model
     public function isRenewable(): bool
     {
         return $this->status !== MemberStatus::Pending;
+    }
+
+    public function daysUntilExpiry(): ?int
+    {
+        if ($this->membership_expires_at === null) {
+            return null;
+        }
+
+        return (int) today()->diffInDays($this->membership_expires_at, false);
     }
 }
