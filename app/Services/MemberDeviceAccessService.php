@@ -22,6 +22,7 @@ class MemberDeviceAccessService extends BaseService
         private RfidCardRepositoryInterface $rfidCards,
         private MemberRepositoryInterface $members,
         private ZktecoCommandBuilder $commandBuilder,
+        private MemberDeviceAccessPolicy $accessPolicy,
     ) {}
 
     public function grantMemberAccess(int $memberId): bool
@@ -62,6 +63,16 @@ class MemberDeviceAccessService extends BaseService
                 'member_id' => $member->id,
                 'member_code' => $userPin,
                 'status' => $member->status->value,
+            ]);
+
+            return false;
+        }
+
+        if (! $this->accessPolicy->canSyncToDevice($member)) {
+            Log::info('Skipping ZKTeco access grant due to device access policy', [
+                'member_id' => $member->id,
+                'member_code' => $userPin,
+                'restricted' => $this->accessPolicy->isMemberCurrentlyRestricted($member),
             ]);
 
             return false;
@@ -112,6 +123,37 @@ class MemberDeviceAccessService extends BaseService
         return $queuedAnyCommand;
     }
 
+    public function reconcileMemberDeviceAccess(int $memberId): bool
+    {
+        $member = Member::query()
+            ->with('activeRfidCard')
+            ->find($memberId);
+
+        if ($member === null) {
+            return false;
+        }
+
+        if ($this->accessPolicy->canSyncToDevice($member)) {
+            return $this->grantMemberAccess($memberId);
+        }
+
+        if ($this->accessPolicy->shouldRevokeFromDevice($member)) {
+            return $this->revokeMemberDeviceAccess($memberId);
+        }
+
+        return false;
+    }
+
+    public function isMemberRemovedFromAllActiveDevices(Member $member): bool
+    {
+        $activeDevices = ZktecoDevice::query()
+            ->where('status', ZktecoDeviceStatus::Active)
+            ->orderBy('serial_number')
+            ->get();
+
+        return $this->hasRevokedAccessOnAllDevices($member, $activeDevices);
+    }
+
     /**
      * @return array{
      *     pim: string,
@@ -133,6 +175,10 @@ class MemberDeviceAccessService extends BaseService
 
         if ($card->member === null) {
             throw new InvalidArgumentException('The selected RFID card is not assigned to a member.');
+        }
+
+        if (! $this->accessPolicy->canSyncToDevice($card->member)) {
+            throw new InvalidArgumentException('This member cannot be synced to devices while access restrictions are active.');
         }
 
         return $this->buildUserPayload($card->member, $card);

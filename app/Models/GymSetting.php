@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MemberAccessRestrictionGroup;
 use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -24,6 +25,10 @@ use Illuminate\Support\Facades\Storage;
     'opening_time',
     'closing_time',
     'is_open',
+    'member_access_restriction_enabled',
+    'member_access_restriction_start_time',
+    'member_access_restriction_end_time',
+    'member_access_restriction_group',
     'meta',
 ])]
 class GymSetting extends Model
@@ -39,6 +44,10 @@ class GymSetting extends Model
             'opening_time' => 'datetime:H:i:s',
             'closing_time' => 'datetime:H:i:s',
             'is_open' => 'boolean',
+            'member_access_restriction_enabled' => 'boolean',
+            'member_access_restriction_start_time' => 'datetime:H:i:s',
+            'member_access_restriction_end_time' => 'datetime:H:i:s',
+            'member_access_restriction_group' => MemberAccessRestrictionGroup::class,
             'default_admission_fee' => 'decimal:2',
             'membership_reminder_days' => 'integer',
             'enabled_payment_methods' => 'array',

@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('notifications:sync-gym-alerts')->dailyAt('06:00');
 Schedule::command('access:expire')->dailyAt('01:00');
+Schedule::command('access:restriction:dispatch')->everyMinute();

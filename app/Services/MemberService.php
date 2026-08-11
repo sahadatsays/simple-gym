@@ -17,6 +17,7 @@ class MemberService extends BaseService
         private ActivityLogger $activityLogger,
         private RfidCardService $rfidCardService,
         private MemberPhotoStorage $photoStorage,
+        private MemberDeviceAccessService $memberDeviceAccess,
     ) {}
 
     /**
@@ -50,6 +51,7 @@ class MemberService extends BaseService
     public function update(Member $member, array $data, ?UploadedFile $photo = null): Member
     {
         return $this->transaction(function () use ($member, $data, $photo): Member {
+            $previousGender = $member->gender;
             $removePhoto = (bool) ($data['remove_photo'] ?? false);
             unset($data['photo'], $data['remove_photo'], $data['member_code']);
 
@@ -66,6 +68,10 @@ class MemberService extends BaseService
             $updatedMember = $this->members->update($member, $data);
 
             $this->activityLogger->log('member.updated', $updatedMember, 'Member profile updated');
+
+            if ($previousGender !== $updatedMember->gender) {
+                $this->memberDeviceAccess->reconcileMemberDeviceAccess($updatedMember->id);
+            }
 
             return $updatedMember->load('membershipPlan');
         });

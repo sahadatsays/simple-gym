@@ -144,6 +144,48 @@
                     </div>
                 </x-ui.card>
 
+                <x-ui.card title="Device Access Restriction" class="mb-4">
+                    <p class="text-muted small">
+                        Temporarily block selected member groups from ZKTeco devices during a daily time window.
+                        Member and RFID records stay active; only device access is removed and restored at the configured boundaries.
+                    </p>
+
+                    <x-forms.checkbox
+                        label="Enable member group access restriction"
+                        name="member_access_restriction_enabled"
+                        :checked="old('member_access_restriction_enabled', $settings->member_access_restriction_enabled)"
+                        :disabled="! $canUpdate"
+                    />
+
+                    <x-forms.select
+                        label="Restricted group"
+                        name="member_access_restriction_group"
+                        :options="$restrictionGroups"
+                        :selected="old('member_access_restriction_group', $settings->member_access_restriction_group?->value ?? 'male')"
+                        :disabled="! $canUpdate"
+                    />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <x-forms.time-picker
+                                label="Restriction start time"
+                                name="member_access_restriction_start_time"
+                                :value="old('member_access_restriction_start_time', optional($settings->member_access_restriction_start_time)?->format('H:i'))"
+                                :disabled="! $canUpdate"
+                            />
+                        </div>
+                        <div class="col-md-6">
+                            <x-forms.time-picker
+                                label="Restriction end time"
+                                name="member_access_restriction_end_time"
+                                :value="old('member_access_restriction_end_time', optional($settings->member_access_restriction_end_time)?->format('H:i'))"
+                                help="Supports overnight windows, e.g. 22:00 to 06:00."
+                                :disabled="! $canUpdate"
+                            />
+                        </div>
+                    </div>
+                </x-ui.card>
+
                 <x-ui.card title="Receipts & Membership" class="mb-4">
                     <x-forms.textarea
                         label="Receipt footer"

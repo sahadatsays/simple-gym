@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\MemberAccessRestrictionGroup;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateGymSettingRequest;
@@ -26,6 +27,7 @@ class GymSettingController extends Controller
             'timezones' => timezone_identifiers_list(),
             'currencies' => CurrencyRegistry::options(),
             'paymentMethods' => PaymentMethod::options(),
+            'restrictionGroups' => MemberAccessRestrictionGroup::options(),
             'canUpdate' => auth()->user()?->can('update', $settings) ?? false,
         ]);
     }
@@ -40,6 +42,7 @@ class GymSettingController extends Controller
             [
                 ...$request->safe()->except(['logo', 'remove_logo']),
                 'is_open' => $request->boolean('is_open'),
+                'member_access_restriction_enabled' => $request->boolean('member_access_restriction_enabled'),
             ],
             $request->file('logo'),
             $request->boolean('remove_logo'),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\MemberAccessRestrictionGroup;
 use App\Enums\PaymentMethod;
 use App\Support\CurrencyRegistry;
 use Illuminate\Foundation\Http\FormRequest;
@@ -34,8 +35,25 @@ class UpdateGymSettingRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'timezone' => ['required', 'string', 'max:64'],
             'opening_time' => ['nullable', 'date_format:H:i'],
-            'closing_time' => ['nullable', 'date_format:H:i', 'after:opening_time'],
+            'closing_time' => ['nullable', 'date_format:H:i'],
             'is_open' => ['nullable', 'boolean'],
+            'member_access_restriction_enabled' => ['nullable', 'boolean'],
+            'member_access_restriction_start_time' => [
+                'nullable',
+                'date_format:H:i',
+                'required_if:member_access_restriction_enabled,1,true',
+            ],
+            'member_access_restriction_end_time' => [
+                'nullable',
+                'date_format:H:i',
+                'required_if:member_access_restriction_enabled,1,true',
+                'different:member_access_restriction_start_time',
+            ],
+            'member_access_restriction_group' => [
+                'nullable',
+                'string',
+                Rule::enum(MemberAccessRestrictionGroup::class),
+            ],
         ];
     }
 

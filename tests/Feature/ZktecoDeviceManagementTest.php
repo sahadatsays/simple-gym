@@ -8,6 +8,7 @@ use App\Models\RfidCard;
 use App\Models\User;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
+use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -15,6 +16,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
+    $this->seed(GymSettingSeeder::class);
 
     $this->user = User::factory()->create(['is_active' => true]);
     $this->user->assignRole('super-admin');

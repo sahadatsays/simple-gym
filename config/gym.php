@@ -23,6 +23,8 @@ return [
         'default_admission_fee' => 500,
         'enabled_payment_methods' => ['cash', 'card', 'bank', 'mobile_banking'],
         'is_open' => true,
+        'member_access_restriction_enabled' => true,
+        'member_access_restriction_group' => 'male',
     ],
 
     /*
