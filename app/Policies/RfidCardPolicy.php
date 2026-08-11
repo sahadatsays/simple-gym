@@ -41,9 +41,4 @@ class RfidCardPolicy
     {
         return $user->can('rfid-cards.manage');
     }
-
-    public function delete(User $user, RfidCard $rfidCard): bool
-    {
-        return $user->can('rfid-cards.manage');
-    }
 }

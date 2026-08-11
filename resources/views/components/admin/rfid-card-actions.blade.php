@@ -72,21 +72,6 @@
                 </li>
             @endcan
         @endif
-
-        @can('delete', $card)
-            <li><hr class="dropdown-divider"></li>
-            <li>
-                <form
-                    action="{{ route('admin.rfid-cards.destroy', $card) }}"
-                    method="POST"
-                    onsubmit="return confirm(@js($card->isActive() && $card->member ? 'Remove this RFID card permanently? The member will be removed from all access devices.' : 'Remove this RFID card permanently?'));"
-                >
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="dropdown-item text-danger">Remove Card</button>
-                </form>
-            </li>
-        @endcan
     </ul>
 </div>
 

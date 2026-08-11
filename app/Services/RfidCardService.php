@@ -165,29 +165,6 @@ class RfidCardService extends BaseService
         });
     }
 
-    public function remove(RfidCard $card): void
-    {
-        $this->transaction(function () use ($card): void {
-            $member = $card->member;
-            $shouldRevokeDeviceAccess = $card->isActive() && $member !== null;
-
-            if ($member !== null && $member->rfid_card === $card->card_number) {
-                $this->syncMemberRfidCard($member, null);
-            }
-
-            $this->activityLogger->log('rfid_card.removed', $card, 'RFID card removed', [
-                'card_number' => $card->card_number,
-                'member_code' => $member?->member_code,
-            ]);
-
-            if ($shouldRevokeDeviceAccess) {
-                $this->queueDeviceAccessRevoke($member, $card);
-            }
-
-            $this->rfidCards->delete($card);
-        });
-    }
-
     public function disableAllForMember(Member $member): void
     {
         $this->transaction(function () use ($member): void {

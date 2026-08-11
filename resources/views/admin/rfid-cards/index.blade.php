@@ -3,7 +3,7 @@
 @section('title', 'RFID Cards')
 
 @section('content')
-    <x-ui.page-header title="RFID Cards" subtitle="Register, assign, replace, disable, and remove member access cards">
+    <x-ui.page-header title="RFID Cards" subtitle="Register, assign, replace, disable, and enable member access cards">
         <x-slot:actions>
             @can('create', App\Models\RfidCard::class)
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerCardModal">
