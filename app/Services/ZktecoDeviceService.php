@@ -185,21 +185,21 @@ class ZktecoDeviceService extends BaseService
         );
     }
 
-    public function deleteUser(ZktecoDevice $device, string $userId): ZktecoCommand
+    public function deleteUser(ZktecoDevice $device, string $pim): ZktecoCommand
     {
         return $this->commands->queue(
             $device,
-            $this->commandBuilder->deleteUser($userId),
+            $this->commandBuilder->deleteUser($pim),
         );
     }
 
     /**
      * @param  array{
-     *     uid?: int|null,
-     *     user_id: string,
+     *     pim: string|int,
      *     name?: string|null,
+     *     card_number?: string|null,
      *     privilege?: int|null,
-     *     card_number?: string|null
+     *     group?: int|null
      * }  $userData
      */
     public function upsertUser(ZktecoDevice $device, array $userData): ZktecoCommand

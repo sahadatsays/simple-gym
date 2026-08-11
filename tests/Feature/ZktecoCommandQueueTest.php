@@ -287,11 +287,11 @@ it('builds reboot restart delete and upsert command strings', function () {
         ->and($builder->restart())->toBe('RESTART')
         ->and($builder->deleteUser('1005'))->toBe('DATA DELETE user Pin=1005')
         ->and($builder->upsertUser([
-            'user_id' => '1005',
+            'pim' => '7',
             'name' => 'Asma',
             'privilege' => 0,
             'card_number' => '123456',
-        ]))->toBe("DATA UPDATE user Pin=1005\tName=Asma\tCardNo=123456\tPri=0\tGrp=1");
+        ]))->toBe("DATA UPDATE user Pin=7\tName=Asma\tCardID=123456\tPri=0\tGrp=1");
 });
 
 it('updates last seen when a device polls getrequest', function () {

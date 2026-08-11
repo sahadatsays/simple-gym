@@ -13,6 +13,7 @@ use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class MemberDeviceAccessService extends BaseService
 {
@@ -40,8 +41,16 @@ class MemberDeviceAccessService extends BaseService
         $userPin = trim($member->member_code);
         $card = $member->activeRfidCard;
 
-        if ($userPin === '' || $card === null) {
-            Log::info('Skipping ZKTeco access grant without member code or active card', [
+        if ($card === null) {
+            Log::info('Skipping ZKTeco access grant without active RFID card', [
+                'member_id' => $member->id,
+            ]);
+
+            return false;
+        }
+
+        if ($userPin === '') {
+            Log::info('Skipping ZKTeco access grant without member UID', [
                 'member_id' => $member->id,
             ]);
 
@@ -91,7 +100,8 @@ class MemberDeviceAccessService extends BaseService
 
                 Log::info('Queued ZKTeco user sync for member', [
                     'member_id' => $member->id,
-                    'member_code' => $userPin,
+                    'uid' => $userPin,
+                    'pim' => $userData['pim'],
                     'card_number' => $userData['card_number'],
                     'serial_number' => $device->serial_number,
                     'command_id' => $command->id,
@@ -104,7 +114,44 @@ class MemberDeviceAccessService extends BaseService
 
     /**
      * @return array{
-     *     user_id: string,
+     *     pim: string,
+     *     name: string,
+     *     card_number: string,
+     *     privilege: int,
+     *     group: int
+     * }
+     */
+    public function resolveDeviceUserDataFromPim(int $rfidCardId): array
+    {
+        $card = RfidCard::query()
+            ->with('member')
+            ->find($rfidCardId);
+
+        if ($card === null) {
+            throw new InvalidArgumentException('The selected RFID card was not found.');
+        }
+
+        if ($card->member === null) {
+            throw new InvalidArgumentException('The selected RFID card is not assigned to a member.');
+        }
+
+        return $this->buildUserPayload($card->member, $card);
+    }
+
+    public function resolvePim(int $rfidCardId): string
+    {
+        $card = RfidCard::query()->find($rfidCardId);
+
+        if ($card === null) {
+            throw new InvalidArgumentException('The selected RFID card was not found.');
+        }
+
+        return (string) $card->id;
+    }
+
+    /**
+     * @return array{
+     *     pim: string,
      *     name: string,
      *     card_number: string,
      *     privilege: int,
@@ -114,7 +161,7 @@ class MemberDeviceAccessService extends BaseService
     private function buildUserPayload(Member $member, RfidCard $card): array
     {
         return [
-            'user_id' => $member->member_code,
+            'pim' => (string) $card->id,
             'name' => $member->name,
             'card_number' => $card->card_number,
             'privilege' => 0,
@@ -124,7 +171,7 @@ class MemberDeviceAccessService extends BaseService
 
     /**
      * @param  array{
-     *     user_id: string,
+     *     pim: string,
      *     name: string,
      *     card_number: string,
      *     privilege: int,
@@ -164,9 +211,11 @@ class MemberDeviceAccessService extends BaseService
         return $processed;
     }
 
-    public function revokeMemberDeviceAccess(int $memberId): bool
+    public function revokeMemberDeviceAccess(int $memberId, ?int $rfidCardId = null): bool
     {
-        $member = Member::query()->find($memberId);
+        $member = Member::query()
+            ->with('activeRfidCard')
+            ->find($memberId);
 
         if ($member === null) {
             Log::warning('Skipping ZKTeco access removal for missing member', [
@@ -176,17 +225,33 @@ class MemberDeviceAccessService extends BaseService
             return false;
         }
 
-        return $this->queueDeviceAccessRemoval($member);
+        if ($rfidCardId !== null) {
+            return $this->queueDeviceAccessRemoval($member, (string) $rfidCardId);
+        }
+
+        if ($member->activeRfidCard === null) {
+            Log::info('Skipping ZKTeco access removal without RFID card', [
+                'member_id' => $member->id,
+            ]);
+
+            return false;
+        }
+
+        return $this->queueDeviceAccessRemoval($member, (string) $member->activeRfidCard->id);
     }
 
     public function revokeMemberAccess(Member $member): bool
     {
+        $member->loadMissing('activeRfidCard');
+
         $activeDevices = ZktecoDevice::query()
             ->where('status', ZktecoDeviceStatus::Active)
             ->orderBy('serial_number')
             ->get();
 
-        $queuedAnyCommand = $this->queueDeviceAccessRemoval($member);
+        $queuedAnyCommand = $member->activeRfidCard !== null
+            ? $this->queueDeviceAccessRemoval($member, (string) $member->activeRfidCard->id)
+            : false;
 
         $this->transaction(function () use ($member): void {
             if ($member->activeRfidCard !== null) {
@@ -199,18 +264,8 @@ class MemberDeviceAccessService extends BaseService
         return $queuedAnyCommand || $this->hasRevokedAccessOnAllDevices($member, $activeDevices);
     }
 
-    private function queueDeviceAccessRemoval(Member $member): bool
+    private function queueDeviceAccessRemoval(Member $member, string $pim): bool
     {
-        $userPin = trim($member->member_code);
-
-        if ($userPin === '') {
-            Log::warning('Skipping ZKTeco access removal for member without PIN', [
-                'member_id' => $member->id,
-            ]);
-
-            return false;
-        }
-
         $activeDevices = ZktecoDevice::query()
             ->where('status', ZktecoDeviceStatus::Active)
             ->orderBy('serial_number')
@@ -219,7 +274,7 @@ class MemberDeviceAccessService extends BaseService
         if ($activeDevices->isEmpty()) {
             Log::info('No active ZKTeco devices available for access removal', [
                 'member_id' => $member->id,
-                'member_code' => $userPin,
+                'pim' => $pim,
             ]);
 
             return false;
@@ -227,13 +282,13 @@ class MemberDeviceAccessService extends BaseService
 
         $queuedAnyCommand = false;
 
-        $this->transaction(function () use ($member, $userPin, $activeDevices, &$queuedAnyCommand): void {
+        $this->transaction(function () use ($member, $pim, $activeDevices, &$queuedAnyCommand): void {
             foreach ($activeDevices as $device) {
                 if ($this->hasRevokedAccess($member, $device)) {
                     continue;
                 }
 
-                if ($this->hasPendingRemovalCommand($device, $userPin)) {
+                if ($this->hasPendingRemovalCommand($device, $pim)) {
                     MemberZktecoAccessRemoval::query()->firstOrCreate(
                         [
                             'member_id' => $member->id,
@@ -248,7 +303,7 @@ class MemberDeviceAccessService extends BaseService
                     continue;
                 }
 
-                $command = $this->devices->deleteUser($device, $userPin);
+                $command = $this->devices->deleteUser($device, $pim);
 
                 MemberZktecoAccessRemoval::query()->create([
                     'member_id' => $member->id,
@@ -261,7 +316,7 @@ class MemberDeviceAccessService extends BaseService
 
                 Log::info('Queued ZKTeco user removal for member', [
                     'member_id' => $member->id,
-                    'member_code' => $userPin,
+                    'pim' => $pim,
                     'serial_number' => $device->serial_number,
                     'command_id' => $command->id,
                 ]);
@@ -296,9 +351,9 @@ class MemberDeviceAccessService extends BaseService
         return $removedDeviceCount >= $devices->count();
     }
 
-    private function hasPendingRemovalCommand(ZktecoDevice $device, string $userPin): bool
+    private function hasPendingRemovalCommand(ZktecoDevice $device, string $pim): bool
     {
-        $deleteCommand = 'DATA DELETE user Pin='.$userPin;
+        $deleteCommand = 'DATA DELETE user Pin='.$pim;
 
         return ZktecoCommand::query()
             ->where('serial_number', $device->serial_number)

@@ -404,7 +404,7 @@ it('reactivates a disabled card and syncs the member to the device after renewal
         ->and($card->fresh()->status)->toBe(RfidCardStatus::Active)
         ->and(ZktecoCommand::query()->count())->toBe(1)
         ->and(ZktecoCommand::query()->value('command'))
-        ->toBe("DATA UPDATE user Pin=M30001\tName=Renewed Member\tCardNo=1233447\tPri=0\tGrp=1");
+        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Renewed Member\tCardID=1233447\tPri=0\tGrp=1");
 });
 
 it('syncs an already active card to the device when a member renews early', function () {
@@ -423,7 +423,7 @@ it('syncs an already active card to the device when a member renews early', func
         'rfid_card' => '7654321',
     ]);
 
-    RfidCard::factory()->create([
+    $card = RfidCard::factory()->create([
         'card_number' => '7654321',
         'status' => RfidCardStatus::Active,
         'member_id' => $member->id,
@@ -439,6 +439,6 @@ it('syncs an already active card to the device when a member renews early', func
 
     expect(ZktecoCommand::query()->count())->toBe(1)
         ->and(ZktecoCommand::query()->value('command'))
-        ->toContain('Pin=M30002')
-        ->toContain('CardNo=7654321');
+        ->toContain('Pin='.$card->id)
+        ->toContain('CardID=7654321');
 });

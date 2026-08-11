@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('connection')->index();
             $table->unsignedInteger('uid')->nullable();
-            $table->string('user_id')->index();
+            $table->string('pim')->index();
             $table->timestamp('recorded_at');
             $table->string('verify_mode');
             $table->string('punch_state');
@@ -20,7 +20,7 @@ return new class extends Migration
 
             $table->unique([
                 'connection',
-                'user_id',
+                'pim',
                 'recorded_at',
             ]);
         });

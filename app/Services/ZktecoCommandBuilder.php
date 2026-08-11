@@ -7,8 +7,9 @@ use InvalidArgumentException;
 /**
  * Builds ZKTeco ADMS command wire strings.
  *
- * User upsert syntax follows the device ADMS specification:
- * DATA USER PIN=123\tName=Example\tCard=123456\tPri=0
+ * Device mapping:
+ * - Pin: rfid_cards.id (PIM)
+ * - CardID: rfid_cards.card_number
  */
 class ZktecoCommandBuilder
 {
@@ -22,33 +23,33 @@ class ZktecoCommandBuilder
         return 'RESTART';
     }
 
-    public function deleteUser(string $userId): string
+    public function deleteUser(string $pim): string
     {
-        $this->assertUserId($userId);
+        $this->assertPim($pim);
 
-        return 'DATA DELETE user Pin='.$userId;
+        return 'DATA DELETE user Pin='.$pim;
     }
 
     /**
      * @param  array{
-     *     uid?: int|null,
-     *     user_id: string,
+     *     pim: string|int,
      *     name?: string|null,
+     *     card_number?: string|null,
      *     privilege?: int|null,
-     *     card_number?: string|null
+     *     group?: int|null
      * }  $user
      */
     public function upsertUser(array $user): string
     {
-        $this->assertUserId($user['user_id'] ?? '');
+        $this->assertPim($user['pim'] ?? '');
 
         $fields = [
-            'Pin' => $user['user_id'],
+            'Pin' => (string) $user['pim'],
             'Name' => $user['name'] ?? '',
         ];
 
         if (! empty($user['card_number'])) {
-            $fields['CardNo'] = $user['card_number'];
+            $fields['CardID'] = (string) $user['card_number'];
         }
 
         $fields['Pri'] = (string) ($user['privilege'] ?? 0);
@@ -65,16 +66,16 @@ class ZktecoCommandBuilder
         $segments = [];
 
         foreach ($fields as $key => $value) {
-            $segments[] = $key.'='. trim($value);
+            $segments[] = $key.'='.trim($value);
         }
 
         return implode("\t", $segments);
     }
 
-    private function assertUserId(string $userId): void
+    private function assertPim(string $pim): void
     {
-        if (trim($userId) === '') {
-            throw new InvalidArgumentException('A user ID is required.');
+        if (trim($pim) === '') {
+            throw new InvalidArgumentException('An RFID card PIM is required.');
         }
     }
 }

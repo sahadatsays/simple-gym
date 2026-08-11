@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\IndexAttendanceLogRequest;
 use App\Models\AttendanceLog;
-use App\Models\Member;
+use App\Models\RfidCard;
 use App\Models\ZktecoDevice;
 use Illuminate\View\View;
 
@@ -20,7 +20,7 @@ class AttendanceLogController extends Controller
                 $search = $filters['search'];
 
                 $query->where(function ($builder) use ($search): void {
-                    $builder->where('user_id', 'like', "%{$search}%")
+                    $builder->where('pim', 'like', "%{$search}%")
                         ->orWhere('sn', 'like', "%{$search}%");
                 });
             })
@@ -31,13 +31,11 @@ class AttendanceLogController extends Controller
             ->paginate(config('gym.pagination.per_page'))
             ->withQueryString();
 
-        $memberCodes = $logs->getCollection()->pluck('user_id')->unique()->filter()->values();
-        $serialNumbers = $logs->getCollection()->pluck('sn')->unique()->filter()->values();
+        $members = RfidCard::membersKeyedByPim(
+            $logs->getCollection()->pluck('pim'),
+        );
 
-        $members = Member::query()
-            ->whereIn('member_code', $memberCodes)
-            ->get(['id', 'name', 'member_code'])
-            ->keyBy('member_code');
+        $serialNumbers = $logs->getCollection()->pluck('sn')->unique()->filter()->values();
 
         $devices = ZktecoDevice::query()
             ->whereIn('serial_number', $serialNumbers)

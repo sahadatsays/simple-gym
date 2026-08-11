@@ -121,7 +121,7 @@ class RfidCardService extends BaseService
             ]);
 
             if ($member !== null) {
-                $this->queueDeviceAccessRevoke($member);
+                $this->queueDeviceAccessRevoke($member, $card);
             }
 
             return $disabledCard->load('member');
@@ -180,11 +180,11 @@ class RfidCardService extends BaseService
                 'member_code' => $member?->member_code,
             ]);
 
-            $this->rfidCards->delete($card);
-
             if ($shouldRevokeDeviceAccess) {
-                $this->queueDeviceAccessRevoke($member);
+                $this->queueDeviceAccessRevoke($member, $card);
             }
+
+            $this->rfidCards->delete($card);
         });
     }
 
@@ -242,8 +242,8 @@ class RfidCardService extends BaseService
         MemberAccessJob::dispatch($member->id)->afterCommit();
     }
 
-    private function queueDeviceAccessRevoke(Member $member): void
+    private function queueDeviceAccessRevoke(Member $member, RfidCard $card): void
     {
-        MemberAccessRevokeJob::dispatch($member->id)->afterCommit();
+        MemberAccessRevokeJob::dispatch($member->id, $card->id)->afterCommit();
     }
 }

@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('attendance_logs', function (Blueprint $table) {
             $table->id();
             $table->string('sn')->index();
-            $table->string('user_id')->index();
+            $table->string('pim')->index();
             $table->timestamp('timestamp');
             $table->string('punch_status');
             $table->string('verify_mode');
@@ -20,7 +20,7 @@ return new class extends Migration
 
             $table->unique([
                 'sn',
-                'user_id',
+                'pim',
                 'timestamp',
             ]);
         });
@@ -34,7 +34,7 @@ return new class extends Migration
                     foreach ($records as $record) {
                         $rows[] = [
                             'sn' => $record->connection,
-                            'user_id' => $record->user_id,
+                            'pim' => $record->pim,
                             'timestamp' => $record->recorded_at,
                             'punch_status' => $record->punch_state,
                             'verify_mode' => $record->verify_mode,

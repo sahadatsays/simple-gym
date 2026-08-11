@@ -13,7 +13,7 @@
                     name="search"
                     id="search"
                     value="{{ $filters['search'] ?? '' }}"
-                    placeholder="User PIN or device serial..."
+                    placeholder="PIM or device serial..."
                     class="form-control ps-2"
                 >
             </x-admin.filter-field>
@@ -56,7 +56,7 @@
                 <table class="table table-hover align-middle mb-0 sg-data-table">
                     <thead>
                         <tr>
-                            <th class="ps-4">User PIN</th>
+                            <th class="ps-4">PIM</th>
                             <th>Member</th>
                             <th>Device</th>
                             <th>Recorded At</th>
@@ -67,11 +67,11 @@
                     <tbody>
                         @forelse ($logs as $log)
                             @php
-                                $member = $members->get($log->user_id);
+                                $member = $members->get($log->pim);
                                 $device = $devices->get($log->sn);
                             @endphp
                             <tr>
-                                <td class="ps-4 fw-semibold">{{ $log->user_id }}</td>
+                                <td class="ps-4 fw-semibold">{{ $log->pim }}</td>
                                 <td>
                                     @if ($member)
                                         <a href="{{ route('admin.members.show', $member) }}" class="text-decoration-none fw-semibold">

@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('attendance_log_failures', function (Blueprint $table) {
             $table->id();
             $table->string('sn')->index();
-            $table->string('user_id')->index();
+            $table->string('pim')->index();
             $table->timestamp('timestamp');
             $table->string('punch_status')->nullable();
             $table->string('verify_mode')->nullable();
@@ -20,7 +20,7 @@ return new class extends Migration
 
             $table->unique([
                 'sn',
-                'user_id',
+                'pim',
                 'timestamp',
             ]);
         });

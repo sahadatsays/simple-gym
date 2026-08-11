@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
     'sn',
-    'user_id',
+    'pim',
     'timestamp',
     'punch_status',
     'verify_mode',

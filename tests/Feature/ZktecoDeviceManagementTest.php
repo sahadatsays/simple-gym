@@ -1,6 +1,10 @@
 <?php
 
+use App\Enums\MemberStatus;
+use App\Enums\RfidCardStatus;
 use App\Enums\ZktecoDeviceStatus;
+use App\Models\Member;
+use App\Models\RfidCard;
 use App\Models\User;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
@@ -84,28 +88,52 @@ it('queues a restart command', function () {
 });
 
 it('queues a delete user command', function () {
+    $member = Member::factory()->create([
+        'member_code' => 'M10005',
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addMonth(),
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => '123456',
+        'status' => RfidCardStatus::Active,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+
     $this->actingAs($this->user)
         ->delete(route('admin.zkteco-devices.users.destroy', $this->device), [
-            'user_id' => '1005',
+            'pim' => $card->id,
         ])
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
-    expect(ZktecoCommand::query()->first()->command)->toBe('DATA DELETE user Pin=1005');
+    expect(ZktecoCommand::query()->first()->command)->toBe('DATA DELETE user Pin='.$card->id);
 });
 
-it('queues a user upsert command', function () {
+it('queues a user upsert command from rfid card pim', function () {
+    $member = Member::factory()->create([
+        'member_code' => 'M10005',
+        'name' => 'Asma',
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addMonth(),
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => '123456',
+        'status' => RfidCardStatus::Active,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+
     $this->actingAs($this->user)
         ->post(route('admin.zkteco-devices.users.store', $this->device), [
-            'uid' => 1,
-            'user_id' => '1005',
-            'name' => 'Asma',
+            'pim' => $card->id,
             'privilege' => 0,
-            'card_number' => '123456',
         ])
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
     expect(ZktecoCommand::query()->first()->command)
-        ->toBe("DATA UPDATE user Pin=1005\tName=Asma\tCardNo=123456\tPri=0\tGrp=1");
+        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Asma\tCardID=123456\tPri=0\tGrp=1");
 });
 
 it('returns not found for an invalid device id', function () {
@@ -117,7 +145,7 @@ it('returns not found for an invalid device id', function () {
 it('validates user upsert payload', function () {
     $this->actingAs($this->user)
         ->post(route('admin.zkteco-devices.users.store', $this->device), [])
-        ->assertSessionHasErrors(['user_id']);
+        ->assertSessionHasErrors(['pim']);
 });
 
 it('filters devices by pending status', function () {

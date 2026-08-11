@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\ZktecoDevice;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreZktecoDeviceUserRequest extends FormRequest
 {
@@ -21,11 +22,12 @@ class StoreZktecoDeviceUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'uid' => ['nullable', 'integer', 'min:0'],
-            'user_id' => ['required', 'string', 'max:50'],
-            'name' => ['nullable', 'string', 'max:255'],
+            'pim' => [
+                'required',
+                'integer',
+                Rule::exists('rfid_cards', 'id')->whereNotNull('member_id'),
+            ],
             'privilege' => ['nullable', 'integer', 'min:0', 'max:14'],
-            'card_number' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

@@ -215,7 +215,7 @@
                             <tbody>
                                 @forelse ($attendanceEvents as $record)
                                     @php
-                                        $member = $members->get($record->user_id);
+                                        $member = $members->get($record->pim);
                                         $recordedAt = \Illuminate\Support\Carbon::parse($record->timestamp);
                                     @endphp
                                     <tr>
@@ -224,9 +224,9 @@
                                                 <a href="{{ route('admin.members.show', $member) }}" class="text-decoration-none fw-semibold">
                                                     {{ $member->name }}
                                                 </a>
-                                                <div class="text-muted small">PIN {{ $record->user_id }}</div>
+                                                <div class="text-muted small">PIM {{ $record->pim }}</div>
                                             @else
-                                                <div class="fw-semibold">PIN {{ $record->user_id }}</div>
+                                                <div class="fw-semibold">PIM {{ $record->pim }}</div>
                                                 <div class="text-muted small">Unknown member</div>
                                             @endif
                                         </td>
@@ -277,12 +277,16 @@
                         </div>
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
-                                Queues a user upsert command. The device applies it on the next push poll.
+                                Select a registered RFID card (PIM). Member UID and card details are resolved automatically.
                             </p>
-                            <x-forms.input label="User PIN" name="user_id" placeholder="e.g. 1005" required />
-                            <x-forms.input label="Name" name="name" placeholder="Member name" />
-                            <x-forms.input label="UID" name="uid" type="number" min="0" />
-                            <x-forms.input label="Card number" name="card_number" placeholder="RFID card number" />
+                            <x-forms.searchable-select
+                                label="PIM"
+                                name="pim"
+                                id="sync-device-pim"
+                                :options="$rfidCards->mapWithKeys(fn ($card) => [$card->id => 'PIM #'.$card->id.' · '.$card->card_number.' · '.($card->member?->name ?? 'Unknown')])->all()"
+                                placeholder="Search RFID card..."
+                                required
+                            />
                             <x-forms.input label="Privilege" name="privilege" type="number" min="0" max="14" />
                         </div>
                         <div class="modal-footer border-0 pt-0">
@@ -306,9 +310,16 @@
                         </div>
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
-                                Queues a delete command for the given user PIN on this device.
+                                Select the RFID card (PIM) to remove its assigned member from this device.
                             </p>
-                            <x-forms.input label="User PIN" name="user_id" placeholder="e.g. 1005" required />
+                            <x-forms.searchable-select
+                                label="PIM"
+                                name="pim"
+                                id="delete-device-pim"
+                                :options="$rfidCards->mapWithKeys(fn ($card) => [$card->id => 'PIM #'.$card->id.' · '.$card->card_number.' · '.($card->member?->name ?? 'Unknown')])->all()"
+                                placeholder="Search RFID card..."
+                                required
+                            />
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>

@@ -2,6 +2,7 @@
 
 use App\Models\AttendanceLog;
 use App\Models\Member;
+use App\Models\RfidCard;
 use App\Models\User;
 use App\Models\ZktecoDevice;
 use Database\Seeders\RolePermissionSeeder;
@@ -28,7 +29,7 @@ it('requires authentication for the attendance logs index', function () {
 it('lists attendance logs in the admin panel', function () {
     AttendanceLog::query()->create([
         'sn' => 'JJA1254800833',
-        'user_id' => '1005',
+        'pim' => '1005',
         'timestamp' => '2026-08-11 10:00:00',
         'punch_status' => '0',
         'verify_mode' => '4',
@@ -44,15 +45,19 @@ it('lists attendance logs in the admin panel', function () {
         ->assertSee('Card Scan');
 });
 
-it('links attendance logs to members when the PIN matches member code', function () {
+it('links attendance logs to members when the pim matches an rfid card id', function () {
     $member = Member::factory()->create([
-        'member_code' => '1005',
+        'member_code' => 'M10005',
         'name' => 'Asma Khan',
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'member_id' => $member->id,
     ]);
 
     AttendanceLog::query()->create([
         'sn' => 'JJA1254800833',
-        'user_id' => '1005',
+        'pim' => (string) $card->id,
         'timestamp' => '2026-08-11 10:00:00',
         'punch_status' => '0',
         'verify_mode' => '1',
@@ -68,7 +73,7 @@ it('links attendance logs to members when the PIN matches member code', function
 it('filters attendance logs by device serial and date range', function () {
     AttendanceLog::query()->create([
         'sn' => 'JJA1254800833',
-        'user_id' => '1005',
+        'pim' => '1005',
         'timestamp' => '2026-08-11 10:00:00',
         'punch_status' => '0',
         'verify_mode' => '1',
@@ -76,7 +81,7 @@ it('filters attendance logs by device serial and date range', function () {
 
     AttendanceLog::query()->create([
         'sn' => 'OTHER1234567',
-        'user_id' => '2001',
+        'pim' => '2001',
         'timestamp' => '2026-08-12 11:00:00',
         'punch_status' => '1',
         'verify_mode' => '4',

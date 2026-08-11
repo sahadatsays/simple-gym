@@ -159,7 +159,7 @@ it('queues device user delete when disabling an active card', function () {
         ->assertRedirect(route('admin.rfid-cards.index'));
 
     expect(ZktecoCommand::query()->count())->toBe(1)
-        ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin=M20010');
+        ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin='.$card->id);
 });
 
 it('dispatches member access revoke job when disabling a card', function () {
@@ -180,7 +180,7 @@ it('dispatches member access revoke job when disabling a card', function () {
         ->patch(route('admin.rfid-cards.disable', $card))
         ->assertRedirect(route('admin.rfid-cards.index'));
 
-    Queue::assertPushed(MemberAccessRevokeJob::class, fn (MemberAccessRevokeJob $job): bool => $job->memberId === $member->id);
+    Queue::assertPushed(MemberAccessRevokeJob::class, fn (MemberAccessRevokeJob $job): bool => $job->memberId === $member->id && $job->rfidCardId === $card->id);
 });
 
 it('enables a disabled card for a non-expired member and queues device sync', function () {
@@ -212,8 +212,8 @@ it('enables a disabled card for a non-expired member and queues device sync', fu
         ->and($member->fresh()->rfid_card)->toBe('RFIDENABLE011')
         ->and(ZktecoCommand::query()->count())->toBe(1)
         ->and(ZktecoCommand::query()->value('command'))
-        ->toContain('Pin=M20011')
-        ->toContain('CardNo=RFIDENABLE011');
+        ->toContain('Pin='.$card->id)
+        ->toContain('CardID=RFIDENABLE011');
 });
 
 it('prevents enabling a card for an expired member', function () {
@@ -278,7 +278,7 @@ it('removes an active card and queues device user delete', function () {
     expect(RfidCard::query()->whereKey($card->id)->exists())->toBeFalse()
         ->and($member->fresh()->rfid_card)->toBeNull()
         ->and(ZktecoCommand::query()->count())->toBe(1)
-        ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin=M20020');
+        ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin='.$card->id);
 });
 
 it('dispatches member access revoke job when removing an active card', function () {
@@ -301,7 +301,7 @@ it('dispatches member access revoke job when removing an active card', function 
         ->delete(route('admin.rfid-cards.destroy', $card))
         ->assertRedirect(route('admin.rfid-cards.index'));
 
-    Queue::assertPushed(MemberAccessRevokeJob::class, fn (MemberAccessRevokeJob $job): bool => $job->memberId === $member->id);
+    Queue::assertPushed(MemberAccessRevokeJob::class, fn (MemberAccessRevokeJob $job): bool => $job->memberId === $member->id && $job->rfidCardId === $card->id);
 });
 
 it('prevents assigning a card that is not unassigned', function () {

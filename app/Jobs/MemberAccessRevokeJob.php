@@ -22,19 +22,20 @@ class MemberAccessRevokeJob implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 60;
 
-    public function __construct(public int $memberId) {}
+    public function __construct(public int $memberId, public int $rfidCardId) {}
 
     public function uniqueId(): string
     {
-        return 'member-access-revoke-'.$this->memberId;
+        return 'member-access-revoke-'.$this->memberId.'-'.$this->rfidCardId;
     }
 
     public function handle(MemberDeviceAccessService $memberDeviceAccess): void
     {
-        $revoked = $memberDeviceAccess->revokeMemberDeviceAccess($this->memberId);
+        $revoked = $memberDeviceAccess->revokeMemberDeviceAccess($this->memberId, $this->rfidCardId);
 
         Log::info('MemberAccessRevokeJob completed', [
             'member_id' => $this->memberId,
+            'rfid_card_id' => $this->rfidCardId,
             'revoked' => $revoked,
         ]);
     }
@@ -43,6 +44,7 @@ class MemberAccessRevokeJob implements ShouldBeUnique, ShouldQueue
     {
         Log::error('MemberAccessRevokeJob failed', [
             'member_id' => $this->memberId,
+            'rfid_card_id' => $this->rfidCardId,
             'message' => $exception?->getMessage(),
         ]);
     }

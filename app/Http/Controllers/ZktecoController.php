@@ -167,7 +167,7 @@ class ZktecoController extends Controller
     }
 
     /**
-     * @return array{user_id: string, timestamp: Carbon, punch_status: string, verify_mode: string}|null
+     * @return array{pim: string, timestamp: Carbon, punch_status: string, verify_mode: string, card_number: string|null}|null
      */
     private function parseAttlogLine(string $line): ?array
     {
@@ -179,7 +179,7 @@ class ZktecoController extends Controller
     }
 
     /**
-     * @return array{user_id: string, timestamp: Carbon, punch_status: string, verify_mode: string, card_number: string|null}|null
+     * @return array{pim: string, timestamp: Carbon, punch_status: string, verify_mode: string, card_number: string|null}|null
      */
     private function parseKeyValueAttlogLine(string $line): ?array
     {
@@ -194,7 +194,7 @@ class ZktecoController extends Controller
             $fields[strtolower(trim($key))] = trim($value);
         }
 
-        $userId = $fields['pin']
+        $pim = $fields['pin']
             ?? $fields['userid']
             ?? $fields['user_id']
             ?? null;
@@ -204,7 +204,7 @@ class ZktecoController extends Controller
             ?? $fields['checktime']
             ?? null;
 
-        if ($userId === null || $userId === '' || $timestampValue === null || $timestampValue === '') {
+        if ($pim === null || $pim === '' || $timestampValue === null || $timestampValue === '') {
             return null;
         }
 
@@ -226,7 +226,7 @@ class ZktecoController extends Controller
             ?? '';
 
         return [
-            'user_id' => $userId,
+            'pim' => $pim,
             'timestamp' => $timestamp,
             'punch_status' => $punchStatus,
             'verify_mode' => $verifyMode,
@@ -237,7 +237,7 @@ class ZktecoController extends Controller
     }
 
     /**
-     * @return array{user_id: string, timestamp: Carbon, punch_status: string, verify_mode: string, card_number: string|null}|null
+     * @return array{pim: string, timestamp: Carbon, punch_status: string, verify_mode: string, card_number: string|null}|null
      */
     private function parsePositionalAttlogLine(string $line): ?array
     {
@@ -254,7 +254,7 @@ class ZktecoController extends Controller
         }
 
         return [
-            'user_id' => trim($fields[0]),
+            'pim' => trim($fields[0]),
             'timestamp' => $timestamp,
             'punch_status' => trim($fields[2] ?? ''),
             'verify_mode' => trim($fields[3] ?? ''),
@@ -319,7 +319,7 @@ class ZktecoController extends Controller
 
             $record = [
                 'sn' => $serialNumber,
-                'user_id' => $parsed['user_id'],
+                'pim' => $parsed['pim'],
                 'timestamp' => $parsed['timestamp']->toDateTimeString(),
                 'punch_status' => $parsed['punch_status'],
                 'verify_mode' => $parsed['verify_mode'],
@@ -347,7 +347,7 @@ class ZktecoController extends Controller
         if ($rows !== []) {
             DB::table('attendance_logs')->upsert(
                 $rows,
-                ['sn', 'user_id', 'timestamp'],
+                ['sn', 'pim', 'timestamp'],
                 ['punch_status', 'verify_mode', 'updated_at'],
             );
         }
@@ -355,7 +355,7 @@ class ZktecoController extends Controller
         if ($failedRows !== []) {
             DB::table('attendance_log_failures')->upsert(
                 $failedRows,
-                ['sn', 'user_id', 'timestamp'],
+                ['sn', 'pim', 'timestamp'],
                 ['punch_status', 'verify_mode', 'card_number', 'updated_at'],
             );
         }

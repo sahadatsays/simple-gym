@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\ZktecoDevice;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DeleteZktecoDeviceUserRequest extends FormRequest
 {
@@ -21,7 +22,11 @@ class DeleteZktecoDeviceUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'string', 'max:50'],
+            'pim' => [
+                'required',
+                'integer',
+                Rule::exists('rfid_cards', 'id')->whereNotNull('member_id'),
+            ],
         ];
     }
 }

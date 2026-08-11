@@ -27,7 +27,7 @@ it('queues device user removal for expired members with assigned cards', functio
         'membership_expires_at' => now()->subDay(),
     ]);
 
-    RfidCard::factory()->create([
+    $card = RfidCard::factory()->create([
         'member_id' => $member->id,
         'card_number' => '1233447',
         'status' => RfidCardStatus::Active,
@@ -36,7 +36,7 @@ it('queues device user removal for expired members with assigned cards', functio
     app(MemberDeviceAccessService::class)->revokeExpiredMemberAccess();
 
     expect(ZktecoCommand::query()->count())->toBe(1)
-        ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin=M10001')
+        ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin='.$card->id)
         ->and(ZktecoCommand::query()->value('serial_number'))->toBe($device->serial_number)
         ->and(MemberZktecoAccessRemoval::query()->count())->toBe(1)
         ->and($member->fresh()->status)->toBe(MemberStatus::Expired)
@@ -49,10 +49,15 @@ it('does not queue duplicate removal commands for the same expired member', func
         'status' => ZktecoDeviceStatus::Active,
     ]);
 
-    Member::factory()->expired()->create([
+    $member = Member::factory()->expired()->create([
         'member_code' => 'M10002',
         'status' => MemberStatus::Expired,
         'membership_expires_at' => now()->subDays(3),
+    ]);
+
+    RfidCard::factory()->create([
+        'member_id' => $member->id,
+        'status' => RfidCardStatus::Active,
     ]);
 
     $service = app(MemberDeviceAccessService::class);
@@ -113,10 +118,15 @@ it('processes expired members through the queued job', function () {
         'status' => ZktecoDeviceStatus::Active,
     ]);
 
-    Member::factory()->expired()->create([
+    $member = Member::factory()->expired()->create([
         'member_code' => 'M10005',
         'status' => MemberStatus::Active,
         'membership_expires_at' => now()->subDays(2),
+    ]);
+
+    RfidCard::factory()->create([
+        'member_id' => $member->id,
+        'status' => RfidCardStatus::Active,
     ]);
 
     (new AccessExpireJob)->handle(app(MemberDeviceAccessService::class));

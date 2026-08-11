@@ -153,7 +153,7 @@ it('ingests attlog data from an approved device and advances the stamp', functio
 
     expect(AttendanceLog::query()->count())->toBe(2);
 
-    $attendance = AttendanceLog::query()->where('user_id', '1005')->first();
+    $attendance = AttendanceLog::query()->where('pim', '1005')->first();
 
     expect($attendance)->not->toBeNull()
         ->and($attendance->sn)->toBe('JJA1254800833')
@@ -197,7 +197,7 @@ it('captures attlog payloads without an explicit table query parameter', functio
 
     $attendance = AttendanceLog::query()->first();
 
-    expect($attendance->user_id)->toBe('1005')
+    expect($attendance->pim)->toBe('1005')
         ->and($attendance->verify_mode)->toBe('4');
 });
 
@@ -225,7 +225,7 @@ it('ingests f22 key value attlog lines', function () {
 
     $attendance = AttendanceLog::query()->first();
 
-    expect($attendance->user_id)->toBe('1')
+    expect($attendance->pim)->toBe('1')
         ->and($attendance->timestamp->format('Y-m-d H:i:s'))->toBe('2026-08-11 21:47:45')
         ->and($attendance->punch_status)->toBe('0')
         ->and($attendance->verify_mode)->toBe('4');

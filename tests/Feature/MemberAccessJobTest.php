@@ -59,7 +59,7 @@ it('queues device user sync when assigning an rfid card', function () {
     $command = ZktecoCommand::query()->first();
 
     expect($command->serial_number)->toBe('JJA1254800833')
-        ->and($command->command)->toBe("DATA UPDATE user Pin=M20001\tName=Sahadat Hossain\tCardNo=1233447\tPri=0\tGrp=1");
+        ->and($command->command)->toBe("DATA UPDATE user Pin={$card->fresh()->id}\tName=Sahadat Hossain\tCardID=1233447\tPri=0\tGrp=1");
 });
 
 it('queues device user sync when replacing a member card', function () {
@@ -89,10 +89,12 @@ it('queues device user sync when replacing a member card', function () {
         ])
         ->assertRedirect(route('admin.rfid-cards.index'));
 
+    $newCard = RfidCard::query()->where('card_number', '1233447')->first();
+
     expect(ZktecoCommand::query()->count())->toBe(1)
         ->and(ZktecoCommand::query()->value('command'))
-        ->toContain('Pin=M20002')
-        ->toContain('CardNo=1233447');
+        ->toContain('Pin='.$newCard->id)
+        ->toContain('CardID=1233447');
 });
 
 it('dispatches member access job after card assignment', function () {

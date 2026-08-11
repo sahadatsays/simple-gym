@@ -7,9 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DeleteZktecoDeviceUserRequest;
 use App\Http\Requests\Admin\IndexZktecoDeviceRequest;
 use App\Http\Requests\Admin\StoreZktecoDeviceUserRequest;
-use App\Models\Member;
+use App\Models\RfidCard;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
+use App\Services\MemberDeviceAccessService;
 use App\Services\ZktecoDeviceService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class ZktecoDeviceController extends Controller
 {
     public function __construct(
         private ZktecoDeviceService $devices,
+        private MemberDeviceAccessService $memberDeviceAccess,
     ) {}
 
     public function index(IndexZktecoDeviceRequest $request): View
@@ -68,7 +70,7 @@ class ZktecoDeviceController extends Controller
             ->select(
                 'id',
                 'sn',
-                'user_id',
+                'pim',
                 'timestamp',
                 'punch_status',
                 'verify_mode',
@@ -81,7 +83,7 @@ class ZktecoDeviceController extends Controller
             ->select(
                 'id',
                 'sn',
-                'user_id',
+                'pim',
                 'timestamp',
                 'punch_status',
                 'verify_mode',
@@ -97,22 +99,20 @@ class ZktecoDeviceController extends Controller
             ->paginate($perPage, ['*'], 'attendance_page')
             ->withQueryString();
 
-        $memberCodes = collect($attendanceEvents->items())
-            ->pluck('user_id')
-            ->unique()
-            ->filter()
-            ->values();
-
-        $members = Member::query()
-            ->whereIn('member_code', $memberCodes)
-            ->get(['id', 'name', 'member_code'])
-            ->keyBy('member_code');
+        $members = RfidCard::membersKeyedByPim(
+            collect($attendanceEvents->items())->pluck('pim'),
+        );
 
         return view('admin.zkteco-devices.show', [
             'device' => $device,
             'commands' => $commands,
             'attendanceEvents' => $attendanceEvents,
             'members' => $members,
+            'rfidCards' => RfidCard::query()
+                ->with('member')
+                ->whereNotNull('member_id')
+                ->orderBy('card_number')
+                ->get(['id', 'card_number', 'member_id', 'status']),
         ]);
     }
 
@@ -163,7 +163,15 @@ class ZktecoDeviceController extends Controller
     public function storeUser(StoreZktecoDeviceUserRequest $request, ZktecoDevice $device): RedirectResponse
     {
         try {
-            $this->devices->upsertUser($device, $request->validated());
+            $userData = $this->memberDeviceAccess->resolveDeviceUserDataFromPim(
+                (int) $request->validated('pim'),
+            );
+
+            if ($request->filled('privilege')) {
+                $userData['privilege'] = (int) $request->validated('privilege');
+            }
+
+            $this->devices->upsertUser($device, $userData);
         } catch (InvalidArgumentException $exception) {
             Flash::error($exception->getMessage());
 
@@ -175,12 +183,12 @@ class ZktecoDeviceController extends Controller
         return redirect()->route('admin.zkteco-devices.show', $device);
     }
 
-    public function deleteUser(ZktecoDevice $device, string $userId): RedirectResponse
+    public function deleteUser(ZktecoDevice $device, string $pim): RedirectResponse
     {
         $this->authorize('manage', $device);
 
         try {
-            $this->devices->deleteUser($device, $userId);
+            $this->devices->deleteUser($device, $pim);
         } catch (InvalidArgumentException $exception) {
             Flash::error($exception->getMessage());
 
@@ -194,6 +202,14 @@ class ZktecoDeviceController extends Controller
 
     public function destroyUser(DeleteZktecoDeviceUserRequest $request, ZktecoDevice $device): RedirectResponse
     {
-        return $this->deleteUser($device, $request->validated('user_id'));
+        try {
+            $pim = $this->memberDeviceAccess->resolvePim((int) $request->validated('pim'));
+
+            return $this->deleteUser($device, $pim);
+        } catch (InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back()->withInput();
+        }
     }
 }
