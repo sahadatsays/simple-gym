@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('notifications:sync-gym-alerts')->dailyAt('06:00');
+Schedule::command('access:expire')->dailyAt('01:00');

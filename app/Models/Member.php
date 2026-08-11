@@ -126,6 +126,14 @@ class Member extends Model
     }
 
     /**
+     * @return HasMany<MemberZktecoAccessRemoval, $this>
+     */
+    public function zktecoAccessRemovals(): HasMany
+    {
+        return $this->hasMany(MemberZktecoAccessRemoval::class);
+    }
+
+    /**
      * @param  Builder<Member>  $query
      * @return Builder<Member>
      */

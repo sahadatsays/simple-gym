@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Repositories\MemberRepositoryInterface;
 use App\Contracts\Repositories\RfidCardRepositoryInterface;
 use App\Enums\RfidCardStatus;
+use App\Jobs\MemberAccessJob;
 use App\Models\Member;
 use App\Models\RfidCard;
 use App\Support\ActivityLogger;
@@ -55,6 +56,8 @@ class RfidCardService extends BaseService
                 'member_code' => $member->member_code,
             ]);
 
+            $this->queueDeviceAccessSync($member);
+
             return $assignedCard->load('member');
         });
     }
@@ -88,6 +91,8 @@ class RfidCardService extends BaseService
             $this->activityLogger->log('rfid_card.replaced', $assignedCard, 'Member RFID card replaced', [
                 'member_code' => $member->member_code,
             ]);
+
+            $this->queueDeviceAccessSync($member);
 
             return $assignedCard->load('member');
         });
@@ -131,5 +136,10 @@ class RfidCardService extends BaseService
         $this->members->update($member, [
             'rfid_card' => $cardNumber,
         ]);
+    }
+
+    private function queueDeviceAccessSync(Member $member): void
+    {
+        MemberAccessJob::dispatch($member->id)->afterCommit();
     }
 }
