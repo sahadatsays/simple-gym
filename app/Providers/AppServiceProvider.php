@@ -6,10 +6,12 @@ use App\Contracts\Zkteco\ZktecoClientInterface;
 use App\Enums\PaymentMethod;
 use App\Models\GymSetting;
 use App\Models\Invoice;
+use App\Models\ZktecoDevice;
 use App\Policies\GymSettingPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
+use App\Policies\ZktecoDevicePolicy;
 use App\Services\Zkteco\AdmsZktecoClient;
 use App\Support\MenuBuilder;
 use App\Support\MoneyFormatter;
@@ -45,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Permission::class, PermissionPolicy::class);
         Gate::policy(GymSetting::class, GymSettingPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
+        Gate::policy(ZktecoDevice::class, ZktecoDevicePolicy::class);
 
         $this->shareGymContext();
 

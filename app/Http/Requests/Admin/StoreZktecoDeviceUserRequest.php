@@ -1,14 +1,18 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Admin;
 
+use App\Models\ZktecoDevice;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreZktecoDeviceUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        $device = $this->route('device');
+
+        return $device instanceof ZktecoDevice
+            && $this->user()?->can('manage', $device) === true;
     }
 
     /**

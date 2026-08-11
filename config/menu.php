@@ -165,6 +165,13 @@ return [
                     'match' => 'admin.settings.*',
                     'icon' => 'gear',
                 ],
+                [
+                    'label' => 'ZKTeco Devices',
+                    'route' => 'admin.zkteco-devices.index',
+                    'permission' => 'zkteco-devices.view',
+                    'match' => 'admin.zkteco-devices.*',
+                    'icon' => 'fingerprint',
+                ],
             ],
         ],
     ],

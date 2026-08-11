@@ -16,12 +16,12 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RfidCardController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ZktecoDeviceController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ZktecoController;
-use App\Http\Controllers\ZktecoDeviceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -31,17 +31,10 @@ Route::get('/', function () {
 });
 
 Route::prefix('iclock')->group(function (): void {
-    Route::match(['get', 'post'], 'registry', [ZktecoController::class, 'registry']);
+    Route::match(['get', 'post'], 'cdata', [ZktecoController::class, 'cdata']);
+    Route::match(['get', 'post'], 'getrequest', [ZktecoController::class, 'getRequest']);
     Route::match(['get', 'post'], 'push', [ZktecoController::class, 'push']);
-});
-
-Route::middleware(['auth', 'active'])->prefix('zkteco/devices')->controller(ZktecoDeviceController::class)->group(function (): void {
-    Route::get('/', 'index');
-    Route::get('/{device}', 'show');
-    Route::post('/{device}/reboot', 'reboot');
-    Route::post('/{device}/restart', 'restart');
-    Route::post('/{device}/users', 'storeUser');
-    Route::delete('/{device}/users/{userId}', 'deleteUser');
+    Route::match(['get', 'post'], 'registry', [ZktecoController::class, 'registry']);
 });
 
 Route::middleware('guest')->group(function (): void {
@@ -118,6 +111,17 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 
         Route::get('settings', [GymSettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [GymSettingController::class, 'update'])->name('settings.update');
+
+        Route::prefix('zkteco-devices')->name('zkteco-devices.')->controller(ZktecoDeviceController::class)->group(function (): void {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{device}', 'show')->name('show');
+            Route::patch('/{device}/approve', 'approve')->name('approve');
+            Route::patch('/{device}/suspend', 'suspend')->name('suspend');
+            Route::post('/{device}/reboot', 'reboot')->name('reboot');
+            Route::post('/{device}/restart', 'restart')->name('restart');
+            Route::post('/{device}/users', 'storeUser')->name('users.store');
+            Route::delete('/{device}/users', 'destroyUser')->name('users.destroy');
+        });
 
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/{report}', [ReportController::class, 'show'])->name('reports.show');

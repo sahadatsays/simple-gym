@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Zkteco\ZktecoClientInterface;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
+use App\Support\ZktecoAdmsResponseBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -73,6 +74,98 @@ class ZktecoDeviceService extends BaseService
             'last_seen_at' => now(),
             'status' => 'active',
         ])->save();
+
+        return $device;
+    }
+
+    public function registerFromCdata(Request $request): ?ZktecoDevice
+    {
+        $serialNumber = $this->resolveSerialNumber($request);
+
+        if ($serialNumber === null) {
+            Log::warning('ZKTeco cdata request missing serial number', [
+                'query' => $request->query(),
+                'method' => $request->method(),
+            ]);
+
+            return null;
+        }
+
+        $device = ZktecoDevice::query()->firstOrNew([
+            'serial_number' => $serialNumber,
+        ]);
+
+        $wasRecentlyCreated = ! $device->exists;
+
+        $device->last_seen_at = now();
+
+        if ($wasRecentlyCreated) {
+            $device->status = 'pending';
+            $device->protocol_generation = $this->resolveProtocolGeneration($request) ?? 'Legacy';
+        }
+
+        if ($protocolGeneration = $this->resolveProtocolGeneration($request)) {
+            $device->protocol_generation = $protocolGeneration;
+        }
+
+        if ($capabilities = $this->resolveCapabilities($request)) {
+            $device->capabilities = $capabilities;
+        }
+
+        $device->save();
+
+        Log::info($wasRecentlyCreated ? 'ZKTeco device discovered via cdata' : 'ZKTeco device cdata refreshed', [
+            'serial_number' => $device->serial_number,
+            'protocol_generation' => $device->protocol_generation,
+            'status' => $device->status,
+        ]);
+
+        return $device;
+    }
+
+    public function markSeen(ZktecoDevice $device): ZktecoDevice
+    {
+        $device->forceFill([
+            'last_seen_at' => now(),
+        ])->save();
+
+        return $device;
+    }
+
+    public function updateStamp(ZktecoDevice $device, string $table, string $stamp): ZktecoDevice
+    {
+        $stamps = $device->stamps ?? [];
+        $stamps[strtoupper($table)] = $stamp;
+
+        $device->forceFill([
+            'stamps' => $stamps,
+        ])->save();
+
+        return $device;
+    }
+
+    public function approve(ZktecoDevice $device): ZktecoDevice
+    {
+        $device->forceFill([
+            'status' => 'active',
+        ])->save();
+
+        Log::info('ZKTeco device approved', [
+            'serial_number' => $device->serial_number,
+        ]);
+
+        return $device;
+    }
+
+    public function suspend(ZktecoDevice $device): ZktecoDevice
+    {
+        $device->forceFill([
+            'status' => 'suspended',
+        ])->save();
+
+        Log::info('ZKTeco device suspended', [
+            'serial_number' => $device->serial_number,
+        ]);
 
         return $device;
     }
@@ -163,6 +256,37 @@ class ZktecoDeviceService extends BaseService
 
             return $command->fresh();
         });
+    }
+
+    public function getRequestResponse(Request $request): string
+    {
+        $serialNumber = $this->resolveSerialNumber($request);
+
+        if ($serialNumber === null) {
+            return ZktecoAdmsResponseBuilder::ok();
+        }
+
+        $device = ZktecoDevice::query()
+            ->where('serial_number', $serialNumber)
+            ->first();
+
+        if ($device === null) {
+            Log::warning('Unknown ZKTeco device requested command', [
+                'serial_number' => $serialNumber,
+            ]);
+
+            return ZktecoAdmsResponseBuilder::ok();
+        }
+
+        $this->touchDevice($device);
+
+        $command = $this->pullNextPendingCommand($device);
+
+        if ($command === null) {
+            return ZktecoAdmsResponseBuilder::ok();
+        }
+
+        return $command->command;
     }
 
     public function acknowledgeCommandFromRequest(Request $request): void

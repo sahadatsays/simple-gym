@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ZktecoDeviceStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,6 +28,7 @@ class ZktecoDevice extends Model
             'capabilities' => 'array',
             'stamps' => 'array',
             'last_seen_at' => 'datetime',
+            'status' => ZktecoDeviceStatus::class,
         ];
     }
 
@@ -40,5 +42,10 @@ class ZktecoDevice extends Model
             'serial_number',
             'serial_number',
         );
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === ZktecoDeviceStatus::Active;
     }
 }

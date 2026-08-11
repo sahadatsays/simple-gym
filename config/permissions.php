@@ -53,6 +53,10 @@ return [
             'settings.view',
             'settings.update',
         ],
+        'zkteco-devices' => [
+            'zkteco-devices.view',
+            'zkteco-devices.manage',
+        ],
         'roles' => [
             'roles.view',
             'roles.create',
@@ -95,6 +99,8 @@ return [
             'reports.view',
             'settings.view',
             'settings.update',
+            'zkteco-devices.view',
+            'zkteco-devices.manage',
         ],
         'staff' => [
             'dashboard.view',
