@@ -48,7 +48,7 @@ class ZktecoCommandBuilder
         ];
 
         if (! empty($user['card_number'])) {
-            $fields['Card'] = $user['card_number'];
+            $fields['CardNo'] = str_pad($user['card_number'], 10, '0', STR_PAD_LEFT);
         }
 
         $fields['Pri'] = (string) ($user['privilege'] ?? 0);
