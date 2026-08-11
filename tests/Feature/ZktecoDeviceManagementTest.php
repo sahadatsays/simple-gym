@@ -105,9 +105,7 @@ it('queues a user upsert command', function () {
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
     expect(ZktecoCommand::query()->first()->command)
-        ->toContain('DATA User')
-        ->toContain('Pin=1005')
-        ->toContain('Name=Asma');
+        ->toBe("DATA USER PIN=1005\tName=Asma\tCard=123456\tPri=0");
 });
 
 it('returns not found for an invalid device id', function () {

@@ -7,8 +7,8 @@ use InvalidArgumentException;
 /**
  * Builds ZKTeco ADMS command wire strings.
  *
- * Command syntax matches the existing standalone ADMS client and common Push SDK
- * formats. Verify against your physical device firmware if a command is rejected.
+ * User upsert syntax follows the device ADMS specification:
+ * DATA USER PIN=123\tName=Example\tCard=123456\tPri=0
  */
 class ZktecoCommandBuilder
 {
@@ -26,7 +26,7 @@ class ZktecoCommandBuilder
     {
         $this->assertUserId($userId);
 
-        return 'DATA DELETE User Pin='.$userId;
+        return 'DATA DELETE user Pin='.$userId;
     }
 
     /**
@@ -45,18 +45,15 @@ class ZktecoCommandBuilder
         $fields = [
             'Pin' => $user['user_id'],
             'Name' => $user['name'] ?? '',
-            'Pri' => (string) ($user['privilege'] ?? 0),
         ];
-
-        if (array_key_exists('uid', $user) && $user['uid'] !== null) {
-            $fields = ['UID' => (string) $user['uid']] + $fields;
-        }
 
         if (! empty($user['card_number'])) {
             $fields['Card'] = $user['card_number'];
         }
 
-        return 'DATA User '.$this->formatFields($fields);
+        $fields['Pri'] = (string) ($user['privilege'] ?? 0);
+
+        return 'DATA UPDATE user '.$this->formatFields($fields);
     }
 
     /**
