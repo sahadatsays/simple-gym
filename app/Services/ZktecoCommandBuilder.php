@@ -48,7 +48,7 @@ class ZktecoCommandBuilder
         ];
 
         if (! empty($user['card_number'])) {
-            $fields['BadgeNo'] = $user['card_number'];
+            $fields['CardNo'] = $user['card_number'];
         }
 
         $fields['Pri'] = (string) ($user['privilege'] ?? 0);
@@ -65,7 +65,7 @@ class ZktecoCommandBuilder
         $segments = [];
 
         foreach ($fields as $key => $value) {
-            $segments[] = $key.'='.$value;
+            $segments[] = $key.'='. trim($value);
         }
 
         return implode("\t", $segments);
