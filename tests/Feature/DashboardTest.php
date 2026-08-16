@@ -1,9 +1,17 @@
 <?php
 
+use App\Enums\AssetStatus;
+use App\Models\Asset;
+use App\Models\AssetCategory;
+use App\Models\AssetMaintenance;
+use App\Models\Investment;
+use App\Models\InvestmentCategory;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\DashboardService;
+use App\Support\DashboardDateRange;
 use Database\Seeders\DashboardSeeder;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -57,6 +65,137 @@ it('displays dashboard widgets for authorized users', function () {
         ->assertSee('Recent Registrations')
         ->assertSee('Low Stock Products')
         ->assertSee('Upcoming Due Orders');
+});
+
+it('displays asset and investment dashboard widgets for authorized users', function () {
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertSee('Assets & Investments')
+        ->assertSee('Total Owner Investment')
+        ->assertSee('Total Asset Purchase Value')
+        ->assertSee('Current Asset Value')
+        ->assertSee('Total Maintenance Cost')
+        ->assertSee('Active Assets')
+        ->assertSee('Assets Under Maintenance')
+        ->assertSee('Assets Requiring Maintenance')
+        ->assertSee('Recent Investments')
+        ->assertSee('Recent Asset Purchases');
+});
+
+it('filters asset and investment dashboard metrics by date range', function () {
+    $investmentCategory = InvestmentCategory::factory()->create();
+    $assetCategory = AssetCategory::factory()->create();
+
+    Investment::factory()->create([
+        'investment_category_id' => $investmentCategory->id,
+        'invested_at' => now()->subDays(20),
+        'amount' => 10000,
+        'investment_number' => 'INV-OLD-001',
+    ]);
+
+    Investment::factory()->create([
+        'investment_category_id' => $investmentCategory->id,
+        'invested_at' => now()->subDays(2),
+        'amount' => 25000,
+        'investment_number' => 'INV-NEW-001',
+    ]);
+
+    Asset::factory()->create([
+        'asset_category_id' => $assetCategory->id,
+        'name' => 'Old Treadmill',
+        'purchased_at' => now()->subDays(20),
+        'purchase_price' => 50000,
+        'current_value' => 40000,
+        'status' => AssetStatus::Active,
+    ]);
+
+    $recentAsset = Asset::factory()->create([
+        'asset_category_id' => $assetCategory->id,
+        'name' => 'Recent Bike',
+        'purchased_at' => now()->subDay(),
+        'purchase_price' => 15000,
+        'current_value' => 15000,
+        'status' => AssetStatus::Active,
+    ]);
+
+    AssetMaintenance::factory()->create([
+        'asset_id' => $recentAsset->id,
+        'maintained_at' => now()->subDays(20),
+        'cost' => 500,
+    ]);
+
+    AssetMaintenance::factory()->create([
+        'asset_id' => $recentAsset->id,
+        'maintained_at' => now()->subDay(),
+        'cost' => 1500,
+    ]);
+
+    $from = now()->subDays(7)->toDateString();
+    $to = now()->toDateString();
+
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard', [
+            'preset' => 'custom',
+            'from_date' => $from,
+            'to_date' => $to,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('INV-NEW-001')
+        ->assertDontSee('INV-OLD-001')
+        ->assertSee('Recent Bike')
+        ->assertDontSee('Old Treadmill')
+        ->assertSee('25,000')
+        ->assertSee('15,000')
+        ->assertSee('1,500')
+        ->assertSee('55,000');
+});
+
+it('counts assets requiring maintenance from the latest schedule', function () {
+    $assetCategory = AssetCategory::factory()->create();
+
+    $dueAsset = Asset::factory()->create([
+        'asset_category_id' => $assetCategory->id,
+        'status' => AssetStatus::Active,
+    ]);
+
+    $scheduledAsset = Asset::factory()->create([
+        'asset_category_id' => $assetCategory->id,
+        'status' => AssetStatus::Active,
+    ]);
+
+    AssetMaintenance::factory()->create([
+        'asset_id' => $dueAsset->id,
+        'maintained_at' => now()->subMonths(2),
+        'next_maintenance_at' => now()->subDay(),
+    ]);
+
+    AssetMaintenance::factory()->create([
+        'asset_id' => $scheduledAsset->id,
+        'maintained_at' => now()->subMonths(2),
+        'next_maintenance_at' => now()->subMonth(),
+    ]);
+
+    AssetMaintenance::factory()->create([
+        'asset_id' => $scheduledAsset->id,
+        'maintained_at' => now()->subWeek(),
+        'next_maintenance_at' => now()->addMonth(),
+    ]);
+
+    expect(app(DashboardService::class)->assetInvestmentStats(DashboardDateRange::default())['assets_requiring_maintenance'])
+        ->toBe(1);
+});
+
+it('hides asset and investment widgets without module permissions', function () {
+    $user = User::factory()->create(['is_active' => true]);
+    $user->assignRole('trainer');
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertDontSee('Assets & Investments')
+        ->assertDontSee('Recent Investments')
+        ->assertDontSee('Recent Asset Purchases');
 });
 
 it('shows upcoming due pos orders on the dashboard', function () {

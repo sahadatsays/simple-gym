@@ -14,6 +14,10 @@ return [
         'renew' => 'নবায়ন',
     ],
 
+    'sections' => [
+        'assets_investments' => 'সম্পদ ও বিনিয়োগ',
+    ],
+
     'stats' => [
         'new_registrations' => 'নতুন নিবন্ধন',
         'new_registrations_footer' => 'নির্বাচিত সময়কালে',
@@ -25,6 +29,18 @@ return [
         'product_sales' => 'পণ্য বিক্রয়',
         'low_stock_items' => 'কম স্টক আইটেম',
         'low_stock_items_footer' => 'পুনরায় স্টক প্রয়োজন',
+        'total_owner_investment' => 'মোট মালিকের বিনিয়োগ',
+        'total_asset_purchase_value' => 'মোট সম্পদ ক্রয় মূল্য',
+        'current_asset_value' => 'বর্তমান সম্পদ মূল্য',
+        'total_maintenance_cost' => 'মোট রক্ষণাবেক্ষণ খরচ',
+        'active_assets' => 'সক্রিয় সম্পদ',
+        'assets_under_maintenance' => 'রক্ষণাবেক্ষণাধীন সম্পদ',
+        'assets_requiring_maintenance' => 'রক্ষণাবেক্ষণ প্রয়োজন',
+        'in_selected_period' => 'নির্বাচিত সময়কালে',
+        'active_assets_today' => 'আজকের সক্রিয় সম্পদ',
+        'currently_active' => 'বর্তমানে সক্রিয়',
+        'current_status' => 'বর্তমান অবস্থা',
+        'due_or_overdue' => 'নির্ধারিত বা মেয়াদোত্তীর্ণ',
     ],
 
     'charts' => [
@@ -69,6 +85,17 @@ return [
         'no_upcoming_due' => 'আগামী :days দিনে কোনো বকেয়া অর্ডার নেই।',
         'no_payments' => 'এই সময়কালে কোনো পেমেন্ট পাওয়া যায়নি।',
         'no_payments_recorded' => 'এই সময়কালে কোনো পেমেন্ট রেকর্ড করা হয়নি।',
+        'recent_investments' => 'সাম্প্রতিক বিনিয়োগ',
+        'recent_investments_subtitle' => 'নির্বাচিত সময়কালের বিনিয়োগ',
+        'view_all_investments' => 'সব বিনিয়োগ দেখুন',
+        'no_investments_recorded' => 'এই সময়কালে কোনো বিনিয়োগ রেকর্ড করা হয়নি।',
+        'investment_number' => 'বিনিয়োগ নং',
+        'recent_asset_purchases' => 'সাম্প্রতিক সম্পদ ক্রয়',
+        'recent_asset_purchases_subtitle' => 'নির্বাচিত সময়কালের সম্পদ ক্রয়',
+        'view_all_assets' => 'সব সম্পদ দেখুন',
+        'no_asset_purchases_recorded' => 'এই সময়কালে কোনো সম্পদ ক্রয় রেকর্ড করা হয়নি।',
+        'asset' => 'সম্পদ',
+        'purchase_price' => 'ক্রয় মূল্য',
     ],
 
     'alerts' => [

@@ -2,9 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\AssetStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
 use App\Enums\PaymentType;
+use App\Models\Asset;
+use App\Models\AssetMaintenance;
+use App\Models\Investment;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\Payment;
@@ -121,6 +125,91 @@ class DashboardService
     }
 
     /**
+     * @return array{
+     *     total_owner_investment: float,
+     *     total_asset_purchase_value: float,
+     *     current_asset_value: float,
+     *     total_maintenance_cost: float,
+     *     active_assets: int,
+     *     assets_under_maintenance: int,
+     *     assets_requiring_maintenance: int
+     * }
+     */
+    public function assetInvestmentStats(DashboardDateRange $range): array
+    {
+        $from = $range->from->toDateString();
+        $to = $range->to->toDateString();
+
+        return [
+            'total_owner_investment' => (float) Investment::query()
+                ->whereDate('invested_at', '>=', $from)
+                ->whereDate('invested_at', '<=', $to)
+                ->sum('amount'),
+            'total_asset_purchase_value' => (float) Asset::query()
+                ->whereDate('purchased_at', '>=', $from)
+                ->whereDate('purchased_at', '<=', $to)
+                ->sum('purchase_price'),
+            'current_asset_value' => (float) Asset::query()
+                ->where('status', AssetStatus::Active)
+                ->sum(DB::raw('COALESCE(current_value, 0)')),
+            'total_maintenance_cost' => (float) AssetMaintenance::query()
+                ->whereDate('maintained_at', '>=', $from)
+                ->whereDate('maintained_at', '<=', $to)
+                ->sum(DB::raw('COALESCE(cost, 0)')),
+            'active_assets' => Asset::query()->where('status', AssetStatus::Active)->count(),
+            'assets_under_maintenance' => Asset::query()
+                ->where('status', AssetStatus::UnderMaintenance)
+                ->count(),
+            'assets_requiring_maintenance' => $this->assetsRequiringMaintenanceCount(),
+        ];
+    }
+
+    /**
+     * @return Collection<int, Investment>
+     */
+    public function recentInvestments(DashboardDateRange $range, int $limit = 8): Collection
+    {
+        return Investment::query()
+            ->with('category:id,name')
+            ->whereDate('invested_at', '>=', $range->from->toDateString())
+            ->whereDate('invested_at', '<=', $range->to->toDateString())
+            ->latest('invested_at')
+            ->latest('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'investment_number',
+                'invested_at',
+                'investment_category_id',
+                'amount',
+                'payment_method',
+            ]);
+    }
+
+    /**
+     * @return Collection<int, Asset>
+     */
+    public function recentAssetPurchases(DashboardDateRange $range, int $limit = 8): Collection
+    {
+        return Asset::query()
+            ->with('category:id,name')
+            ->whereDate('purchased_at', '>=', $range->from->toDateString())
+            ->whereDate('purchased_at', '<=', $range->to->toDateString())
+            ->latest('purchased_at')
+            ->latest('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'asset_code',
+                'name',
+                'asset_category_id',
+                'purchased_at',
+                'purchase_price',
+                'status',
+            ]);
+    }
+
+    /**
      * @return array{labels: array<int, string>, values: array<int, float>}
      */
     public function revenueSeries(DashboardDateRange $range): array
@@ -152,6 +241,20 @@ class DashboardService
             ->map(fn ($total): int => (int) $total);
 
         return $this->buildBucketSeries($range, $totals, 0);
+    }
+
+    private function assetsRequiringMaintenanceCount(): int
+    {
+        return Asset::query()
+            ->maintainable()
+            ->whereHas('maintenances', function (Builder $query): void {
+                $query->whereNotNull('next_maintenance_at')
+                    ->whereDate('next_maintenance_at', '<=', today())
+                    ->whereRaw(
+                        'asset_maintenances.id = (select max(am.id) from asset_maintenances as am where am.asset_id = assets.id)'
+                    );
+            })
+            ->count();
     }
 
     /**

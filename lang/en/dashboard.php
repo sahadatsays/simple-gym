@@ -14,6 +14,10 @@ return [
         'renew' => 'Renew',
     ],
 
+    'sections' => [
+        'assets_investments' => 'Assets & Investments',
+    ],
+
     'stats' => [
         'new_registrations' => 'New Registrations',
         'new_registrations_footer' => 'In selected period',
@@ -25,6 +29,18 @@ return [
         'product_sales' => 'Product Sales',
         'low_stock_items' => 'Low Stock Items',
         'low_stock_items_footer' => 'Needs restocking',
+        'total_owner_investment' => 'Total Owner Investment',
+        'total_asset_purchase_value' => 'Total Asset Purchase Value',
+        'current_asset_value' => 'Current Asset Value',
+        'total_maintenance_cost' => 'Total Maintenance Cost',
+        'active_assets' => 'Active Assets',
+        'assets_under_maintenance' => 'Assets Under Maintenance',
+        'assets_requiring_maintenance' => 'Assets Requiring Maintenance',
+        'in_selected_period' => 'In selected period',
+        'active_assets_today' => 'Active assets today',
+        'currently_active' => 'Currently active',
+        'current_status' => 'Current status',
+        'due_or_overdue' => 'Due or overdue',
     ],
 
     'charts' => [
@@ -69,6 +85,17 @@ return [
         'no_upcoming_due' => 'No upcoming due orders in the next :days days.',
         'no_payments' => 'No payments found for this period.',
         'no_payments_recorded' => 'No payments recorded for this period.',
+        'recent_investments' => 'Recent Investments',
+        'recent_investments_subtitle' => 'Investments in the selected period',
+        'view_all_investments' => 'View all investments',
+        'no_investments_recorded' => 'No investments recorded for this period.',
+        'investment_number' => 'Investment No.',
+        'recent_asset_purchases' => 'Recent Asset Purchases',
+        'recent_asset_purchases_subtitle' => 'Asset purchases in the selected period',
+        'view_all_assets' => 'View all assets',
+        'no_asset_purchases_recorded' => 'No asset purchases recorded for this period.',
+        'asset' => 'Asset',
+        'purchase_price' => 'Purchase Price',
     ],
 
     'alerts' => [
