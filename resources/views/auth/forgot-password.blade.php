@@ -1,40 +1,52 @@
 @extends('layouts.auth')
 
 @section('content')
-    <div class="card sg-auth-card mx-auto">
-        <div class="card-body p-4 p-md-5">
-            <div class="text-center mb-4">
-                <x-auth.logo class="mx-auto mb-3" />
-                <h1 class="h4 fw-bold mb-1">Forgot password</h1>
-                <p class="text-muted mb-0">Enter your email to receive a reset link</p>
+    <div class="sg-auth-form-card">
+        <div class="sg-auth-form-header">
+            <h1 class="sg-auth-form-title">{{ __('auth.forgot.title') }}</h1>
+            <p class="sg-auth-form-subtitle">{{ __('auth.forgot.subtitle') }}</p>
+        </div>
+
+        <x-ui.status />
+
+        <form action="{{ route('password.email') }}" method="POST" class="sg-auth-form">
+            @csrf
+
+            <div class="mb-4">
+                <label for="email" class="form-label">
+                    {{ __('common.fields.email_address') }}
+                    <span class="text-danger">*</span>
+                </label>
+                <div class="input-group sg-auth-input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-envelope" aria-hidden="true"></i>
+                    </span>
+                    <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        value="{{ old('email') }}"
+                        placeholder="{{ __('common.placeholders.email') }}"
+                        class="form-control @error('email') is-invalid @enderror"
+                        required
+                        autofocus
+                        autocomplete="email"
+                    >
+                    @error('email')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
 
-            <x-ui.status />
+            <button type="submit" class="btn sg-auth-btn w-100 mb-3">
+                {{ __('auth.forgot.send_link') }}
+            </button>
 
-            <form action="{{ route('password.email') }}" method="POST" class="sg-auth-form">
-                @csrf
-
-                <x-forms.input
-                    label="Email address"
-                    name="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    :value="old('email')"
-                    required
-                    autofocus
-                    autocomplete="email"
-                />
-
-                <button type="submit" class="btn sg-auth-btn w-100 mb-3">
-                    Send reset link
-                </button>
-
-                <div class="text-center">
-                    <a href="{{ route('login') }}" class="sg-auth-link small">
-                        Back to sign in
-                    </a>
-                </div>
-            </form>
-        </div>
+            <div class="text-center">
+                <a href="{{ route('login') }}" class="sg-auth-link small">
+                    {{ __('auth.forgot.back_to_sign_in') }}
+                </a>
+            </div>
+        </form>
     </div>
 @endsection

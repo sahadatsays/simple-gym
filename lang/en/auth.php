@@ -1,7 +1,17 @@
 <?php
 
 return [
+    'banner' => [
+        'staff_portal' => 'Staff portal',
+        'tagline' => 'Run your gym smarter — members, billing, POS, and reports in one place.',
+        'feature_members' => 'Member registration & renewals',
+        'feature_payments' => 'Payments, invoices & POS',
+        'feature_reports' => 'Reports & business insights',
+        'secure_access' => 'Secure staff access only',
+    ],
+
     'login' => [
+        'welcome' => 'Welcome back',
         'title' => 'Sign in to your admin account',
         'sign_in' => 'Sign in',
         'remember_me' => 'Remember me',

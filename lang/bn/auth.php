@@ -1,40 +1,50 @@
 <?php
 
 return [
+    'banner' => [
+        'staff_portal' => 'স্টাফ পোর্টাল',
+        'tagline' => 'আপনার জিম সহজে পরিচালনা করুন — সদস্য, বিলিং, পিওএস ও রিপোর্ট এক জায়গায়।',
+        'feature_members' => 'সদস্য নিবন্ধন ও নবায়ন',
+        'feature_payments' => 'পেমেন্ট, ইনভয়েস ও পিওএস',
+        'feature_reports' => 'রিপোর্ট ও ব্যবসায়িক অন্তর্দৃষ্টি',
+        'secure_access' => 'শুধুমাত্র নিরাপদ স্টাফ অ্যাক্সেস',
+    ],
+
     'login' => [
-        'title' => 'Sign in to your admin account',
-        'sign_in' => 'Sign in',
-        'remember_me' => 'Remember me',
-        'forgot_password' => 'Forgot password?',
-        'dev_only' => 'Local only',
-        'dev_login' => 'One-click login as :name',
+        'welcome' => 'আবার স্বাগতম',
+        'title' => 'আপনার অ্যাডমিন অ্যাকাউন্টে সাইন ইন করুন',
+        'sign_in' => 'সাইন ইন',
+        'remember_me' => 'আমাকে মনে রাখুন',
+        'forgot_password' => 'পাসওয়ার্ড ভুলে গেছেন?',
+        'dev_only' => 'শুধু লোকাল',
+        'dev_login' => ':name হিসেবে এক-ক্লিকে লগইন',
     ],
 
     'forgot' => [
-        'title' => 'Forgot password',
-        'subtitle' => 'Enter your email to receive a reset link',
-        'send_link' => 'Send reset link',
-        'back_to_sign_in' => 'Back to sign in',
-        'status' => 'If an account exists for that email, a password reset link has been sent.',
+        'title' => 'পাসওয়ার্ড ভুলে গেছেন',
+        'subtitle' => 'রিসেট লিংক পেতে আপনার ইমেইল লিখুন',
+        'send_link' => 'রিসেট লিংক পাঠান',
+        'back_to_sign_in' => 'সাইন ইন-এ ফিরে যান',
+        'status' => 'ঐ ইমেইলে অ্যাকাউন্ট থাকলে পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে।',
     ],
 
     'reset' => [
-        'title' => 'Reset password',
-        'subtitle' => 'Choose a new password for your account',
-        'submit' => 'Reset password',
-        'success' => 'Your password has been reset. You can sign in now.',
+        'title' => 'পাসওয়ার্ড রিসেট',
+        'subtitle' => 'আপনার অ্যাকাউন্টের জন্য নতুন পাসওয়ার্ড বেছে নিন',
+        'submit' => 'পাসওয়ার্ড রিসেট',
+        'success' => 'আপনার পাসওয়ার্ড রিসেট হয়েছে। এখন সাইন ইন করতে পারেন।',
     ],
 
     'flash' => [
-        'welcome_back' => 'Welcome back!',
-        'dev_login' => 'Logged in via local dev shortcut.',
-        'logged_out' => 'You have been logged out.',
+        'welcome_back' => 'আবার স্বাগতম!',
+        'dev_login' => 'লোকাল ডেভ শর্টকাট দিয়ে লগইন হয়েছে।',
+        'logged_out' => 'আপনি লগ আউট হয়েছেন।',
     ],
 
     'errors' => [
-        'invalid_credentials' => 'These credentials do not match our records.',
-        'account_deactivated' => 'Your account has been deactivated.',
-        'account_deactivated_contact' => 'Your account has been deactivated. Please contact an administrator.',
-        'dev_user_not_found' => 'Dev login user not found. Run php artisan db:seed.',
+        'invalid_credentials' => 'এই তথ্য আমাদের রেকর্ডের সাথে মিলছে না।',
+        'account_deactivated' => 'আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে।',
+        'account_deactivated_contact' => 'আপনার অ্যাকাউন্ট নিষ্ক্রিয়। অনুগ্রহ করে অ্যাডমিনের সাথে যোগাযোগ করুন।',
+        'dev_user_not_found' => 'ডেভ লগইন ব্যবহারকারী পাওয়া যায়নি। php artisan db:seed চালান।',
     ],
 ];

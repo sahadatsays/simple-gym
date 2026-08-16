@@ -8,8 +8,8 @@
         <rect x="52" y="28" width="4" height="8" rx="1.5" fill="#fff" opacity="0.85"/>
         <defs>
             <linearGradient id="sg-logo-gradient" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#2563eb"/>
-                <stop offset="1" stop-color="#1d4ed8"/>
+                <stop stop-color="#fb923c"/>
+                <stop offset="1" stop-color="#ea580c"/>
             </linearGradient>
         </defs>
     </svg>

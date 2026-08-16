@@ -3,14 +3,18 @@
 @section('title', 'Login | '.config('app.name'))
 
 @section('body')
-    <div class="sg-auth-wrapper">
-        <div class="container px-3 position-relative">
-            <div class="d-flex justify-content-end pt-3">
+    <div class="sg-auth-page">
+        <x-auth.banner />
+
+        <main class="sg-auth-panel">
+            <div class="sg-auth-panel__toolbar">
                 <x-ui.locale-switcher />
             </div>
 
-            <x-ui.flash />
-            @yield('content')
-        </div>
+            <div class="sg-auth-panel__body">
+                <x-ui.flash />
+                @yield('content')
+            </div>
+        </main>
     </div>
 @endsection
