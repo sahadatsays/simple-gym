@@ -5,7 +5,7 @@
 @section('content')
     @php
         $totalMaintenanceCost = $asset->maintenances->sum(fn ($maintenance): float => (float) ($maintenance->cost ?? 0));
-        $isDisposed = $asset->disposal !== null || $asset->status?->isTerminal();
+        $isDisposed = $asset->disposal !== null || ! ($asset->status?->isOperational() ?? false);
     @endphp
 
     <x-ui.page-header :title="$asset->name" :subtitle="$asset->asset_code">

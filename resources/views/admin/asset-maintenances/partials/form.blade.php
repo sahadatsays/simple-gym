@@ -3,7 +3,7 @@
         fn ($asset): array => [$asset->id => "{$asset->name} ({$asset->asset_code})"]
     )->all();
 
-    $assetStatusOptions = ['' => 'Do not change status'] + App\Enums\AssetStatus::options();
+    $assetStatusOptions = ['' => 'Do not change status'] + App\Enums\AssetStatus::operationalOptions();
 @endphp
 
 <div class="row">

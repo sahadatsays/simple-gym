@@ -13,6 +13,7 @@ use App\Services\AssetService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class AssetController extends Controller
 {
@@ -98,7 +99,11 @@ class AssetController extends Controller
     {
         $this->authorize('delete', $asset);
 
-        $this->assetService->delete($asset);
+        try {
+            $this->assetService->delete($asset);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['asset' => $exception->getMessage()]);
+        }
 
         Flash::success('Asset deleted successfully.');
 

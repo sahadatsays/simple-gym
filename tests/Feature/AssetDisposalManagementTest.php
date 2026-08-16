@@ -133,6 +133,21 @@ it('rejects negative sale amounts', function () {
         ->assertSessionHasErrors('sale_amount');
 });
 
+it('rejects disposal for lost assets', function () {
+    $this->asset->update(['status' => AssetStatus::Lost]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.asset-disposals.store'), [
+            'asset_id' => $this->asset->id,
+            'disposed_at' => '2026-08-16',
+            'disposal_type' => AssetDisposalType::Disposed->value,
+            'reason' => 'Attempted duplicate disposal',
+        ])
+        ->assertSessionHasErrors('asset_id');
+
+    expect(AssetDisposal::query()->count())->toBe(0);
+});
+
 it('rejects disposal for already sold assets', function () {
     $this->asset->update(['status' => AssetStatus::Sold]);
 

@@ -88,12 +88,25 @@ class Asset extends Model
 
     public function isEligibleForMaintenance(): bool
     {
-        return $this->status !== null && ! $this->status->isTerminal();
+        return $this->status !== null && $this->status->isOperational();
     }
 
     public function isEligibleForDisposal(): bool
     {
-        if ($this->status === AssetStatus::Disposed || $this->status === AssetStatus::Sold) {
+        if ($this->status === null || ! $this->status->isOperational()) {
+            return false;
+        }
+
+        if ($this->relationLoaded('disposal')) {
+            return $this->disposal === null;
+        }
+
+        return ! $this->disposal()->exists();
+    }
+
+    public function isDeletable(): bool
+    {
+        if ($this->status === null || ! $this->status->isOperational()) {
             return false;
         }
 
@@ -111,9 +124,10 @@ class Asset extends Model
     public function scopeDisposable(Builder $query): Builder
     {
         return $query
-            ->whereNotIn('status', [
-                AssetStatus::Disposed,
-                AssetStatus::Sold,
+            ->whereIn('status', [
+                AssetStatus::Active,
+                AssetStatus::UnderMaintenance,
+                AssetStatus::Damaged,
             ])
             ->whereDoesntHave('disposal');
     }
@@ -124,9 +138,10 @@ class Asset extends Model
      */
     public function scopeMaintainable(Builder $query): Builder
     {
-        return $query->whereNotIn('status', [
-            AssetStatus::Disposed,
-            AssetStatus::Sold,
+        return $query->whereIn('status', [
+            AssetStatus::Active,
+            AssetStatus::UnderMaintenance,
+            AssetStatus::Damaged,
         ]);
     }
 

@@ -27,7 +27,10 @@ class AssetDisposalController extends Controller
         return view('admin.asset-disposals.index', [
             'disposals' => $this->disposals->paginateWithFilters($filters, config('gym.pagination.per_page')),
             'filters' => $filters,
-            'assets' => Asset::query()->orderBy('name')->get(['id', 'name', 'asset_code']),
+            'assets' => Asset::query()
+                ->whereIn('id', AssetDisposal::query()->select('asset_id'))
+                ->orderBy('name')
+                ->get(['id', 'name', 'asset_code']),
         ]);
     }
 

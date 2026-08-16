@@ -245,15 +245,18 @@ class DashboardService
 
     private function assetsRequiringMaintenanceCount(): int
     {
+        $latestMaintenances = AssetMaintenance::query()
+            ->selectRaw('asset_id, MAX(id) as id')
+            ->groupBy('asset_id');
+
         return Asset::query()
             ->maintainable()
-            ->whereHas('maintenances', function (Builder $query): void {
-                $query->whereNotNull('next_maintenance_at')
-                    ->whereDate('next_maintenance_at', '<=', today())
-                    ->whereRaw(
-                        'asset_maintenances.id = (select max(am.id) from asset_maintenances as am where am.asset_id = assets.id)'
-                    );
+            ->joinSub($latestMaintenances, 'latest_maintenances', function ($join): void {
+                $join->on('assets.id', '=', 'latest_maintenances.asset_id');
             })
+            ->join('asset_maintenances', 'asset_maintenances.id', '=', 'latest_maintenances.id')
+            ->whereNotNull('asset_maintenances.next_maintenance_at')
+            ->whereDate('asset_maintenances.next_maintenance_at', '<=', today())
             ->count();
     }
 

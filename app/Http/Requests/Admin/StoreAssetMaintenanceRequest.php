@@ -31,7 +31,7 @@ class StoreAssetMaintenanceRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:5000'],
             'next_maintenance_at' => ['nullable', 'date', 'after_or_equal:maintained_at'],
             'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
-            'asset_status' => ['nullable', 'string', Rule::enum(AssetStatus::class)],
+            'asset_status' => ['nullable', 'string', Rule::in(array_keys(AssetStatus::operationalOptions()))],
         ];
     }
 

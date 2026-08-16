@@ -180,6 +180,51 @@ it('updates an asset', function () {
         ->location->toBe('Locker Room');
 });
 
+it('rejects manual terminal status changes on update', function () {
+    $asset = Asset::factory()->create([
+        'asset_category_id' => $this->category->id,
+        'status' => AssetStatus::Active,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.assets.edit', $asset))
+        ->put(route('admin.assets.update', $asset), [
+            'name' => $asset->name,
+            'asset_category_id' => $this->category->id,
+            'purchased_at' => $asset->purchased_at->toDateString(),
+            'purchase_price' => $asset->purchase_price,
+            'current_value' => $asset->current_value,
+            'condition' => AssetCondition::Good->value,
+            'status' => AssetStatus::Sold->value,
+        ])
+        ->assertRedirect(route('admin.assets.edit', $asset))
+        ->assertSessionHasErrors('status');
+
+    expect($asset->fresh()->status)->toBe(AssetStatus::Active);
+});
+
+it('prevents deleting disposed assets', function () {
+    $asset = Asset::factory()->create([
+        'asset_category_id' => $this->category->id,
+        'status' => AssetStatus::Sold,
+    ]);
+
+    AssetDisposal::query()->create([
+        'asset_id' => $asset->id,
+        'disposed_at' => '2026-08-16',
+        'disposal_type' => AssetDisposalType::Sold,
+        'sale_amount' => 10000,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.assets.show', $asset))
+        ->delete(route('admin.assets.destroy', $asset))
+        ->assertRedirect(route('admin.assets.show', $asset))
+        ->assertSessionHasErrors('asset');
+
+    expect(Asset::query()->count())->toBe(1);
+});
+
 it('soft deletes an asset', function () {
     $asset = Asset::factory()->create([
         'asset_category_id' => $this->category->id,

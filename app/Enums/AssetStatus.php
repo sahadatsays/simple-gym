@@ -37,4 +37,20 @@ enum AssetStatus: string
     {
         return in_array($this, [self::Disposed, self::Sold], true);
     }
+
+    public function isOperational(): bool
+    {
+        return in_array($this, [self::Active, self::UnderMaintenance, self::Damaged], true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function operationalOptions(): array
+    {
+        return collect(self::cases())
+            ->filter(fn (self $status): bool => $status->isOperational())
+            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
+            ->all();
+    }
 }

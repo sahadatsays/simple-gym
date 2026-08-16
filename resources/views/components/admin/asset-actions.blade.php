@@ -25,20 +25,22 @@
         @endcan
 
         @can('delete', $asset)
-            <li><hr class="dropdown-divider"></li>
-            <li>
-                <form
-                    action="{{ route('admin.assets.destroy', $asset) }}"
-                    method="POST"
-                    onsubmit="return confirm('Delete this asset?');"
-                >
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="dropdown-item text-danger">
-                        Delete
-                    </button>
-                </form>
-            </li>
+            @if ($asset->isDeletable())
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form
+                        action="{{ route('admin.assets.destroy', $asset) }}"
+                        method="POST"
+                        onsubmit="return confirm('Delete this asset?');"
+                    >
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="dropdown-item text-danger">
+                            Delete
+                        </button>
+                    </form>
+                </li>
+            @endif
         @endcan
     </ul>
 </div>

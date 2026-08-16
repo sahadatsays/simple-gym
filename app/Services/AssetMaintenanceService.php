@@ -37,7 +37,7 @@ class AssetMaintenanceService extends BaseService
 
             $maintenance = $this->maintenances->create($payload);
 
-            if ($assetStatus !== null) {
+            if ($assetStatus !== null && $assetStatus->isOperational()) {
                 Asset::query()
                     ->whereKey($maintenance->asset_id)
                     ->update(['status' => $assetStatus]);
@@ -76,7 +76,7 @@ class AssetMaintenanceService extends BaseService
 
             $updatedMaintenance = $this->maintenances->update($maintenance, $payload);
 
-            if ($assetStatus !== null) {
+            if ($assetStatus !== null && $assetStatus->isOperational()) {
                 Asset::query()
                     ->whereKey($updatedMaintenance->asset_id)
                     ->update(['status' => $assetStatus]);

@@ -3,6 +3,7 @@
         fn ($category): array => [$category->id => $category->name]
     )->all();
     $isEditing = $asset !== null;
+    $isStatusLocked = $asset && (! ($asset->status?->isOperational() ?? false) || $asset->disposal);
 @endphp
 
 <div class="row">
@@ -88,13 +89,22 @@
                 />
             </div>
             <div class="col-md-6">
-                <x-forms.select
-                    label="Status"
-                    name="status"
-                    :options="App\Enums\AssetStatus::options()"
-                    :selected="old('status', $asset?->status?->value ?? App\Enums\AssetStatus::Active->value)"
-                    :required="$isEditing"
-                />
+                @if ($isStatusLocked)
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <input type="text" class="form-control" value="{{ $asset->status->label() }}" disabled>
+                        <input type="hidden" name="status" value="{{ $asset->status->value }}">
+                        <div class="form-text">Status is managed through the disposal workflow.</div>
+                    </div>
+                @elseif ($isEditing)
+                    <x-forms.select
+                        label="Status"
+                        name="status"
+                        :options="App\Enums\AssetStatus::operationalOptions()"
+                        :selected="old('status', $asset?->status?->value ?? App\Enums\AssetStatus::Active->value)"
+                        required
+                    />
+                @endif
             </div>
         </div>
 

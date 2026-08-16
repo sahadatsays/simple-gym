@@ -30,7 +30,7 @@ class StoreAssetRequest extends FormRequest
             'supplier' => ['nullable', 'string', 'max:255'],
             'location' => ['nullable', 'string', 'max:255'],
             'condition' => ['nullable', 'string', Rule::enum(AssetCondition::class)],
-            'status' => ['nullable', 'string', Rule::enum(AssetStatus::class)],
+            'status' => ['nullable', 'string', Rule::in(array_keys(AssetStatus::operationalOptions()))],
             'warranty_expires_at' => ['nullable', 'date', 'after_or_equal:purchased_at'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];

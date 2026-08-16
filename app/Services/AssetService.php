@@ -45,7 +45,9 @@ class AssetService extends BaseService
     public function update(Asset $asset, array $data): Asset
     {
         return $this->transaction(function () use ($asset, $data): Asset {
-            $updatedAsset = $this->assets->update($asset, $data);
+            $payload = $this->sanitizeUpdatePayload($asset, $data);
+
+            $updatedAsset = $this->assets->update($asset, $payload);
 
             $this->activityLogger->log('asset.updated', $updatedAsset, 'Asset updated', [
                 'asset_code' => $updatedAsset->asset_code,
@@ -57,6 +59,10 @@ class AssetService extends BaseService
 
     public function delete(Asset $asset): void
     {
+        if (! $asset->isDeletable()) {
+            throw new \InvalidArgumentException('Disposed assets cannot be deleted.');
+        }
+
         $this->transaction(function () use ($asset): void {
             $this->activityLogger->log('asset.deleted', $asset, 'Asset deleted', [
                 'asset_code' => $asset->asset_code,
@@ -65,5 +71,30 @@ class AssetService extends BaseService
 
             $this->assets->delete($asset);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function sanitizeUpdatePayload(Asset $asset, array $data): array
+    {
+        $payload = $data;
+
+        if (! $asset->status?->isOperational() || $asset->disposal()->exists()) {
+            unset($payload['status']);
+
+            return $payload;
+        }
+
+        if (isset($payload['status'])) {
+            $status = AssetStatus::tryFrom((string) $payload['status']);
+
+            if ($status === null || ! $status->isOperational()) {
+                unset($payload['status']);
+            }
+        }
+
+        return $payload;
     }
 }
