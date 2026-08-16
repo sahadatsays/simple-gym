@@ -133,6 +133,13 @@ return [
                     'match' => 'admin.expense-categories.*',
                     'icon' => 'tags',
                 ],
+                [
+                    'key' => 'expenses',
+                    'route' => 'admin.expenses.index',
+                    'permission' => 'expenses.view',
+                    'match' => 'admin.expenses.*',
+                    'icon' => 'receipt-cutoff',
+                ],
             ],
         ],
         [

@@ -27,6 +27,7 @@ return [
         'investments' => 'বিনিয়োগ',
         'investment_categories' => 'বিনিয়োগ বিভাগ',
         'expense_categories' => 'খরচের বিভাগ',
+        'expenses' => 'খরচ',
         'assets' => 'সম্পদ',
         'asset_maintenances' => 'রক্ষণাবেক্ষণ',
         'asset_disposals' => 'নিষ্পত্তি',

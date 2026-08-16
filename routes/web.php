@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AttendanceLogController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseCategoryController;
+use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\GymSettingController;
 use App\Http\Controllers\Admin\InvestmentCategoryController;
 use App\Http\Controllers\Admin\InvestmentController;
@@ -109,6 +110,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
         Route::resource('investment-categories', InvestmentCategoryController::class)->except(['show']);
         Route::resource('expense-categories', ExpenseCategoryController::class)->except(['show']);
+        Route::resource('expenses', ExpenseController::class);
         Route::resource('investments', InvestmentController::class);
         Route::resource('assets', AssetController::class);
         Route::resource('asset-maintenances', AssetMaintenanceController::class);

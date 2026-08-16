@@ -27,6 +27,7 @@ return [
         'investments' => 'Investments',
         'investment_categories' => 'Investment Categories',
         'expense_categories' => 'Expense Categories',
+        'expenses' => 'Expenses',
         'assets' => 'Assets',
         'asset_maintenances' => 'Maintenance',
         'asset_disposals' => 'Disposals',

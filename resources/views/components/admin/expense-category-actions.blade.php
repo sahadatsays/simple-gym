@@ -18,6 +18,14 @@
             </li>
         @endcan
 
+        @can('viewAny', App\Models\Expense::class)
+            <li>
+                <a class="dropdown-item" href="{{ route('admin.expenses.index', ['expense_category_id' => $category->id]) }}">
+                    View Expenses
+                </a>
+            </li>
+        @endcan
+
         @can('delete', $category)
             <li><hr class="dropdown-divider"></li>
             <li>
