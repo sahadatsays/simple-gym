@@ -1,11 +1,11 @@
-@extends('layouts.admin', ['heading' => 'Dashboard'])
+@extends('layouts.admin', ['heading' => __('dashboard.heading')])
 
-@section('title', 'Dashboard')
+@section('title', __('dashboard.heading'))
 
 @section('content')
     <x-ui.page-header
-        title="Business Dashboard"
-        :subtitle="'Performance overview · '.$stats['range_label']"
+        :title="__('dashboard.title')"
+        :subtitle="__('common.misc.performance_overview', ['range' => $stats['range_label']])"
     />
 
     <x-dashboard.quick-actions />
@@ -15,40 +15,40 @@
     <div class="row g-3 g-xl-4 mb-4">
         <div class="col-6 col-xl-4 col-xxl-2">
             <x-dashboard.stat-card
-                title="New Registrations"
+                :title="__('dashboard.stats.new_registrations')"
                 :value="$stats['new_registrations']"
                 icon="users"
                 variant="primary"
             >
-                <x-slot:footer>In selected period</x-slot:footer>
+                <x-slot:footer>{{ __('dashboard.stats.new_registrations_footer') }}</x-slot:footer>
             </x-dashboard.stat-card>
         </div>
 
         <div class="col-6 col-xl-4 col-xxl-2">
             <x-dashboard.stat-card
-                title="Active Members"
+                :title="__('dashboard.stats.active_members')"
                 :value="$stats['active_members']"
                 icon="user-check"
                 variant="success"
             >
-                <x-slot:footer>Currently active</x-slot:footer>
+                <x-slot:footer>{{ __('dashboard.stats.active_members_footer') }}</x-slot:footer>
             </x-dashboard.stat-card>
         </div>
 
         <div class="col-6 col-xl-4 col-xxl-2">
             <x-dashboard.stat-card
-                title="Expired in Period"
+                :title="__('dashboard.stats.expired_in_period')"
                 :value="$stats['expired_members']"
                 icon="user-x"
                 variant="danger"
             >
-                <x-slot:footer>Memberships expired</x-slot:footer>
+                <x-slot:footer>{{ __('dashboard.stats.expired_in_period_footer') }}</x-slot:footer>
             </x-dashboard.stat-card>
         </div>
 
         <div class="col-6 col-xl-4 col-xxl-2">
             <x-dashboard.stat-card
-                title="Period Revenue"
+                :title="__('dashboard.stats.period_revenue')"
                 :value="App\Support\MoneyFormatter::format($stats['period_revenue'], $stats['currency'])"
                 icon="wallet"
                 variant="info"
@@ -58,7 +58,7 @@
 
         <div class="col-6 col-xl-4 col-xxl-2">
             <x-dashboard.stat-card
-                title="Product Sales"
+                :title="__('dashboard.stats.product_sales')"
                 :value="App\Support\MoneyFormatter::format($stats['product_sales'], $stats['currency'])"
                 icon="shopping"
                 variant="warning"
@@ -68,25 +68,25 @@
 
         <div class="col-6 col-xl-4 col-xxl-2">
             <x-dashboard.stat-card
-                title="Low Stock Items"
+                :title="__('dashboard.stats.low_stock_items')"
                 :value="$stats['low_stock_products']"
                 icon="alert"
                 variant="dark"
             >
-                <x-slot:footer>Needs restocking</x-slot:footer>
+                <x-slot:footer>{{ __('dashboard.stats.low_stock_items_footer') }}</x-slot:footer>
             </x-dashboard.stat-card>
         </div>
     </div>
 
     <div class="row g-3 g-xl-4 mb-4">
         <div class="col-lg-7">
-            <x-dashboard.widget title="Revenue Trend" :subtitle="$stats['range_label']">
+            <x-dashboard.widget :title="__('dashboard.charts.revenue_trend')" :subtitle="$stats['range_label']">
                 <x-dashboard.chart
                     id="revenueTrendChart"
                     type="line"
                     :labels="$revenueSeries['labels']"
                     :values="$revenueSeries['values']"
-                    label="Revenue"
+                    :label="__('dashboard.charts.revenue_label')"
                     color="#2563eb"
                     :currency="$stats['currency']"
                 />
@@ -94,13 +94,13 @@
         </div>
 
         <div class="col-lg-5">
-            <x-dashboard.widget title="Registration Trend" :subtitle="$stats['range_label']">
+            <x-dashboard.widget :title="__('dashboard.charts.registration_trend')" :subtitle="$stats['range_label']">
                 <x-dashboard.chart
                     id="registrationTrendChart"
                     type="bar"
                     :labels="$registrationSeries['labels']"
                     :values="$registrationSeries['values']"
-                    label="Registrations"
+                    :label="__('dashboard.charts.registrations_label')"
                     color="#16a34a"
                 />
             </x-dashboard.widget>

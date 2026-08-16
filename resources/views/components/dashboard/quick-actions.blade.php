@@ -1,42 +1,42 @@
 @php
     $actions = collect([
         [
-            'label' => 'Register',
+            'label' => __('dashboard.quick_actions.register'),
             'route' => 'admin.members.register.create',
             'icon' => 'person-plus',
             'variant' => 'primary',
             'visible' => auth()->user()?->can('members.create'),
         ],
         [
-            'label' => 'RFID Card',
+            'label' => __('dashboard.quick_actions.rfid_card'),
             'route' => 'admin.rfid-cards.index',
             'icon' => 'credit-card-2-front',
             'variant' => 'purple',
             'visible' => auth()->user()?->can('rfid-cards.view'),
         ],
         [
-            'label' => 'POS',
+            'label' => __('dashboard.quick_actions.pos'),
             'route' => 'admin.pos.index',
             'icon' => 'shop-window',
             'variant' => 'success',
             'visible' => auth()->user()?->can('payments.create'),
         ],
         [
-            'label' => 'Orders',
+            'label' => __('dashboard.quick_actions.orders'),
             'route' => 'admin.orders.index',
             'icon' => 'bag-check',
             'variant' => 'info',
             'visible' => auth()->user()?->can('payments.view'),
         ],
         [
-            'label' => 'Payment',
+            'label' => __('dashboard.quick_actions.payment'),
             'route' => 'admin.payments.create',
             'icon' => 'wallet2',
             'variant' => 'warning',
             'visible' => auth()->user()?->can('payments.create'),
         ],
         [
-            'label' => 'Renew',
+            'label' => __('dashboard.quick_actions.renew'),
             'route' => 'admin.members.renew.create',
             'icon' => 'arrow-repeat',
             'variant' => 'danger',

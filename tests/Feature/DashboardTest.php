@@ -23,6 +23,17 @@ beforeEach(function () {
     $this->seed(DashboardSeeder::class);
 });
 
+it('displays dashboard in bangla when locale is bn', function () {
+    $this->actingAs($this->user)
+        ->withSession(['locale' => 'bn'])
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertSee('ব্যবসায়িক ড্যাশবোর্ড', false)
+        ->assertSee('নতুন নিবন্ধন', false)
+        ->assertSee('সাম্প্রতিক পেমেন্ট', false)
+        ->assertSee('তারিখের পরিসর', false);
+});
+
 it('displays dashboard widgets for authorized users', function () {
     $this->actingAs($this->user)
         ->get(route('admin.dashboard'))

@@ -68,6 +68,7 @@ return [
         'view_all_orders' => 'View all orders',
         'no_upcoming_due' => 'No upcoming due orders in the next :days days.',
         'no_payments' => 'No payments found for this period.',
+        'no_payments_recorded' => 'No payments recorded for this period.',
     ],
 
     'alerts' => [

@@ -62,8 +62,8 @@ class DashboardAlertService
             'type' => AlertType::MembershipExpired,
             'title' => AlertType::MembershipExpired->label(),
             'message' => $count === 1
-                ? '1 membership has expired and needs renewal.'
-                : "{$count} memberships have expired and need renewal.",
+                ? __('dashboard.alerts.message_expired_one')
+                : __('dashboard.alerts.message_expired_many', ['count' => $count]),
             'count' => $count,
             'severity' => AlertType::MembershipExpired->severity(),
             'action_url' => route('admin.reports.show', [
@@ -97,10 +97,10 @@ class DashboardAlertService
 
         return [
             'type' => AlertType::MembershipExpiring,
-            'title' => "Membership Expiring in {$days} Days",
+            'title' => __('dashboard.alerts.membership_expiring_in_days', ['days' => $days]),
             'message' => $count === 1
-                ? '1 membership will expire within the next '.$days.' days.'
-                : "{$count} memberships will expire within the next {$days} days.",
+                ? __('dashboard.alerts.message_expiring_one', ['days' => $days])
+                : __('dashboard.alerts.message_expiring_many', ['count' => $count, 'days' => $days]),
             'count' => $count,
             'severity' => AlertType::MembershipExpiring->severity(),
             'action_url' => route('admin.reports.show', [
@@ -137,8 +137,8 @@ class DashboardAlertService
             'type' => AlertType::LowStock,
             'title' => AlertType::LowStock->label(),
             'message' => $count === 1
-                ? '1 product is at or below minimum stock.'
-                : "{$count} products are at or below minimum stock.",
+                ? __('dashboard.alerts.message_low_stock_one')
+                : __('dashboard.alerts.message_low_stock_many', ['count' => $count]),
             'count' => $count,
             'severity' => AlertType::LowStock->severity(),
             'action_url' => route('admin.products.index', [
@@ -146,7 +146,10 @@ class DashboardAlertService
             ]),
             'items' => $products->map(fn (Product $product): array => [
                 'name' => $product->name,
-                'detail' => $product->stock.' in stock (min '.$product->minimum_stock.')',
+                'detail' => __('dashboard.alerts.stock_detail', [
+                    'stock' => $product->stock,
+                    'minimum' => $product->minimum_stock,
+                ]),
             ])->all(),
         ];
     }
@@ -180,8 +183,8 @@ class DashboardAlertService
             'type' => AlertType::Birthday,
             'title' => AlertType::Birthday->label(),
             'message' => $count === 1
-                ? '1 member is celebrating a birthday today.'
-                : "{$count} members are celebrating birthdays today.",
+                ? __('dashboard.alerts.message_birthday_one')
+                : __('dashboard.alerts.message_birthday_many', ['count' => $count]),
             'count' => $count,
             'severity' => AlertType::Birthday->severity(),
             'action_url' => route('admin.members.index'),

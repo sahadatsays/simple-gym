@@ -16,8 +16,8 @@
     <div class="card-body p-3 p-md-4">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
             <div>
-                <h2 class="h6 mb-1 fw-bold">Date Range</h2>
-                <p class="text-muted small mb-0">All KPIs, charts, and tables refresh for the selected period.</p>
+                <h2 class="h6 mb-1 fw-bold">{{ __('dashboard.date_filter.title') }}</h2>
+                <p class="text-muted small mb-0">{{ __('dashboard.date_filter.help') }}</p>
             </div>
 
             <div class="d-flex flex-wrap gap-2">
@@ -37,7 +37,7 @@
                     :class="preset === 'custom' ? 'btn-primary' : 'btn-light'"
                     @click="preset = 'custom'"
                 >
-                    Custom
+                    {{ __('dashboard.date_filter.custom') }}
                 </button>
             </div>
         </div>
@@ -46,15 +46,15 @@
 
         <div class="row g-3 mt-2 align-items-end" x-show="preset === 'custom'" x-cloak>
             <div class="col-6 col-md-3">
-                <label for="from_date" class="form-label small fw-semibold">From</label>
+                <label for="from_date" class="form-label small fw-semibold">{{ __('common.filters.from') }}</label>
                 <input type="date" name="from_date" id="from_date" x-model="fromDate" class="form-control form-control-sm">
             </div>
             <div class="col-6 col-md-3">
-                <label for="to_date" class="form-label small fw-semibold">To</label>
+                <label for="to_date" class="form-label small fw-semibold">{{ __('common.filters.to') }}</label>
                 <input type="date" name="to_date" id="to_date" x-model="toDate" class="form-control form-control-sm">
             </div>
             <div class="col-12 col-md-auto">
-                <button type="submit" class="btn btn-primary btn-sm">Apply Range</button>
+                <button type="submit" class="btn btn-primary btn-sm">{{ __('dashboard.date_filter.apply_range') }}</button>
             </div>
         </div>
     </div>

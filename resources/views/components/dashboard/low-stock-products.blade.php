@@ -3,15 +3,15 @@
     'currency',
 ])
 
-<x-dashboard.widget title="Low Stock Products" subtitle="Current inventory needing attention">
+<x-dashboard.widget :title="__('dashboard.widgets.low_stock_products')" :subtitle="__('dashboard.widgets.low_stock_products_subtitle')">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0 sg-dashboard-table">
             <thead>
                 <tr>
-                    <th>Product</th>
-                    <th class="text-center">Stock</th>
-                    <th class="text-center d-none d-sm-table-cell">Minimum</th>
-                    <th class="text-end d-none d-md-table-cell">Price</th>
+                    <th>{{ __('common.table.product') }}</th>
+                    <th class="text-center">{{ __('common.table.stock') }}</th>
+                    <th class="text-center d-none d-sm-table-cell">{{ __('common.table.minimum') }}</th>
+                    <th class="text-end d-none d-md-table-cell">{{ __('common.table.price') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -34,7 +34,7 @@
                 @empty
                     <tr>
                         <td colspan="4" class="text-center text-muted py-4">
-                            All products are above minimum stock levels.
+                            {{ __('dashboard.widgets.all_above_minimum') }}
                         </td>
                     </tr>
                 @endforelse
@@ -44,7 +44,7 @@
 
     @if ($products->isNotEmpty())
         <div class="text-end mt-3">
-            <a href="{{ route('admin.products.index', ['stock' => 'low']) }}" class="btn btn-sm btn-light">Manage inventory</a>
+            <a href="{{ route('admin.products.index', ['stock' => 'low']) }}" class="btn btn-sm btn-light">{{ __('dashboard.widgets.manage_inventory') }}</a>
         </div>
     @endif
 </x-dashboard.widget>

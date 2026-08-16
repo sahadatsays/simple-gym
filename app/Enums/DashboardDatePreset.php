@@ -14,15 +14,7 @@ enum DashboardDatePreset: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Today => 'Today',
-            self::Yesterday => 'Yesterday',
-            self::Last7Days => 'Last 7 Days',
-            self::Last30Days => 'Last 30 Days',
-            self::ThisMonth => 'This Month',
-            self::LastMonth => 'Last Month',
-            self::Custom => 'Custom Range',
-        };
+        return __('dashboard.date_presets.'.$this->value);
     }
 
     /**

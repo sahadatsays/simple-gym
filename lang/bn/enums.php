@@ -2,10 +2,10 @@
 
 return [
     'member_status' => [
-        'pending' => 'Pending',
-        'active' => 'Active',
-        'expired' => 'Expired',
-        'suspended' => 'Suspended',
+        'pending' => 'অপেক্ষমাণ',
+        'active' => 'সক্রিয়',
+        'expired' => 'মেয়াদোত্তীর্ণ',
+        'suspended' => 'স্থগিত',
     ],
 
     'gender' => [
@@ -15,10 +15,10 @@ return [
     ],
 
     'invoice_status' => [
-        'unpaid' => 'Unpaid',
-        'partial' => 'Partially paid',
-        'paid' => 'Paid',
-        'void' => 'Void',
+        'unpaid' => 'অপরিশোধিত',
+        'partial' => 'আংশিক পরিশোধ',
+        'paid' => 'পরিশোধিত',
+        'void' => 'বাতিল',
     ],
 
     'invoice_type' => [
@@ -35,9 +35,9 @@ return [
     ],
 
     'payment_type' => [
-        'admission_fee' => 'Admission Fee',
-        'membership_fee' => 'Membership Fee',
-        'pos_sale' => 'POS Sale',
+        'admission_fee' => 'ভর্তি ফি',
+        'membership_fee' => 'সদস্যতা ফি',
+        'pos_sale' => 'POS বিক্রয়',
     ],
 
     'payment_status' => [
