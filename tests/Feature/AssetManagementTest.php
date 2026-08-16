@@ -1,9 +1,13 @@
 <?php
 
 use App\Enums\AssetCondition;
+use App\Enums\AssetDisposalType;
+use App\Enums\AssetMaintenanceType;
 use App\Enums\AssetStatus;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Models\AssetDisposal;
+use App\Models\AssetMaintenance;
 use App\Models\User;
 use App\Repositories\AssetRepository;
 use Database\Seeders\GymSettingSeeder;
@@ -96,14 +100,56 @@ it('shows asset details', function () {
         'asset_category_id' => $this->category->id,
         'created_by' => $this->admin->id,
         'notes' => 'Requires monthly servicing',
+        'purchase_price' => 50000,
+        'current_value' => 42000,
+        'location' => 'Cardio Zone',
+    ]);
+
+    AssetMaintenance::query()->create([
+        'asset_id' => $asset->id,
+        'maintained_at' => '2026-08-10',
+        'type' => AssetMaintenanceType::Preventive,
+        'cost' => 1500,
+        'service_provider' => 'FitPro Ltd',
+        'description' => 'Belt lubrication',
     ]);
 
     $this->actingAs($this->admin)
         ->get(route('admin.assets.show', $asset))
         ->assertSuccessful()
+        ->assertSee('Basic Information')
+        ->assertSee('Purchase Information')
+        ->assertSee('Financial Information')
+        ->assertSee('Maintenance History')
+        ->assertSee('Disposal Information')
         ->assertSee($asset->asset_code)
+        ->assertSee('Cardio Zone')
+        ->assertSee('Belt lubrication')
+        ->assertSee('FitPro Ltd')
+        ->assertSee('Not disposed')
         ->assertSee('Requires monthly servicing')
         ->assertSee($this->admin->name);
+});
+
+it('shows disposal information on the asset details page', function () {
+    $asset = Asset::factory()->create([
+        'asset_category_id' => $this->category->id,
+        'status' => AssetStatus::Disposed,
+    ]);
+
+    AssetDisposal::query()->create([
+        'asset_id' => $asset->id,
+        'disposed_at' => '2026-08-01',
+        'disposal_type' => AssetDisposalType::Sale,
+        'sale_amount' => 20000,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.assets.show', $asset))
+        ->assertSuccessful()
+        ->assertSee('Disposed')
+        ->assertSee('Sale')
+        ->assertSee('20,000');
 });
 
 it('updates an asset', function () {

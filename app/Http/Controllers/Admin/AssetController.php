@@ -58,7 +58,12 @@ class AssetController extends Controller
     {
         $this->authorize('view', $asset);
 
-        $asset->load(['category', 'creator', 'disposal']);
+        $asset->load([
+            'category',
+            'creator',
+            'disposal',
+            'maintenances' => fn ($query) => $query->latest('maintained_at')->latest('id'),
+        ]);
 
         return view('admin.assets.show', [
             'asset' => $asset,
