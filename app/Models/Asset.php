@@ -86,6 +86,23 @@ class Asset extends Model
         return $this->status === AssetStatus::Disposed;
     }
 
+    public function isEligibleForMaintenance(): bool
+    {
+        return $this->status !== null && ! $this->status->isTerminal();
+    }
+
+    /**
+     * @param  Builder<Asset>  $query
+     * @return Builder<Asset>
+     */
+    public function scopeMaintainable(Builder $query): Builder
+    {
+        return $query->whereNotIn('status', [
+            AssetStatus::Disposed,
+            AssetStatus::Sold,
+        ]);
+    }
+
     /**
      * @param  Builder<Asset>  $query
      * @return Builder<Asset>

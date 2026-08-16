@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\AssetMaintenanceType;
+use Database\Factories\AssetMaintenanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +24,9 @@ use Illuminate\Support\Facades\Storage;
 ])]
 class AssetMaintenance extends Model
 {
+    /** @use HasFactory<AssetMaintenanceFactory> */
+    use HasFactory;
+
     /**
      * @return array<string, string>
      */

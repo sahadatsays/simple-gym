@@ -5,12 +5,19 @@
 @section('content')
     @php
         $totalMaintenanceCost = $asset->maintenances->sum(fn ($maintenance): float => (float) ($maintenance->cost ?? 0));
-        $isDisposed = $asset->disposal !== null || $asset->status === App\Enums\AssetStatus::Disposed;
+        $isDisposed = $asset->disposal !== null || $asset->status?->isTerminal();
     @endphp
 
     <x-ui.page-header :title="$asset->name" :subtitle="$asset->asset_code">
         <x-slot:actions>
             <div class="d-flex flex-wrap gap-2">
+                @can('create', App\Models\AssetMaintenance::class)
+                    @if ($asset->isEligibleForMaintenance())
+                        <a href="{{ route('admin.asset-maintenances.create', ['asset_id' => $asset->id]) }}" class="btn btn-light">
+                            Record Maintenance
+                        </a>
+                    @endif
+                @endcan
                 @can('update', $asset)
                     <a href="{{ route('admin.assets.edit', $asset) }}" class="btn btn-primary">Edit</a>
                 @endcan

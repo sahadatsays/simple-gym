@@ -139,6 +139,13 @@ return [
                     'match' => 'admin.assets.*',
                     'icon' => 'boxes',
                 ],
+                [
+                    'key' => 'asset_maintenances',
+                    'route' => 'admin.asset-maintenances.index',
+                    'permission' => 'asset-maintenances.view',
+                    'match' => 'admin.asset-maintenances.*',
+                    'icon' => 'tools',
+                ],
             ],
         ],
         [

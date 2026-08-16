@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AssetController;
+use App\Http\Controllers\Admin\AssetMaintenanceController;
 use App\Http\Controllers\Admin\AttendanceLogController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -107,6 +108,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::resource('investment-categories', InvestmentCategoryController::class)->except(['show']);
         Route::resource('investments', InvestmentController::class);
         Route::resource('assets', AssetController::class);
+        Route::resource('asset-maintenances', AssetMaintenanceController::class);
         Route::get('pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('pos', [PosController::class, 'store'])->name('pos.store');
         Route::get('pos/products/search', [PosController::class, 'search'])->name('pos.products.search');

@@ -6,8 +6,10 @@ enum AssetStatus: string
 {
     case Active = 'active';
     case UnderMaintenance = 'under_maintenance';
+    case Damaged = 'damaged';
+    case Lost = 'lost';
     case Disposed = 'disposed';
-    case Inactive = 'inactive';
+    case Sold = 'sold';
 
     /**
      * @return array<string, string>
@@ -24,8 +26,15 @@ enum AssetStatus: string
         return match ($this) {
             self::Active => 'Active',
             self::UnderMaintenance => 'Under Maintenance',
+            self::Damaged => 'Damaged',
+            self::Lost => 'Lost',
             self::Disposed => 'Disposed',
-            self::Inactive => 'Inactive',
+            self::Sold => 'Sold',
         };
+    }
+
+    public function isTerminal(): bool
+    {
+        return in_array($this, [self::Disposed, self::Sold], true);
     }
 }

@@ -53,7 +53,7 @@ it('filters assets by search, category, status, condition, and location', functi
     Asset::factory()->create([
         'name' => 'Hidden Desk',
         'asset_category_id' => $otherCategory->id,
-        'status' => AssetStatus::Inactive,
+        'status' => AssetStatus::Damaged,
         'condition' => AssetCondition::Fair,
         'location' => 'Reception',
     ]);
