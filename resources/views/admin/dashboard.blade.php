@@ -175,6 +175,71 @@
         </div>
     @endif
 
+    @if ($expenseStats !== null)
+        <h2 class="h5 fw-bold mb-3">{{ __('dashboard.sections.expenses') }}</h2>
+
+        <div class="row g-3 g-xl-4 mb-4">
+            <div class="col-6 col-xl-4">
+                <x-dashboard.stat-card
+                    :title="__('dashboard.stats.total_expenses')"
+                    :value="App\Support\MoneyFormatter::format($expenseStats['total_expenses'], $stats['currency'])"
+                    icon="wallet"
+                    variant="danger"
+                    formatted
+                >
+                    <x-slot:footer>{{ __('dashboard.stats.in_selected_period') }}</x-slot:footer>
+                </x-dashboard.stat-card>
+            </div>
+
+            <div class="col-6 col-xl-4">
+                <x-dashboard.stat-card
+                    :title="__('dashboard.stats.expense_this_month')"
+                    :value="App\Support\MoneyFormatter::format($expenseStats['expense_this_month'], $stats['currency'])"
+                    icon="chart"
+                    variant="warning"
+                    formatted
+                >
+                    <x-slot:footer>{{ __('dashboard.stats.this_month_in_selected_period') }}</x-slot:footer>
+                </x-dashboard.stat-card>
+            </div>
+
+            <div class="col-6 col-xl-4">
+                <x-dashboard.stat-card
+                    :title="__('dashboard.stats.expense_today')"
+                    :value="App\Support\MoneyFormatter::format($expenseStats['expense_today'], $stats['currency'])"
+                    icon="shopping"
+                    variant="info"
+                    formatted
+                >
+                    <x-slot:footer>{{ __('dashboard.stats.today_in_selected_period') }}</x-slot:footer>
+                </x-dashboard.stat-card>
+            </div>
+        </div>
+
+        <div class="row g-3 g-xl-4 mb-4">
+            <div class="col-lg-7">
+                <x-dashboard.widget :title="__('dashboard.charts.expense_by_category')" :subtitle="$stats['range_label']">
+                    <x-dashboard.chart
+                        id="expenseByCategoryChart"
+                        type="bar"
+                        :labels="$expenseCategorySeries['labels']"
+                        :values="$expenseCategorySeries['values']"
+                        :label="__('dashboard.charts.expense_amount_label')"
+                        color="#dc2626"
+                        :currency="$stats['currency']"
+                    />
+                </x-dashboard.widget>
+            </div>
+
+            <div class="col-lg-5">
+                <x-dashboard.highest-expense-categories
+                    :categories="$highestExpenseCategories"
+                    :currency="$stats['currency']"
+                />
+            </div>
+        </div>
+    @endif
+
     <div class="row g-3 g-xl-4 mb-4">
         <div class="col-lg-7">
             <x-dashboard.widget :title="__('dashboard.charts.revenue_trend')" :subtitle="$stats['range_label']">
@@ -232,6 +297,12 @@
         @can('viewAny', App\Models\Asset::class)
             <div class="col-xl-6">
                 <x-dashboard.recent-asset-purchases :assets="$recentAssetPurchases" :currency="$stats['currency']" />
+            </div>
+        @endcan
+
+        @can('viewAny', App\Models\Expense::class)
+            <div class="col-xl-6">
+                <x-dashboard.recent-expenses :expenses="$recentExpenses" :currency="$stats['currency']" />
             </div>
         @endcan
     </div>

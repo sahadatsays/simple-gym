@@ -4,6 +4,8 @@ use App\Enums\AssetStatus;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetMaintenance;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Investment;
 use App\Models\InvestmentCategory;
 use App\Models\Invoice;
@@ -81,6 +83,74 @@ it('displays asset and investment dashboard widgets for authorized users', funct
         ->assertSee('Assets Requiring Maintenance')
         ->assertSee('Recent Investments')
         ->assertSee('Recent Asset Purchases');
+});
+
+it('displays expense dashboard widgets for authorized users', function () {
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertSee('Expenses')
+        ->assertSee('Total Expenses')
+        ->assertSee('Expense This Month')
+        ->assertSee('Expense Today')
+        ->assertSee('Expense by Category')
+        ->assertSee('Highest Expense Categories')
+        ->assertSee('Recent Expenses');
+});
+
+it('filters expense dashboard metrics by date range', function () {
+    $rentCategory = ExpenseCategory::factory()->create(['name' => 'Dashboard Rent Category']);
+    $utilityCategory = ExpenseCategory::factory()->create(['name' => 'Dashboard Utility Category']);
+
+    Expense::factory()->create([
+        'expense_category_id' => $rentCategory->id,
+        'expensed_at' => now()->subDays(20),
+        'amount' => 10000,
+        'expense_number' => 'EXP-OLD-001',
+    ]);
+
+    Expense::factory()->create([
+        'expense_category_id' => $utilityCategory->id,
+        'expensed_at' => now()->subDay(),
+        'amount' => 2500,
+        'expense_number' => 'EXP-NEW-001',
+    ]);
+
+    Expense::factory()->cancelled()->create([
+        'expense_category_id' => $rentCategory->id,
+        'expensed_at' => now()->subDay(),
+        'amount' => 9999,
+        'expense_number' => 'EXP-CANCELLED-001',
+    ]);
+
+    $from = now()->subDays(7)->toDateString();
+    $to = now()->toDateString();
+
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard', [
+            'preset' => 'custom',
+            'from_date' => $from,
+            'to_date' => $to,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('EXP-NEW-001')
+        ->assertDontSee('EXP-OLD-001')
+        ->assertDontSee('EXP-CANCELLED-001')
+        ->assertSee('2,500')
+        ->assertSee('Dashboard Utility Category')
+        ->assertDontSee('Dashboard Rent Category');
+});
+
+it('hides expense widgets without module permissions', function () {
+    $user = User::factory()->create(['is_active' => true]);
+    $user->assignRole('trainer');
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertDontSee('Expenses')
+        ->assertDontSee('Recent Expenses')
+        ->assertDontSee('Highest Expense Categories');
 });
 
 it('filters asset and investment dashboard metrics by date range', function () {

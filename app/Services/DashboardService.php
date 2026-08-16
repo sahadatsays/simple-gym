@@ -8,6 +8,7 @@ use App\Enums\InvoiceType;
 use App\Enums\PaymentType;
 use App\Models\Asset;
 use App\Models\AssetMaintenance;
+use App\Models\Expense;
 use App\Models\Investment;
 use App\Models\Invoice;
 use App\Models\Member;
@@ -210,6 +211,122 @@ class DashboardService
     }
 
     /**
+     * @return array{
+     *     total_expenses: float,
+     *     expense_this_month: float,
+     *     expense_today: float
+     * }
+     */
+    public function expenseStats(DashboardDateRange $range): array
+    {
+        $from = $range->from->toDateString();
+        $to = $range->to->toDateString();
+
+        $totalExpenses = (float) $this->paidExpensesInRange($range)->sum('amount');
+
+        $monthStart = now()->startOfMonth();
+        $monthEnd = now()->endOfMonth();
+        $monthFrom = $range->from->greaterThan($monthStart) ? $range->from : $monthStart;
+        $monthTo = $range->to->lessThan($monthEnd) ? $range->to : $monthEnd;
+
+        $expenseThisMonth = $monthFrom->greaterThan($monthTo)
+            ? 0.0
+            : (float) Expense::query()
+                ->paid()
+                ->whereDate('expensed_at', '>=', $monthFrom->toDateString())
+                ->whereDate('expensed_at', '<=', $monthTo->toDateString())
+                ->sum('amount');
+
+        $expenseToday = today()->toDateString() >= $range->from->toDateString()
+            && today()->toDateString() <= $range->to->toDateString()
+            ? (float) Expense::query()
+                ->paid()
+                ->whereDate('expensed_at', today())
+                ->sum('amount')
+            : 0.0;
+
+        return [
+            'total_expenses' => $totalExpenses,
+            'expense_this_month' => $expenseThisMonth,
+            'expense_today' => $expenseToday,
+        ];
+    }
+
+    /**
+     * @return Collection<int, object{
+     *     expense_category_id: int,
+     *     category_name: string,
+     *     total_amount: float,
+     *     expense_count: int
+     * }>
+     */
+    public function expensesByCategory(DashboardDateRange $range, ?int $limit = null): Collection
+    {
+        $from = $range->from->toDateString();
+        $to = $range->to->toDateString();
+
+        $query = Expense::query()
+            ->paid()
+            ->whereDate('expensed_at', '>=', $from)
+            ->whereDate('expensed_at', '<=', $to)
+            ->join('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
+            ->groupBy('expense_categories.id', 'expense_categories.name')
+            ->select([
+                'expense_categories.id as expense_category_id',
+                'expense_categories.name as category_name',
+            ])
+            ->selectRaw('COALESCE(SUM(expenses.amount), 0) as total_amount')
+            ->selectRaw('COUNT(expenses.id) as expense_count')
+            ->orderByDesc('total_amount');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query->get()->map(fn ($row): object => (object) [
+            'expense_category_id' => (int) $row->expense_category_id,
+            'category_name' => (string) $row->category_name,
+            'total_amount' => (float) $row->total_amount,
+            'expense_count' => (int) $row->expense_count,
+        ]);
+    }
+
+    /**
+     * @return Collection<int, Expense>
+     */
+    public function recentExpenses(DashboardDateRange $range, int $limit = 8): Collection
+    {
+        return $this->paidExpensesInRange($range)
+            ->with('category:id,name')
+            ->latest('expensed_at')
+            ->latest('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'expense_number',
+                'expensed_at',
+                'expense_category_id',
+                'amount',
+                'paid_to',
+                'payment_method',
+                'status',
+            ]);
+    }
+
+    /**
+     * @return array{labels: array<int, string>, values: array<int, float>}
+     */
+    public function expenseCategorySeries(DashboardDateRange $range): array
+    {
+        $categories = $this->expensesByCategory($range);
+
+        return [
+            'labels' => $categories->pluck('category_name')->all(),
+            'values' => $categories->pluck('total_amount')->all(),
+        ];
+    }
+
+    /**
      * @return array{labels: array<int, string>, values: array<int, float>}
      */
     public function revenueSeries(DashboardDateRange $range): array
@@ -258,6 +375,17 @@ class DashboardService
             ->whereNotNull('asset_maintenances.next_maintenance_at')
             ->whereDate('asset_maintenances.next_maintenance_at', '<=', today())
             ->count();
+    }
+
+    /**
+     * @return Builder<Expense>
+     */
+    private function paidExpensesInRange(DashboardDateRange $range): Builder
+    {
+        return Expense::query()
+            ->paid()
+            ->whereDate('expensed_at', '>=', $range->from->toDateString())
+            ->whereDate('expensed_at', '<=', $range->to->toDateString());
     }
 
     /**

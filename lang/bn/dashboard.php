@@ -16,6 +16,7 @@ return [
 
     'sections' => [
         'assets_investments' => 'সম্পদ ও বিনিয়োগ',
+        'expenses' => 'খরচ',
     ],
 
     'stats' => [
@@ -41,6 +42,11 @@ return [
         'currently_active' => 'বর্তমানে সক্রিয়',
         'current_status' => 'বর্তমান অবস্থা',
         'due_or_overdue' => 'নির্ধারিত বা মেয়াদোত্তীর্ণ',
+        'total_expenses' => 'মোট খরচ',
+        'expense_this_month' => 'এই মাসের খরচ',
+        'expense_today' => 'আজকের খরচ',
+        'this_month_in_selected_period' => 'নির্বাচিত সময়কালে এই মাস',
+        'today_in_selected_period' => 'নির্বাচিত সময়কালে আজ',
     ],
 
     'charts' => [
@@ -48,6 +54,8 @@ return [
         'registration_trend' => 'নিবন্ধনের প্রবণতা',
         'revenue_label' => 'আয়',
         'registrations_label' => 'নিবন্ধন',
+        'expense_by_category' => 'বিভাগ অনুযায়ী খরচ',
+        'expense_amount_label' => 'খরচের পরিমাণ',
     ],
 
     'date_filter' => [
@@ -96,6 +104,15 @@ return [
         'no_asset_purchases_recorded' => 'এই সময়কালে কোনো সম্পদ ক্রয় রেকর্ড করা হয়নি।',
         'asset' => 'সম্পদ',
         'purchase_price' => 'ক্রয় মূল্য',
+        'recent_expenses' => 'সাম্প্রতিক খরচ',
+        'recent_expenses_subtitle' => 'নির্বাচিত সময়কালের খরচ',
+        'view_all_expenses' => 'সব খরচ দেখুন',
+        'no_expenses_recorded' => 'এই সময়কালে কোনো খরচ রেকর্ড করা হয়নি।',
+        'expense_number' => 'খরচ নং',
+        'highest_expense_categories' => 'সর্বোচ্চ খরচের বিভাগ',
+        'highest_expense_categories_subtitle' => 'নির্বাচিত সময়কালের শীর্ষ বিভাগ',
+        'no_expense_categories_recorded' => 'এই সময়কালে কোনো খরচের বিভাগ রেকর্ড করা হয়নি।',
+        'expense_count' => 'খরচ',
     ],
 
     'alerts' => [

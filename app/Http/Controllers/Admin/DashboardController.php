@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DashboardFilterRequest;
 use App\Models\Asset;
+use App\Models\Expense;
 use App\Models\Investment;
 use App\Services\DashboardAlertService;
 use App\Services\DashboardService;
@@ -32,11 +33,15 @@ class DashboardController extends Controller
         $currency = $this->gymSettings->get()->currency;
         $canViewInvestments = $request->user()->can('viewAny', Investment::class);
         $canViewAssets = $request->user()->can('viewAny', Asset::class);
+        $canViewExpenses = $request->user()->can('viewAny', Expense::class);
 
         return view('admin.dashboard', [
             'stats' => $this->dashboard->stats($range, $currency),
             'assetInvestmentStats' => ($canViewInvestments || $canViewAssets)
                 ? $this->dashboard->assetInvestmentStats($range)
+                : null,
+            'expenseStats' => $canViewExpenses
+                ? $this->dashboard->expenseStats($range)
                 : null,
             'recentRegistrations' => $this->dashboard->recentRegistrations($range),
             'recentPayments' => $this->dashboard->recentPayments($range),
@@ -46,6 +51,15 @@ class DashboardController extends Controller
             'recentAssetPurchases' => $canViewAssets
                 ? $this->dashboard->recentAssetPurchases($range)
                 : Collection::make(),
+            'recentExpenses' => $canViewExpenses
+                ? $this->dashboard->recentExpenses($range)
+                : Collection::make(),
+            'highestExpenseCategories' => $canViewExpenses
+                ? $this->dashboard->expensesByCategory($range, 5)
+                : Collection::make(),
+            'expenseCategorySeries' => $canViewExpenses
+                ? $this->dashboard->expenseCategorySeries($range)
+                : ['labels' => [], 'values' => []],
             'lowStockProducts' => $this->dashboard->lowStockProducts(),
             'upcomingDueOrders' => $request->user()->can('payments.view')
                 ? $this->dashboard->upcomingDueOrders()

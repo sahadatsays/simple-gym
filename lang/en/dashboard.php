@@ -16,6 +16,7 @@ return [
 
     'sections' => [
         'assets_investments' => 'Assets & Investments',
+        'expenses' => 'Expenses',
     ],
 
     'stats' => [
@@ -41,6 +42,11 @@ return [
         'currently_active' => 'Currently active',
         'current_status' => 'Current status',
         'due_or_overdue' => 'Due or overdue',
+        'total_expenses' => 'Total Expenses',
+        'expense_this_month' => 'Expense This Month',
+        'expense_today' => 'Expense Today',
+        'this_month_in_selected_period' => 'This month in selected period',
+        'today_in_selected_period' => 'Today in selected period',
     ],
 
     'charts' => [
@@ -48,6 +54,8 @@ return [
         'registration_trend' => 'Registration Trend',
         'revenue_label' => 'Revenue',
         'registrations_label' => 'Registrations',
+        'expense_by_category' => 'Expense by Category',
+        'expense_amount_label' => 'Expense Amount',
     ],
 
     'date_filter' => [
@@ -96,6 +104,15 @@ return [
         'no_asset_purchases_recorded' => 'No asset purchases recorded for this period.',
         'asset' => 'Asset',
         'purchase_price' => 'Purchase Price',
+        'recent_expenses' => 'Recent Expenses',
+        'recent_expenses_subtitle' => 'Expenses in the selected period',
+        'view_all_expenses' => 'View all expenses',
+        'no_expenses_recorded' => 'No expenses recorded for this period.',
+        'expense_number' => 'Expense No.',
+        'highest_expense_categories' => 'Highest Expense Categories',
+        'highest_expense_categories_subtitle' => 'Top categories in the selected period',
+        'no_expense_categories_recorded' => 'No expense categories recorded for this period.',
+        'expense_count' => 'Expenses',
     ],
 
     'alerts' => [
