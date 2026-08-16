@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use App\Exceptions\PaymentFailedException;
+use App\Exceptions\PosOrderDeletionException;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\Payment;
@@ -192,5 +193,43 @@ class PaymentService extends BaseService
         }
 
         return $result['payment'];
+    }
+
+    public function deletePosOrder(Invoice $invoice): void
+    {
+        $this->transaction(function () use ($invoice): void {
+            $invoice->refresh();
+
+            if (! $invoice->isPosSale()) {
+                throw PosOrderDeletionException::notPosOrder();
+            }
+
+            if (! $invoice->canBeDeletedToday()) {
+                throw PosOrderDeletionException::notSameDay();
+            }
+
+            $invoice->load(['productSales.product', 'payments']);
+
+            $this->productSaleService->reverseForPosOrder($invoice);
+
+            foreach ($invoice->payments as $payment) {
+                $this->activityLogger->log('payment.deleted', $payment, 'POS payment deleted with order', [
+                    'invoice_number' => $invoice->invoice_number,
+                    'receipt_number' => $payment->receipt_number,
+                    'amount' => $payment->amount,
+                ]);
+            }
+
+            $invoice->payments()->delete();
+
+            $this->activityLogger->log('pos_order.deleted', $invoice, 'POS order deleted', [
+                'invoice_number' => $invoice->invoice_number,
+                'member_id' => $invoice->member_id,
+                'total' => $invoice->total,
+                'payment_count' => $invoice->payments->count(),
+            ]);
+
+            $invoice->delete();
+        });
     }
 }

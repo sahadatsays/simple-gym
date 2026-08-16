@@ -123,6 +123,11 @@ class Invoice extends Model
         return $this->type === InvoiceType::PosSale;
     }
 
+    public function canBeDeletedToday(): bool
+    {
+        return $this->issued_at !== null && $this->issued_at->isToday();
+    }
+
     public function isRegistration(): bool
     {
         return $this->type === InvoiceType::Registration;

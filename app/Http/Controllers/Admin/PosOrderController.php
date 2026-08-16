@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
 use App\Enums\PaymentType;
 use App\Exceptions\PaymentFailedException;
+use App\Exceptions\PosOrderDeletionException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\IndexPosOrderRequest;
 use App\Http\Requests\Admin\StorePosOrderPaymentRequest;
@@ -74,6 +75,22 @@ class PosOrderController extends Controller
         Flash::success('Payment recorded successfully.');
 
         return redirect()->route('admin.orders.show', $invoice);
+    }
+
+    public function destroy(Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('delete', $invoice);
+        abort_unless($invoice->isPosSale(), 404);
+
+        try {
+            $this->paymentService->deletePosOrder($invoice);
+        } catch (PosOrderDeletionException $exception) {
+            return back()->withErrors(['order' => $exception->getMessage()]);
+        }
+
+        Flash::success('Order deleted successfully. Stock and payments have been reversed.');
+
+        return redirect()->route('admin.orders.index');
     }
 
     /**

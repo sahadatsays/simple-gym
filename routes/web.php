@@ -103,6 +103,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('pos/products/scan', [PosController::class, 'scan'])->name('pos.products.scan');
         Route::get('orders', [PosOrderController::class, 'index'])->name('orders.index');
         Route::get('orders/{invoice}', [PosOrderController::class, 'show'])->name('orders.show');
+        Route::delete('orders/{invoice}', [PosOrderController::class, 'destroy'])->name('orders.destroy');
         Route::post('orders/{invoice}/payments', [PosOrderController::class, 'storePayment'])->name('orders.payments.store');
         Route::get('products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
         Route::get('categories', [ProductController::class, 'categories'])->name('categories.index');

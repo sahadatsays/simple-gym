@@ -41,6 +41,7 @@ return [
         'payments' => [
             'payments.view',
             'payments.create',
+            'payments.delete',
         ],
         'products' => [
             'products.view',
@@ -109,6 +110,7 @@ return [
         'rfid-cards.manage' => 'Manage RFID cards',
         'payments.view' => 'View payments & invoices',
         'payments.create' => 'Create payments & use POS',
+        'payments.delete' => 'Delete same-day POS orders',
         'products.view' => 'View products & categories',
         'products.manage' => 'Manage products & stock',
         'reports.view' => 'View reports',
@@ -157,6 +159,7 @@ return [
             'rfid-cards.manage',
             'payments.view',
             'payments.create',
+            'payments.delete',
             'products.view',
             'products.manage',
             'reports.view',

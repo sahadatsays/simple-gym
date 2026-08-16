@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\PosOrderDeletionException;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Product;
@@ -74,6 +75,32 @@ class ProductSaleService extends BaseService
     public function recordFromPosPayment(Payment $payment, Invoice $invoice, array $lineItems): void
     {
         $this->recordFromPosOrder($invoice, $lineItems, $payment);
+    }
+
+    public function reverseForPosOrder(Invoice $invoice): void
+    {
+        $invoice->loadMissing(['productSales.product']);
+
+        foreach ($invoice->productSales as $sale) {
+            $product = $sale->product;
+
+            if ($product === null) {
+                throw PosOrderDeletionException::productMissing('a deleted product');
+            }
+
+            $this->productService->adjustStock(
+                $product,
+                $sale->quantity,
+                "POS order reversal {$invoice->invoice_number}",
+            );
+        }
+
+        if ($invoice->productSales->isNotEmpty()) {
+            $this->activityLogger->log('product.sale_reversed', $invoice, 'POS order stock reversed', [
+                'invoice_number' => $invoice->invoice_number,
+                'sale_count' => $invoice->productSales->count(),
+            ]);
+        }
     }
 
     /**

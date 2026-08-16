@@ -86,7 +86,8 @@
                             <th>Due date</th>
                             <th class="text-end">Total</th>
                             <th class="text-end">Paid</th>
-                            <th class="text-end pe-4">Balance</th>
+                            <th class="text-end">Balance</th>
+                            <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -115,13 +116,16 @@
                                 <td class="text-muted">{{ $order->due_at?->format('M j, Y') ?? '—' }}</td>
                                 <td class="text-end">{{ App\Support\MoneyFormatter::format($order->total, $gymCurrency) }}</td>
                                 <td class="text-end">{{ App\Support\MoneyFormatter::format($order->amountPaid(), $gymCurrency) }}</td>
-                                <td class="text-end pe-4 fw-semibold {{ $order->outstandingBalance() > 0 ? 'text-danger' : 'text-success' }}">
+                                <td class="text-end fw-semibold {{ $order->outstandingBalance() > 0 ? 'text-danger' : 'text-success' }}">
                                     {{ App\Support\MoneyFormatter::format($order->outstandingBalance(), $gymCurrency) }}
+                                </td>
+                                <td class="text-end pe-4" onclick="event.stopPropagation();">
+                                    <x-admin.order-actions :order="$order" />
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-5 text-muted">No orders found.</td>
+                                <td colspan="9" class="text-center py-5 text-muted">No orders found.</td>
                             </tr>
                         @endforelse
                     </tbody>

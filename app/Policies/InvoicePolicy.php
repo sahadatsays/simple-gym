@@ -16,4 +16,11 @@ class InvoicePolicy
     {
         return $user->can('payments.view');
     }
+
+    public function delete(User $user, Invoice $invoice): bool
+    {
+        return $user->can('payments.delete')
+            && $invoice->isPosSale()
+            && $invoice->canBeDeletedToday();
+    }
 }

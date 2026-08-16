@@ -15,11 +15,27 @@
             @if ($order->isOpen())
                 <a href="#collect-payment" class="btn btn-primary">Collect Payment</a>
             @endif
+            @can('delete', $order)
+                <form
+                    action="{{ route('admin.orders.destroy', $order) }}"
+                    method="POST"
+                    class="d-inline"
+                    onsubmit="return confirm('Delete this order? Stock will be restored and all related payments will be removed.');"
+                >
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger">Delete Order</button>
+                </form>
+            @endcan
         </x-slot:actions>
     </x-ui.page-header>
 
     @if (session('flash.message'))
         <div class="alert alert-{{ session('flash.type', 'success') }}">{{ session('flash.message') }}</div>
+    @endif
+
+    @if ($errors->has('order'))
+        <div class="alert alert-danger">{{ $errors->first('order') }}</div>
     @endif
 
     <div class="row g-4">
