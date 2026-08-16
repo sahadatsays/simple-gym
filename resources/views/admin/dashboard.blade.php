@@ -8,6 +8,8 @@
         :subtitle="'Performance overview · '.$stats['range_label']"
     />
 
+    <x-dashboard.quick-actions />
+
     <x-dashboard.date-range-filter :filters="$filters" />
 
     <div class="row g-3 g-xl-4 mb-4">
@@ -114,9 +116,15 @@
             <x-dashboard.recent-registrations :members="$recentRegistrations" />
         </div>
 
-        <div class="col-12">
+        <div class="col-xl-6">
             <x-dashboard.low-stock-products :products="$lowStockProducts" :currency="$stats['currency']" />
         </div>
+
+        @can('viewAny', App\Models\Payment::class)
+            <div class="col-xl-6">
+                <x-dashboard.upcoming-due-orders :orders="$upcomingDueOrders" :currency="$stats['currency']" />
+            </div>
+        @endcan
     </div>
 @endsection
 

@@ -33,6 +33,9 @@ class DashboardController extends Controller
             'recentRegistrations' => $this->dashboard->recentRegistrations($range),
             'recentPayments' => $this->dashboard->recentPayments($range),
             'lowStockProducts' => $this->dashboard->lowStockProducts(),
+            'upcomingDueOrders' => $request->user()->can('payments.view')
+                ? $this->dashboard->upcomingDueOrders()
+                : collect(),
             'revenueSeries' => $this->dashboard->revenueSeries($range),
             'registrationSeries' => $this->dashboard->registrationSeries($range),
             'dateRange' => $range,

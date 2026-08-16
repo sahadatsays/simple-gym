@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\InvoiceStatus;
+use App\Enums\InvoiceType;
 use App\Enums\PaymentType;
+use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Product;
@@ -86,6 +89,35 @@ class DashboardService
             ->orderBy('stock')
             ->limit($limit)
             ->get(['id', 'name', 'sku', 'stock', 'minimum_stock', 'selling_price']);
+    }
+
+    /**
+     * Open POS orders with a due date that is overdue or due within the lookahead window.
+     *
+     * @return Collection<int, Invoice>
+     */
+    public function upcomingDueOrders(?int $limit = null): Collection
+    {
+        $limit ??= (int) config('gym.dashboard.due_orders_limit', 8);
+        $lookaheadDays = (int) config('gym.dashboard.due_orders_lookahead_days', 30);
+
+        return Invoice::query()
+            ->with(['member:id,name,member_code', 'payments'])
+            ->where('type', InvoiceType::PosSale)
+            ->whereIn('status', [InvoiceStatus::Unpaid, InvoiceStatus::Partial])
+            ->whereNotNull('due_at')
+            ->where('due_at', '<=', now()->addDays($lookaheadDays)->endOfDay())
+            ->orderBy('due_at')
+            ->limit($limit)
+            ->get([
+                'id',
+                'member_id',
+                'invoice_number',
+                'status',
+                'total',
+                'due_at',
+                'issued_at',
+            ]);
     }
 
     /**

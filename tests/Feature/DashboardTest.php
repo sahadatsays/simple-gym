@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Invoice;
+use App\Models\Member;
+use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\DashboardSeeder;
 use Database\Seeders\GymSettingSeeder;
@@ -25,6 +28,12 @@ it('displays dashboard widgets for authorized users', function () {
         ->get(route('admin.dashboard'))
         ->assertSuccessful()
         ->assertSee('Business Dashboard')
+        ->assertSee('Register')
+        ->assertSee('RFID Card')
+        ->assertSee('POS')
+        ->assertSee('Orders')
+        ->assertSee('Payment')
+        ->assertSee('Renew')
         ->assertSee('Date Range')
         ->assertSee('New Registrations')
         ->assertSee('Active Members')
@@ -35,7 +44,31 @@ it('displays dashboard widgets for authorized users', function () {
         ->assertSee('Registration Trend')
         ->assertSee('Recent Payments')
         ->assertSee('Recent Registrations')
-        ->assertSee('Low Stock Products');
+        ->assertSee('Low Stock Products')
+        ->assertSee('Upcoming Due Orders');
+});
+
+it('shows upcoming due pos orders on the dashboard', function () {
+    $member = Member::factory()->create();
+    $product = Product::factory()->create(['selling_price' => 120, 'stock' => 5]);
+
+    $this->actingAs($this->user)
+        ->post(route('admin.pos.store'), [
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+            'member_id' => $member->id,
+            'amount_paid' => 0,
+            'due_at' => now()->addDays(3)->toDateString(),
+        ])
+        ->assertRedirect();
+
+    $invoice = Invoice::query()->latest('id')->first();
+
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertSee('Upcoming Due Orders')
+        ->assertSee($invoice->invoice_number)
+        ->assertSee($member->name);
 });
 
 it('filters dashboard metrics by date range preset', function () {

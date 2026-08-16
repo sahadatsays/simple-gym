@@ -66,6 +66,11 @@ return [
         'per_page_options' => [10, 15, 25, 50],
     ],
 
+    'dashboard' => [
+        'due_orders_lookahead_days' => 30,
+        'due_orders_limit' => 8,
+    ],
+
     'notifications' => [
         'birthdays_enabled' => env('GYM_BIRTHDAY_NOTIFICATIONS', true),
     ],
