@@ -46,6 +46,13 @@ return [
                     'match' => 'admin.roles.*',
                     'icon' => 'person-badge',
                 ],
+                [
+                    'label' => 'Permissions',
+                    'route' => 'admin.permissions.index',
+                    'permission' => 'permissions.view',
+                    'match' => 'admin.permissions.*',
+                    'icon' => 'key',
+                ],
             ],
         ],
         [

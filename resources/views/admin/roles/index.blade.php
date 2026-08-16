@@ -5,7 +5,7 @@
 @section('content')
     <x-ui.page-header title="Roles" subtitle="Manage roles and assign permissions dynamically">
         <x-slot:actions>
-            @can('create', Spatie\Permission\Models\Role::class)
+            @can('create', App\Models\Role::class)
                 <a href="{{ route('admin.roles.create') }}" class="btn btn-primary">Add Role</a>
             @endcan
         </x-slot:actions>
@@ -17,6 +17,7 @@
                 <thead>
                     <tr>
                         <th>Role</th>
+                        <th>Slug</th>
                         <th>Permissions</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -24,10 +25,8 @@
                 <tbody>
                     @forelse ($roles as $role)
                         <tr>
-                            <td>
-                                <div class="fw-semibold text-capitalize">{{ str_replace('-', ' ', $role->name) }}</div>
-                                <div class="small text-muted">{{ $role->name }}</div>
-                            </td>
+                            <td class="fw-semibold">{{ $role->display_name }}</td>
+                            <td><code>{{ $role->name }}</code></td>
                             <td>
                                 <x-ui.badge variant="secondary">{{ $role->permissions_count }} assigned</x-ui.badge>
                             </td>
@@ -48,7 +47,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="text-center text-muted py-4">No roles found.</td>
+                            <td colspan="4" class="text-center text-muted py-4">No roles found.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -11,24 +11,28 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    @foreach ($groupedPermissions as $group => $permissions)
-        <x-ui.card class="mb-3" :title="ucfirst(str_replace(['-', '_'], ' ', $group))">
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Permission</th>
-                            <th>Guard</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+    <div class="sg-permission-grid">
+        @foreach ($groupedPermissions as $group => $permissions)
+            <div class="sg-permission-group card border-0 shadow-sm">
+                <div class="sg-permission-group__header">
+                    <h2 class="h6 mb-0 fw-semibold">{{ \App\Support\PermissionRegistry::groupLabel($group) }}</h2>
+                    <span class="badge text-bg-light">{{ $permissions->count() }}</span>
+                </div>
+
+                <div class="sg-permission-group__body">
+                    <div class="row g-2">
                         @foreach ($permissions as $permission)
-                            <tr>
-                                <td class="fw-semibold">{{ $permission->name }}</td>
-                                <td>{{ $permission->guard_name }}</td>
-                                <td class="text-end">
-                                    <div class="d-inline-flex gap-2">
+                            <div class="col-sm-6 col-xl-4">
+                                <div class="sg-permission-card">
+                                    <div class="sg-permission-card__content">
+                                        <div class="sg-permission-item__label">
+                                            {{ \App\Support\PermissionRegistry::permissionLabel($permission->name) }}
+                                        </div>
+                                        <div class="sg-permission-item__slug">{{ $permission->name }}</div>
+                                        <div class="small text-muted mt-1">Guard: {{ $permission->guard_name }}</div>
+                                    </div>
+
+                                    <div class="sg-permission-card__actions">
                                         @can('update', $permission)
                                             <a href="{{ route('admin.permissions.edit', $permission) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                         @endcan
@@ -40,12 +44,12 @@
                                             </form>
                                         @endcan
                                     </div>
-                                </td>
-                            </tr>
+                                </div>
+                            </div>
                         @endforeach
-                    </tbody>
-                </table>
+                    </div>
+                </div>
             </div>
-        </x-ui.card>
-    @endforeach
+        @endforeach
+    </div>
 @endsection

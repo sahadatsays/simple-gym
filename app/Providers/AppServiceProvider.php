@@ -6,6 +6,7 @@ use App\Enums\PaymentMethod;
 use App\Models\AttendanceLog;
 use App\Models\GymSetting;
 use App\Models\Invoice;
+use App\Models\Role;
 use App\Models\ZktecoDevice;
 use App\Policies\AttendanceLogPolicy;
 use App\Policies\GymSettingPolicy;
@@ -22,7 +23,6 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {

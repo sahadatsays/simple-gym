@@ -2,9 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\Role;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class PermissionRegistry
 {
@@ -27,6 +27,42 @@ class PermissionRegistry
         return config('permissions.groups', []);
     }
 
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public static function groupedForAssignment(): array
+    {
+        $groups = self::grouped();
+
+        $extraPermissions = Permission::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->diff(self::all())
+            ->values();
+
+        if ($extraPermissions->isNotEmpty()) {
+            $groups['custom'] = $extraPermissions->all();
+        }
+
+        return $groups;
+    }
+
+    public static function groupLabel(string $group): string
+    {
+        return config("permissions.group_labels.{$group}")
+            ?? str($group)->replace(['-', '_'], ' ')->title()->toString();
+    }
+
+    public static function permissionLabel(string $permission): string
+    {
+        return config("permissions.labels.{$permission}")
+            ?? str($permission)
+                ->after('.')
+                ->replace(['-', '_'], ' ')
+                ->title()
+                ->toString();
+    }
+
     public static function syncToDatabase(): void
     {
         foreach (self::all() as $permission) {
@@ -47,6 +83,14 @@ class PermissionRegistry
         }
 
         return $permissions;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function defaultDisplayNames(): array
+    {
+        return config('permissions.role_display_names', []);
     }
 
     public static function isProtectedRole(string $roleName): bool

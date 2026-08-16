@@ -13,14 +13,31 @@ class PermissionService extends BaseService
     public function __construct(private ActivityLogger $activityLogger) {}
 
     /**
-     * @return Collection<int, Permission>
+     * @return array<string, Collection<int, Permission>>
      */
-    public function allGrouped(): Collection
+    public function allGrouped(): array
     {
-        return Permission::query()
+        $permissions = Permission::query()
             ->orderBy('name')
             ->get()
-            ->groupBy(fn (Permission $permission): string => explode('.', $permission->name)[0] ?? 'general');
+            ->keyBy('name');
+
+        $grouped = collect(PermissionRegistry::grouped())
+            ->map(fn (array $names): Collection => collect($names)
+                ->map(fn (string $name): ?Permission => $permissions->get($name))
+                ->filter()
+                ->values());
+
+        $extraPermissions = $permissions->keys()
+            ->diff(PermissionRegistry::all())
+            ->values()
+            ->map(fn (string $name): Permission => $permissions->get($name));
+
+        if ($extraPermissions->isNotEmpty()) {
+            $grouped->put('custom', $extraPermissions);
+        }
+
+        return $grouped->all();
     }
 
     public function create(string $name): Permission

@@ -2,9 +2,9 @@
 
 namespace App\Policies;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Support\PermissionRegistry;
-use Spatie\Permission\Models\Role;
 
 class RolePolicy
 {

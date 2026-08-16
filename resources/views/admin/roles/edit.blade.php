@@ -3,7 +3,7 @@
 @section('title', 'Edit Role')
 
 @section('content')
-    <x-ui.page-header title="Edit Role" :subtitle="str_replace('-', ' ', $role->name)" />
+    <x-ui.page-header title="Edit Role" :subtitle="$role->display_name" />
 
     <x-ui.card>
         <form action="{{ route('admin.roles.update', $role) }}" method="POST">

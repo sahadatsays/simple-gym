@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreRoleRequest;
 use App\Http\Requests\Admin\UpdateRoleRequest;
+use App\Models\Role;
 use App\Services\RoleService;
 use App\Support\Flash;
 use App\Support\PermissionRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use InvalidArgumentException;
-use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
@@ -40,7 +40,8 @@ class RoleController extends Controller
         $this->authorize('create', Role::class);
 
         $this->roleService->create([
-            'name' => $request->validated('name'),
+            'display_name' => $request->validated('display_name'),
+            'slug' => $request->validated('slug'),
             'permissions' => $request->validated('permissions', []),
         ]);
 
@@ -64,8 +65,11 @@ class RoleController extends Controller
     {
         $this->authorize('update', $role);
 
+        $isProtected = PermissionRegistry::isProtectedRole($role->name);
+
         $this->roleService->update($role, [
-            'name' => $request->validated('name'),
+            'display_name' => $request->validated('display_name'),
+            'slug' => $isProtected ? $role->name : $request->validated('slug'),
             'permissions' => $request->validated('permissions', []),
         ]);
 

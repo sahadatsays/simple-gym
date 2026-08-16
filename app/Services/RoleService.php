@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Role;
 use App\Support\ActivityLogger;
 use App\Support\PermissionRegistry;
 use Illuminate\Support\Collection;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RoleService extends BaseService
@@ -21,18 +20,19 @@ class RoleService extends BaseService
         return Role::query()
             ->with('permissions')
             ->withCount('permissions')
-            ->orderBy('name')
+            ->orderBy('display_name')
             ->get();
     }
 
     /**
-     * @param  array{name: string, permissions?: array<int, string>}  $data
+     * @param  array{display_name: string, slug: string, permissions?: array<int, string>}  $data
      */
     public function create(array $data): Role
     {
         return $this->transaction(function () use ($data): Role {
             $role = Role::query()->create([
-                'name' => $data['name'],
+                'name' => $data['slug'],
+                'display_name' => $data['display_name'],
                 'guard_name' => 'web',
             ]);
 
@@ -49,14 +49,22 @@ class RoleService extends BaseService
     }
 
     /**
-     * @param  array{name: string, permissions?: array<int, string>}  $data
+     * @param  array{display_name: string, slug: string, permissions?: array<int, string>}  $data
      */
     public function update(Role $role, array $data): Role
     {
         return $this->transaction(function () use ($role, $data): Role {
-            $role->update(['name' => $data['name']]);
+            $isProtected = PermissionRegistry::isProtectedRole($role->name);
 
-            if (array_key_exists('permissions', $data)) {
+            $attributes = ['display_name' => $data['display_name']];
+
+            if (! $isProtected) {
+                $attributes['name'] = $data['slug'];
+            }
+
+            $role->update($attributes);
+
+            if (! $isProtected && array_key_exists('permissions', $data)) {
                 $role->syncPermissions($data['permissions'] ?? []);
             }
 
@@ -87,11 +95,6 @@ class RoleService extends BaseService
      */
     public function groupedPermissions(): array
     {
-        $permissions = Permission::query()->orderBy('name')->pluck('name');
-
-        return $permissions
-            ->groupBy(fn (string $name): string => explode('.', $name)[0] ?? 'general')
-            ->map(fn (Collection $group) => $group->values()->all())
-            ->all();
+        return PermissionRegistry::groupedForAssignment();
     }
 }

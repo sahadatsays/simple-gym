@@ -1,11 +1,11 @@
 <?php
 
+use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -21,15 +21,27 @@ it('lists roles for authorized users', function () {
     $this->actingAs($this->admin)
         ->get(route('admin.roles.index'))
         ->assertSuccessful()
+        ->assertSee('Super Admin')
         ->assertSee('super-admin');
 });
 
-it('creates a role with dynamic permissions', function () {
+it('shows role create form with name and slug fields', function () {
+    $this->actingAs($this->admin)
+        ->get(route('admin.roles.create'))
+        ->assertSuccessful()
+        ->assertSee('Role name', false)
+        ->assertSee('Slug', false)
+        ->assertSee('name="display_name"', false)
+        ->assertSee('name="slug"', false);
+});
+
+it('creates a role with display name, slug, and permissions', function () {
     Permission::findOrCreate('members.view');
 
     $this->actingAs($this->admin)
         ->post(route('admin.roles.store'), [
-            'name' => 'receptionist',
+            'display_name' => 'Receptionist',
+            'slug' => 'receptionist',
             'permissions' => ['members.view'],
         ])
         ->assertRedirect(route('admin.roles.index'));
@@ -37,7 +49,29 @@ it('creates a role with dynamic permissions', function () {
     $role = Role::query()->where('name', 'receptionist')->first();
 
     expect($role)->not->toBeNull()
+        ->and($role->display_name)->toBe('Receptionist')
         ->and($role->hasPermissionTo('members.view'))->toBeTrue();
+});
+
+it('updates a role display name and slug', function () {
+    $role = Role::query()->create([
+        'name' => 'front-desk',
+        'display_name' => 'Front Desk',
+        'guard_name' => 'web',
+    ]);
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.roles.update', $role), [
+            'display_name' => 'Front Desk Team',
+            'slug' => 'front-desk-team',
+            'permissions' => [],
+        ])
+        ->assertRedirect(route('admin.roles.index'));
+
+    $role->refresh();
+
+    expect($role->display_name)->toBe('Front Desk Team')
+        ->and($role->name)->toBe('front-desk-team');
 });
 
 it('creates a permission and assigns it to super admin', function () {
@@ -52,6 +86,13 @@ it('creates a permission and assigns it to super admin', function () {
     $superAdmin = Role::query()->where('name', 'super-admin')->first();
 
     expect($superAdmin?->hasPermissionTo('members.archive'))->toBeTrue();
+});
+
+it('shows permissions in the sidebar for authorized users', function () {
+    $this->actingAs($this->admin)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertSee('Permissions', false);
 });
 
 it('hides unauthorized sidebar menu items', function () {
@@ -82,4 +123,33 @@ it('prevents deleting protected roles', function () {
         ->assertForbidden();
 
     expect(Role::query()->where('name', 'super-admin')->exists())->toBeTrue();
+});
+
+it('prevents changing protected role slug and permissions', function () {
+    $role = Role::query()->where('name', 'super-admin')->firstOrFail();
+    $originalPermissionCount = $role->permissions()->count();
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.roles.update', $role), [
+            'display_name' => 'Super Admin',
+            'slug' => 'changed-slug',
+            'permissions' => [],
+        ])
+        ->assertRedirect(route('admin.roles.index'));
+
+    $role->refresh();
+
+    expect($role->name)->toBe('super-admin')
+        ->and($role->permissions()->count())->toBe($originalPermissionCount);
+});
+
+it('lists all configured permissions on the role form', function () {
+    $response = $this->actingAs($this->admin)
+        ->get(route('admin.roles.create'));
+
+    foreach (config('permissions.groups') as $permissions) {
+        foreach ($permissions as $permission) {
+            $response->assertSee($permission, false);
+        }
+    }
 });
