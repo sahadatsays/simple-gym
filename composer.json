@@ -56,6 +56,12 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "seed:prod": [
+            "@php artisan db:seed --class=Database\\Seeders\\ProductionSeeder --force --no-interaction"
+        ],
+        "seed:dev": [
+            "@php artisan db:seed --class=Database\\Seeders\\DevelopmentSeeder --force --no-interaction"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

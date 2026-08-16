@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\PermissionRegistry;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StorePermissionRequest extends FormRequest
 {
@@ -22,10 +24,25 @@ class StorePermissionRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                'regex:/^[a-z0-9]+(?:\.[a-z0-9]+)+$/',
+                'regex:/^[a-z0-9]+(?:\.[a-z0-9-]+)+$/',
                 Rule::unique('permissions', 'name'),
             ],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $name = $this->input('name');
+
+            if (! is_string($name) || $name === '') {
+                return;
+            }
+
+            if (PermissionRegistry::isDefault($name)) {
+                $validator->errors()->add('name', 'This permission is a system default. Default permissions are managed by the application seeder.');
+            }
+        });
     }
 
     /**

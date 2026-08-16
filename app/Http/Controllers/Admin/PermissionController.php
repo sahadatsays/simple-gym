@@ -9,6 +9,7 @@ use App\Services\PermissionService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller
@@ -35,7 +36,13 @@ class PermissionController extends Controller
     {
         $this->authorize('create', Permission::class);
 
-        $this->permissionService->create($request->validated('name'));
+        try {
+            $this->permissionService->create($request->validated('name'));
+        } catch (InvalidArgumentException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors(['name' => $exception->getMessage()]);
+        }
 
         Flash::success('Permission created successfully.');
 
@@ -55,7 +62,13 @@ class PermissionController extends Controller
     {
         $this->authorize('update', $permission);
 
-        $this->permissionService->update($permission, $request->validated('name'));
+        try {
+            $this->permissionService->update($permission, $request->validated('name'));
+        } catch (InvalidArgumentException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors(['name' => $exception->getMessage()]);
+        }
 
         Flash::success('Permission updated successfully.');
 
@@ -66,7 +79,11 @@ class PermissionController extends Controller
     {
         $this->authorize('delete', $permission);
 
-        $this->permissionService->delete($permission);
+        try {
+            $this->permissionService->delete($permission);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['permission' => $exception->getMessage()]);
+        }
 
         Flash::success('Permission deleted successfully.');
 

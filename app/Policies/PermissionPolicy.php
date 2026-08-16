@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Support\PermissionRegistry;
 use Spatie\Permission\Models\Permission;
 
 class PermissionPolicy
@@ -24,11 +25,19 @@ class PermissionPolicy
 
     public function update(User $user, Permission $permission): bool
     {
+        if (PermissionRegistry::isDefault($permission->name)) {
+            return false;
+        }
+
         return $user->can('permissions.update');
     }
 
     public function delete(User $user, Permission $permission): bool
     {
+        if (PermissionRegistry::isDefault($permission->name)) {
+            return false;
+        }
+
         return $user->can('permissions.delete');
     }
 }

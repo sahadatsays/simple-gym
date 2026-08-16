@@ -63,6 +63,16 @@ class PermissionRegistry
                 ->toString();
     }
 
+    public static function isDefault(string $permissionName): bool
+    {
+        return self::all()->contains($permissionName);
+    }
+
+    public static function isCustom(string $permissionName): bool
+    {
+        return ! self::isDefault($permissionName);
+    }
+
     public static function syncToDatabase(): void
     {
         foreach (self::all() as $permission) {

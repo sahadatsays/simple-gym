@@ -12,7 +12,7 @@ return [
     */
 
     'defaults' => [
-        'name' => env('GYM_NAME', 'Simple Gym'),
+        'name' => env('GYM_NAME', 'Gym Management System'),
         'email' => env('GYM_EMAIL'),
         'phone' => env('GYM_PHONE'),
         'address' => env('GYM_ADDRESS'),

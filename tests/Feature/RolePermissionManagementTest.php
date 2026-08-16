@@ -153,3 +153,88 @@ it('lists all configured permissions on the role form', function () {
         }
     }
 });
+
+it('prevents updating default permissions', function () {
+    $permission = Permission::query()->where('name', 'members.view')->firstOrFail();
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.permissions.edit', $permission))
+        ->assertForbidden();
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.permissions.update', $permission), [
+            'name' => 'members.read',
+        ])
+        ->assertForbidden();
+
+    expect(Permission::query()->where('name', 'members.view')->exists())->toBeTrue();
+});
+
+it('prevents deleting default permissions', function () {
+    $permission = Permission::query()->where('name', 'dashboard.view')->firstOrFail();
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.permissions.destroy', $permission))
+        ->assertForbidden();
+
+    expect(Permission::query()->where('name', 'dashboard.view')->exists())->toBeTrue();
+});
+
+it('prevents creating permissions that match system defaults', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.permissions.store'), [
+            'name' => 'payments.view',
+        ])
+        ->assertSessionHasErrors('name');
+});
+
+it('updates and deletes custom permissions', function () {
+    $permission = Permission::findOrCreate('members.archive');
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.permissions.update', $permission), [
+            'name' => 'members.restore',
+        ])
+        ->assertRedirect(route('admin.permissions.index'));
+
+    expect(Permission::query()->where('name', 'members.restore')->exists())->toBeTrue()
+        ->and(Permission::query()->where('name', 'members.archive')->exists())->toBeFalse();
+
+    $permission = Permission::query()->where('name', 'members.restore')->firstOrFail();
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.permissions.destroy', $permission))
+        ->assertRedirect(route('admin.permissions.index'));
+
+    expect(Permission::query()->where('name', 'members.restore')->exists())->toBeFalse();
+});
+
+it('uses only configured default permissions across authorization checks', function () {
+    $configuredPermissions = collect(config('permissions.groups'))->flatten()->unique()->sort()->values();
+
+    $usedPermissions = collect([
+        'dashboard.view',
+        'users.view', 'users.create', 'users.update', 'users.delete',
+        'members.view', 'members.create', 'members.edit', 'members.delete',
+        'membership-plans.view', 'membership-plans.create', 'membership-plans.edit', 'membership-plans.delete',
+        'rfid-cards.view', 'rfid-cards.manage',
+        'payments.view', 'payments.create',
+        'products.view', 'products.manage',
+        'reports.view',
+        'settings.view', 'settings.update',
+        'zkteco-devices.view', 'zkteco-devices.manage',
+        'attendance-logs.view',
+        'roles.view', 'roles.create', 'roles.update', 'roles.delete',
+        'permissions.view', 'permissions.create', 'permissions.update', 'permissions.delete',
+    ])->sort()->values();
+
+    expect($usedPermissions->diff($configuredPermissions)->isEmpty())->toBeTrue();
+});
+
+it('syncs all default permissions through the seeder', function () {
+    foreach (config('permissions.groups') as $permissions) {
+        foreach ($permissions as $permission) {
+            expect(Permission::query()->where('name', $permission)->exists())->toBeTrue();
+        }
+    }
+});

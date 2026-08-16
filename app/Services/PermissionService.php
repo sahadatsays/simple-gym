@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Support\ActivityLogger;
 use App\Support\PermissionRegistry;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -42,6 +43,10 @@ class PermissionService extends BaseService
 
     public function create(string $name): Permission
     {
+        if (PermissionRegistry::isDefault($name)) {
+            throw new InvalidArgumentException('System default permissions cannot be created manually. Run the permission seeder to sync defaults.');
+        }
+
         return $this->transaction(function () use ($name): Permission {
             $permission = Permission::findOrCreate($name);
 
@@ -57,6 +62,14 @@ class PermissionService extends BaseService
 
     public function update(Permission $permission, string $name): Permission
     {
+        if (PermissionRegistry::isDefault($permission->name)) {
+            throw new InvalidArgumentException('System default permissions cannot be updated.');
+        }
+
+        if (PermissionRegistry::isDefault($name)) {
+            throw new InvalidArgumentException('A permission name reserved for system defaults cannot be used.');
+        }
+
         return $this->transaction(function () use ($permission, $name): Permission {
             $permission->update(['name' => $name]);
 
@@ -70,6 +83,10 @@ class PermissionService extends BaseService
 
     public function delete(Permission $permission): void
     {
+        if (PermissionRegistry::isDefault($permission->name)) {
+            throw new InvalidArgumentException('System default permissions cannot be deleted.');
+        }
+
         $this->transaction(function () use ($permission): void {
             $this->activityLogger->log('permission.deleted', $permission, 'Permission deleted');
             $permission->delete();
