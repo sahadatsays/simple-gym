@@ -112,6 +112,13 @@ return [
                     'match' => 'admin.invoices.*',
                     'icon' => 'receipt',
                 ],
+                [
+                    'key' => 'investments',
+                    'route' => 'admin.investments.index',
+                    'permission' => 'investments.view',
+                    'match' => 'admin.investments.*',
+                    'icon' => 'piggy-bank',
+                ],
             ],
         ],
         [

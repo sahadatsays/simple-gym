@@ -23,6 +23,7 @@ return [
         'rfid' => 'RFID',
         'payments' => 'Payments',
         'invoices' => 'Invoices',
+        'investments' => 'Investments',
         'products' => 'Products',
         'categories' => 'Categories',
         'pos' => 'POS',

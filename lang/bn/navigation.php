@@ -23,6 +23,7 @@ return [
         'rfid' => 'আরএফআইডি',
         'payments' => 'পেমেন্ট',
         'invoices' => 'ইনভয়েস',
+        'investments' => 'বিনিয়োগ',
         'products' => 'পণ্য',
         'categories' => 'ক্যাটাগরি',
         'pos' => 'পিওএস',

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AttendanceLogController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GymSettingController;
+use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\MemberRegistrationController;
@@ -101,6 +102,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
         Route::get('invoices/{invoice}/thermal', [InvoiceController::class, 'thermal'])->name('invoices.thermal');
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+        Route::resource('investments', InvestmentController::class);
         Route::get('pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('pos', [PosController::class, 'store'])->name('pos.store');
         Route::get('pos/products/search', [PosController::class, 'search'])->name('pos.products.search');
