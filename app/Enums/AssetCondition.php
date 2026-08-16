@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum AssetCondition: string
 {
+    case New = 'new';
     case Excellent = 'excellent';
     case Good = 'good';
     case Fair = 'fair';
@@ -22,6 +23,7 @@ enum AssetCondition: string
     public function label(): string
     {
         return match ($this) {
+            self::New => 'New',
             self::Excellent => 'Excellent',
             self::Good => 'Good',
             self::Fair => 'Fair',

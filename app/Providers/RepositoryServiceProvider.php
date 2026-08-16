@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
+use App\Contracts\Repositories\AssetRepositoryInterface;
 use App\Contracts\Repositories\GymSettingRepositoryInterface;
 use App\Contracts\Repositories\InvestmentCategoryRepositoryInterface;
 use App\Contracts\Repositories\InvestmentRepositoryInterface;
@@ -14,6 +15,7 @@ use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Contracts\Repositories\RfidCardRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Repositories\ActivityLogRepository;
+use App\Repositories\AssetRepository;
 use App\Repositories\GymSettingRepository;
 use App\Repositories\InvestmentCategoryRepository;
 use App\Repositories\InvestmentRepository;
@@ -39,6 +41,7 @@ class RepositoryServiceProvider extends ServiceProvider
         PaymentRepositoryInterface::class => PaymentRepository::class,
         InvestmentRepositoryInterface::class => InvestmentRepository::class,
         InvestmentCategoryRepositoryInterface::class => InvestmentCategoryRepository::class,
+        AssetRepositoryInterface::class => AssetRepository::class,
         ProductRepositoryInterface::class => ProductRepository::class,
         RfidCardRepositoryInterface::class => RfidCardRepository::class,
         GymSettingRepositoryInterface::class => GymSettingRepository::class,

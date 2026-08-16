@@ -129,6 +129,19 @@ return [
             ],
         ],
         [
+            'key' => 'assets',
+            'icon' => 'building',
+            'items' => [
+                [
+                    'key' => 'assets',
+                    'route' => 'admin.assets.index',
+                    'permission' => 'assets.view',
+                    'match' => 'admin.assets.*',
+                    'icon' => 'boxes',
+                ],
+            ],
+        ],
+        [
             'key' => 'inventory',
             'icon' => 'box-seam',
             'items' => [
