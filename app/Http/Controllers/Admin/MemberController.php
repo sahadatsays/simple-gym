@@ -15,6 +15,7 @@ use App\Services\MemberService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class MemberController extends Controller
 {
@@ -87,7 +88,7 @@ class MemberController extends Controller
         $this->authorize('update', $member);
 
         return view('admin.members.edit', [
-            'member' => $member->load('membershipPlan'),
+            'member' => $member->load(['membershipPlan', 'activeRfidCard']),
             'plans' => MembershipPlan::query()->orderBy('name')->get(['id', 'name', 'duration_days']),
         ]);
     }
@@ -114,7 +115,13 @@ class MemberController extends Controller
     {
         $this->authorize('delete', $member);
 
-        $this->memberService->delete($member);
+        try {
+            $this->memberService->delete($member);
+        } catch (InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
 
         Flash::success('Member deleted successfully.');
 

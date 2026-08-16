@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\Gender;
-use App\Enums\MemberStatus;
 use App\Models\Member;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -47,10 +46,10 @@ class UpdateMemberRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:1000'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:20'],
-            'membership_plan_id' => ['nullable', 'integer', Rule::exists('membership_plans', 'id')],
-            'joined_at' => ['required', 'date'],
-            'membership_expires_at' => ['nullable', 'date', 'after_or_equal:joined_at'],
-            'status' => ['required', 'string', Rule::enum(MemberStatus::class)],
+            'membership_plan_id' => ['prohibited'],
+            'joined_at' => ['prohibited'],
+            'membership_expires_at' => ['prohibited'],
+            'status' => ['prohibited'],
         ];
     }
 }

@@ -9,6 +9,7 @@ use App\Support\ActivityLogger;
 use App\Support\MemberPhotoStorage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 class MemberService extends BaseService
 {
@@ -53,9 +54,15 @@ class MemberService extends BaseService
         return $this->transaction(function () use ($member, $data, $photo): Member {
             $previousGender = $member->gender;
             $removePhoto = (bool) ($data['remove_photo'] ?? false);
-            unset($data['photo'], $data['remove_photo'], $data['member_code']);
-
-            $data = $this->applyPlanExpiry($data);
+            unset(
+                $data['photo'],
+                $data['remove_photo'],
+                $data['member_code'],
+                $data['membership_plan_id'],
+                $data['joined_at'],
+                $data['membership_expires_at'],
+                $data['status'],
+            );
 
             if ($photo !== null) {
                 $this->deletePhoto($member->photo_path);
@@ -79,6 +86,10 @@ class MemberService extends BaseService
 
     public function delete(Member $member): void
     {
+        if (! $member->canBeDeleted()) {
+            throw new InvalidArgumentException('This member cannot be deleted because they have payment, membership, RFID, or activity history.');
+        }
+
         $this->transaction(function () use ($member): void {
             $this->rfidCardService->disableAllForMember($member);
 

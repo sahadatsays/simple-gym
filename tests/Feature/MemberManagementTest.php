@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\MemberStatus;
+use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\MembershipPlan;
+use App\Models\Payment;
 use App\Models\User;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -112,26 +114,53 @@ it('shows member profile page', function () {
         ->assertSee('Monthly Plan');
 });
 
-it('updates a member', function () {
+it('updates a member profile without changing membership', function () {
     $member = Member::factory()->create([
         'name' => 'Old Name',
         'phone' => '01722223333',
+        'status' => MemberStatus::Active,
+        'membership_plan_id' => $this->plan->id,
     ]);
 
     $this->actingAs($this->admin)
         ->put(route('admin.members.update', $member), [
             'name' => 'Updated Name',
             'phone' => '01722223333',
-            'joined_at' => $member->joined_at->toDateString(),
-            'status' => 'suspended',
+            'email' => 'updated@example.com',
         ])
         ->assertRedirect(route('admin.members.show', $member));
 
-    expect($member->fresh()->name)->toBe('Updated Name')
-        ->and($member->fresh()->status)->toBe(MemberStatus::Suspended);
+    $member->refresh();
+
+    expect($member->name)->toBe('Updated Name')
+        ->and($member->email)->toBe('updated@example.com')
+        ->and($member->status)->toBe(MemberStatus::Active)
+        ->and($member->membership_plan_id)->toBe($this->plan->id);
 });
 
-it('soft deletes a member and frees unique fields', function () {
+it('rejects membership field updates on member edit', function () {
+    $otherPlan = MembershipPlan::factory()->create(['name' => 'Yearly Plan']);
+
+    $member = Member::factory()->create([
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.members.update', $member), [
+            'name' => $member->name,
+            'phone' => $member->phone,
+            'membership_plan_id' => $otherPlan->id,
+            'status' => 'suspended',
+            'joined_at' => now()->subYear()->toDateString(),
+        ])
+        ->assertSessionHasErrors(['membership_plan_id', 'status', 'joined_at']);
+
+    expect($member->fresh()->membership_plan_id)->toBe($this->plan->id)
+        ->and($member->fresh()->status)->toBe(MemberStatus::Active);
+});
+
+it('soft deletes a member without history and frees unique fields', function () {
     $member = Member::factory()->create([
         'phone' => '01733334444',
     ]);
@@ -151,6 +180,36 @@ it('soft deletes a member and frees unique fields', function () {
             'status' => 'active',
         ])
         ->assertRedirect();
+});
+
+it('prevents deleting a member with payment history', function () {
+    $member = Member::factory()->create([
+        'phone' => '01744445555',
+    ]);
+
+    Payment::factory()->for($member)->membershipFee()->create();
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.members.destroy', $member))
+        ->assertRedirect()
+        ->assertSessionHas('flash.type', 'danger');
+
+    expect(Member::query()->whereKey($member->id)->exists())->toBeTrue();
+});
+
+it('prevents deleting a member with invoice history', function () {
+    $member = Member::factory()->create([
+        'phone' => '01755556666',
+    ]);
+
+    Invoice::factory()->for($member)->create();
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.members.destroy', $member))
+        ->assertRedirect()
+        ->assertSessionHas('flash.type', 'danger');
+
+    expect(Member::query()->whereKey($member->id)->exists())->toBeTrue();
 });
 
 it('denies access without permission', function () {

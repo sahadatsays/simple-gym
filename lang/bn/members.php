@@ -7,7 +7,10 @@ return [
     'renew_membership' => 'Renew Membership',
     'edit' => 'Edit Member',
     'edit_subtitle' => 'Update member profile and membership details',
+    'edit_subtitle_profile' => 'Update personal details and emergency contact only',
     'create' => 'Create Member',
+    'delete_confirm' => 'Delete this member?',
+    'delete_blocked_hint' => 'Cannot delete: member has payment or activity history',
 
     'register_page' => [
         'title' => 'Register Member',
@@ -25,6 +28,7 @@ return [
     ],
 
     'show' => [
+        'view_profile' => 'View Profile',
         'membership' => 'Membership',
         'current_plan' => 'Current plan',
         'join_date' => 'Join date',
@@ -47,7 +51,18 @@ return [
     ],
 
     'form' => [
+        'photo' => 'Photo',
+        'photo_preview_alt' => 'Member photo preview',
+        'member_id' => 'Member ID',
         'membership' => 'Membership',
+        'membership_readonly_help' => 'Membership changes are managed through registration or renewal.',
+        'membership_create_help' => 'Set the initial plan and membership dates for this member.',
+        'personal_details' => 'Personal Details',
+        'personal_details_help' => 'Basic contact and profile information.',
+        'emergency_contact_help' => 'Someone we can reach in case of emergency.',
+        'select_gender' => 'Select gender',
+        'select_plan' => 'Select plan',
+        'expiry_auto_help' => 'Leave blank to auto-calculate from the selected plan.',
         'assigned_on_save' => 'Assigned automatically on save.',
         'photo_help' => 'JPG, PNG or WebP. Max 2 MB.',
         'remove_current_photo' => 'Remove current photo',

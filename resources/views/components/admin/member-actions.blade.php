@@ -26,17 +26,25 @@
 
         @can('delete', $member)
             <li><hr class="dropdown-divider"></li>
-            <li>
-                <form
-                    action="{{ route('admin.members.destroy', $member) }}"
-                    method="POST"
-                    onsubmit="return confirm('Delete this member?');"
-                >
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="dropdown-item text-danger">Delete</button>
-                </form>
-            </li>
+            @if ($member->canBeDeleted())
+                <li>
+                    <form
+                        action="{{ route('admin.members.destroy', $member) }}"
+                        method="POST"
+                        onsubmit="return confirm(@js(__('members.delete_confirm')));"
+                    >
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="dropdown-item text-danger">{{ __('common.actions.delete') }}</button>
+                    </form>
+                </li>
+            @else
+                <li>
+                    <span class="dropdown-item-text small text-muted">
+                        {{ __('members.delete_blocked_hint') }}
+                    </span>
+                </li>
+            @endif
         @endcan
     </ul>
 </div>

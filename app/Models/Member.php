@@ -126,6 +126,14 @@ class Member extends Model
     }
 
     /**
+     * @return HasMany<ProductSale, $this>
+     */
+    public function productSales(): HasMany
+    {
+        return $this->hasMany(ProductSale::class);
+    }
+
+    /**
      * @return HasMany<MemberZktecoAccessRemoval, $this>
      */
     public function zktecoAccessRemovals(): HasMany
@@ -240,5 +248,20 @@ class Member extends Model
         }
 
         return (int) today()->diffInDays($this->membership_expires_at, false);
+    }
+
+    public function canBeDeleted(): bool
+    {
+        return ! $this->hasDeletionBlockingHistory();
+    }
+
+    public function hasDeletionBlockingHistory(): bool
+    {
+        return $this->payments()->exists()
+            || $this->invoices()->exists()
+            || $this->membershipRenewals()->exists()
+            || $this->rfidCards()->exists()
+            || $this->zktecoAccessRemovals()->exists()
+            || $this->productSales()->exists();
     }
 }

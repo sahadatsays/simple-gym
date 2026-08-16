@@ -1054,6 +1054,66 @@ body {
     font-size: 1.5rem;
 }
 
+.sg-member-photo-preview {
+    aspect-ratio: 1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.875rem;
+    overflow: hidden;
+}
+
+.sg-member-photo-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.sg-member-photo-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 8rem;
+    color: #94a3b8;
+}
+
+.sg-member-form-section {
+    padding: 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.875rem;
+    background: #fff;
+}
+
+.sg-member-form-section__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    margin-bottom: 1.25rem;
+}
+
+.sg-member-form-section__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: #eff6ff;
+    color: #2563eb;
+    flex-shrink: 0;
+}
+
+.sg-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #fff;
+    margin-bottom: -0.25rem;
+    padding-bottom: 0.25rem;
+}
+
 .sg-profile-list dt {
     color: #64748b;
     font-size: 0.875rem;
