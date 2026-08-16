@@ -40,24 +40,24 @@ return [
     ],
 
     'user' => [
-        'created' => 'User created successfully.',
-        'updated' => 'User updated successfully.',
-        'deleted' => 'User deleted successfully.',
-        'activated' => 'User activated successfully.',
-        'deactivated' => 'User deactivated successfully.',
-        'password_reset' => 'Password reset successfully.',
+        'created' => 'ব্যবহারকারী সফলভাবে তৈরি হয়েছে।',
+        'updated' => 'ব্যবহারকারী সফলভাবে আপডেট হয়েছে।',
+        'deleted' => 'ব্যবহারকারী সফলভাবে মুছে ফেলা হয়েছে।',
+        'activated' => 'ব্যবহারকারী সফলভাবে সক্রিয় করা হয়েছে।',
+        'deactivated' => 'ব্যবহারকারী সফলভাবে নিষ্ক্রিয় করা হয়েছে।',
+        'password_reset' => 'পাসওয়ার্ড সফলভাবে রিসেট হয়েছে।',
     ],
 
     'role' => [
-        'created' => 'Role created successfully.',
-        'updated' => 'Role updated successfully.',
-        'deleted' => 'Role deleted successfully.',
+        'created' => 'ভূমিকা সফলভাবে তৈরি হয়েছে।',
+        'updated' => 'ভূমিকা সফলভাবে আপডেট হয়েছে।',
+        'deleted' => 'ভূমিকা সফলভাবে মুছে ফেলা হয়েছে।',
     ],
 
     'permission' => [
-        'created' => 'Permission created successfully.',
-        'updated' => 'Permission updated successfully.',
-        'deleted' => 'Permission deleted successfully.',
+        'created' => 'অনুমতি সফলভাবে তৈরি হয়েছে।',
+        'updated' => 'অনুমতি সফলভাবে আপডেট হয়েছে।',
+        'deleted' => 'অনুমতি সফলভাবে মুছে ফেলা হয়েছে।',
     ],
 
     'rfid' => [

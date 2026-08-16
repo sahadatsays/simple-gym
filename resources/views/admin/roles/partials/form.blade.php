@@ -1,23 +1,23 @@
 <div class="row g-3">
     <div class="col-md-6">
         <x-forms.input
-            label="Role name"
+            :label="__('roles.form.role_name')"
             name="display_name"
-            placeholder="Manager"
+            :placeholder="__('roles.form.role_name_placeholder')"
             :value="$role?->display_name"
             required
-            help="A human-readable name shown in the admin panel."
+            :help="__('roles.form.role_name_help')"
         />
     </div>
 
     <div class="col-md-6">
         <x-forms.input
-            label="Slug"
+            :label="__('roles.form.slug')"
             name="slug"
-            placeholder="manager"
+            :placeholder="__('roles.form.slug_placeholder')"
             :value="$role?->name"
             required
-            help="Unique identifier using lowercase letters, numbers, and dashes only."
+            :help="__('roles.form.slug_help')"
             :readonly="$isProtected"
         />
     </div>
@@ -25,20 +25,24 @@
 
 @if ($isProtected)
     <div class="alert alert-info py-2 mb-3">
-        This is a protected system role. Its slug and permissions cannot be changed.
+        {{ __('roles.form.protected_notice') }}
     </div>
 @endif
 
 <div class="mt-2">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <label class="form-label fw-semibold mb-0">Permissions</label>
-            <p class="text-muted small mb-0">Select the permissions this role should have.</p>
+            <label class="form-label fw-semibold mb-0">{{ __('roles.permissions.title') }}</label>
+            <p class="text-muted small mb-0">{{ __('roles.form.permissions_help') }}</p>
         </div>
         @unless ($isProtected)
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="sg-permissions-select-all">Select all</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="sg-permissions-clear-all">Clear all</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="sg-permissions-select-all">
+                    {{ __('common.actions.select_all') }}
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="sg-permissions-clear-all">
+                    {{ __('common.actions.clear_all') }}
+                </button>
             </div>
         @endunless
     </div>

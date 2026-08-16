@@ -2,7 +2,7 @@
     'groups',
 ])
 
-<nav class="sg-sidebar-nav flex-column py-3" aria-label="Admin navigation">
+<nav class="sg-sidebar-nav flex-column py-3" aria-label="{{ __('common.aria.admin_navigation') }}">
     @foreach ($groups as $group)
         @if ($group['single'])
             @php($item = $group['items']->first())

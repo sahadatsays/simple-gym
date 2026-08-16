@@ -50,7 +50,7 @@ class UserController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
-        Flash::success('User created successfully.');
+        Flash::success(__('flash.user.created'));
 
         return redirect()->route('admin.users.index');
     }
@@ -74,7 +74,7 @@ class UserController extends Controller
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        Flash::success('User updated successfully.');
+        Flash::success(__('flash.user.updated'));
 
         return redirect()->route('admin.users.index');
     }
@@ -85,7 +85,7 @@ class UserController extends Controller
 
         $this->userService->delete($user);
 
-        Flash::success('User deleted successfully.');
+        Flash::success(__('flash.user.deleted'));
 
         return redirect()->route('admin.users.index');
     }
@@ -96,7 +96,7 @@ class UserController extends Controller
 
         $this->userService->activate($user);
 
-        Flash::success('User activated successfully.');
+        Flash::success(__('flash.user.activated'));
 
         return back();
     }
@@ -107,7 +107,7 @@ class UserController extends Controller
 
         $this->userService->deactivate($user);
 
-        Flash::success('User deactivated successfully.');
+        Flash::success(__('flash.user.deactivated'));
 
         return back();
     }
@@ -118,7 +118,7 @@ class UserController extends Controller
 
         $this->userService->resetPassword($user, $request->validated('password'));
 
-        Flash::success('Password reset successfully.');
+        Flash::success(__('flash.user.password_reset'));
 
         return back();
     }

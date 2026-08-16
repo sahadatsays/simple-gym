@@ -4,7 +4,7 @@
             type="button"
             class="btn btn-light sg-topbar-icon-btn d-lg-none"
             @click="sidebarOpen = !sidebarOpen"
-            aria-label="Open menu"
+            aria-label="{{ __('common.aria.open_menu') }}"
             aria-controls="adminSidebar"
         >
             <i class="bi bi-list" aria-hidden="true"></i>
@@ -14,7 +14,7 @@
             type="button"
             class="btn btn-light sg-topbar-icon-btn d-none d-lg-inline-flex"
             @click="sidebarCollapsed = !sidebarCollapsed"
-            aria-label="Toggle sidebar"
+            aria-label="{{ __('common.aria.toggle_sidebar') }}"
         >
             <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i>
         </button>
@@ -34,7 +34,7 @@
                     type="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
-                    aria-label="Notifications"
+                    aria-label="{{ __('common.aria.notifications') }}"
                 >
                     <i class="bi bi-bell" aria-hidden="true"></i>
                     @if (($unreadNotificationsCount ?? 0) > 0)
@@ -45,7 +45,7 @@
                 </button>
                 <div class="dropdown-menu dropdown-menu-end sg-notification-menu p-0">
                     <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
-                        <span class="fw-semibold">Notifications</span>
+                        <span class="fw-semibold">{{ __('navigation.notifications_dropdown.title') }}</span>
                         @if (($unreadNotificationsCount ?? 0) > 0)
                             <span class="badge text-bg-danger">{{ $unreadNotificationsCount }}</span>
                         @endif
@@ -56,20 +56,20 @@
                         <form action="{{ route('admin.notifications.read', $notification->id) }}" method="POST">
                             @csrf
                             <button type="submit" class="dropdown-item py-3 sg-notification-item">
-                                <div class="fw-semibold mb-1">{{ $data['title'] ?? 'Alert' }}</div>
+                                <div class="fw-semibold mb-1">{{ $data['title'] ?? __('common.misc.alert') }}</div>
                                 <div class="small text-muted">{{ $data['message'] ?? '' }}</div>
                                 <div class="small text-muted mt-1">{{ $notification->created_at->diffForHumans() }}</div>
                             </button>
                         </form>
                     @empty
                         <div class="px-3 py-4 text-muted small text-center">
-                            You're all caught up.
+                            {{ __('navigation.notifications_dropdown.caught_up') }}
                         </div>
                     @endforelse
 
                     <div class="border-top">
                         <a href="{{ route('admin.notifications.index') }}" class="dropdown-item py-2 text-center fw-semibold">
-                            View all notifications
+                            {{ __('navigation.notifications_dropdown.view_all') }}
                         </a>
                     </div>
                 </div>
@@ -88,13 +88,13 @@
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><span class="dropdown-item-text text-muted small">{{ auth()->user()->email }}</span></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
-                <li><a class="dropdown-item" href="{{ route('profile.password.edit') }}">Change Password</a></li>
+                <li><a class="dropdown-item" href="{{ route('profile.edit') }}">{{ __('navigation.user_menu.profile') }}</a></li>
+                <li><a class="dropdown-item" href="{{ route('profile.password.edit') }}">{{ __('navigation.user_menu.change_password') }}</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
-                        <button type="submit" class="dropdown-item">Logout</button>
+                        <button type="submit" class="dropdown-item">{{ __('navigation.user_menu.logout') }}</button>
                     </form>
                 </li>
             </ul>

@@ -20,7 +20,7 @@
         @can('update', $user)
             <li>
                 <a class="dropdown-item" href="{{ route('admin.users.edit', $user) }}">
-                    Edit user
+                    {{ __('users.edit_user') }}
                 </a>
             </li>
         @endcan
@@ -31,7 +31,7 @@
                     <form action="{{ route('admin.users.deactivate', $user) }}" method="POST">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="dropdown-item">Deactivate</button>
+                        <button type="submit" class="dropdown-item">{{ __('common.actions.deactivate') }}</button>
                     </form>
                 </li>
             @else
@@ -39,7 +39,7 @@
                     <form action="{{ route('admin.users.activate', $user) }}" method="POST">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="dropdown-item">Activate</button>
+                        <button type="submit" class="dropdown-item">{{ __('common.actions.activate') }}</button>
                     </form>
                 </li>
             @endif
@@ -50,7 +50,7 @@
                     data-bs-toggle="modal"
                     data-bs-target="#resetPasswordModal-{{ $user->id }}"
                 >
-                    Reset password
+                    {{ __('users.reset_password_action') }}
                 </button>
             </li>
         @endcan
@@ -58,10 +58,10 @@
         @can('delete', $user)
             <li><hr class="dropdown-divider"></li>
             <li>
-                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm('Delete this user?')">
+                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm(@js(__('common.confirm.delete', ['resource' => __('common.table.user')])))">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="dropdown-item text-danger">Delete</button>
+                    <button type="submit" class="dropdown-item text-danger">{{ __('common.actions.delete') }}</button>
                 </form>
             </li>
         @endcan

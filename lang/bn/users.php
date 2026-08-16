@@ -1,18 +1,22 @@
 <?php
 
 return [
-    'title' => 'Users',
-    'subtitle' => 'Manage staff and admin accounts',
-    'create' => 'Create User',
-    'create_subtitle' => 'Add a new admin or staff account',
-    'edit' => 'Edit User',
-    'no_users' => 'No users found',
-    'reset_password' => 'Reset Password',
-    'set_password_for' => 'Set a new password for :name',
+    'title' => 'ব্যবহারকারী',
+    'subtitle' => 'স্টাফ ও অ্যাডমিন অ্যাকাউন্ট পরিচালনা',
+    'create' => 'ব্যবহারকারী তৈরি',
+    'create_subtitle' => 'নতুন অ্যাডমিন বা স্টাফ অ্যাকাউন্ট যোগ করুন',
+    'edit' => 'ব্যবহারকারী সম্পাদনা',
+    'add_user' => 'ব্যবহারকারী যোগ করুন',
+    'no_users' => 'কোনো ব্যবহারকারী পাওয়া যায়নি',
+    'reset_password' => 'পাসওয়ার্ড রিসেট',
+    'reset_password_section' => 'পাসওয়ার্ড রিসেট',
+    'set_password_for' => ':name-এর জন্য নতুন পাসওয়ার্ড সেট করুন',
+    'edit_user' => 'ব্যবহারকারী সম্পাদনা',
+    'reset_password_action' => 'পাসওয়ার্ড রিসেট',
 
     'form' => [
-        'username_help' => 'Letters, numbers, dashes and underscores only.',
+        'username_help' => 'শুধু অক্ষর, সংখ্যা, ড্যাশ ও আন্ডারস্কোর ব্যবহার করুন।',
     ],
 
-    'search_placeholder' => 'Name, username, email, phone...',
+    'search_placeholder' => 'নাম, ইউজারনেম, ইমেইল, ফোন...',
 ];

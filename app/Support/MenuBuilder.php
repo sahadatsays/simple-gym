@@ -47,9 +47,12 @@ class MenuBuilder
 
                 return [
                     'key' => $group['key'],
-                    'label' => $group['label'],
+                    'label' => __('navigation.groups.'.$group['key']),
                     'icon' => $group['icon'],
-                    'items' => $items,
+                    'items' => $items->map(fn (array $item): array => [
+                        ...$item,
+                        'label' => __('navigation.items.'.$item['key']),
+                    ]),
                     'active' => $items->contains(fn (array $item): bool => $item['active']),
                     'single' => $items->count() === 1,
                 ];

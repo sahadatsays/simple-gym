@@ -45,7 +45,7 @@ class RoleController extends Controller
             'permissions' => $request->validated('permissions', []),
         ]);
 
-        Flash::success('Role created successfully.');
+        Flash::success(__('flash.role.created'));
 
         return redirect()->route('admin.roles.index');
     }
@@ -73,7 +73,7 @@ class RoleController extends Controller
             'permissions' => $request->validated('permissions', []),
         ]);
 
-        Flash::success('Role updated successfully.');
+        Flash::success(__('flash.role.updated'));
 
         return redirect()->route('admin.roles.index');
     }
@@ -88,7 +88,7 @@ class RoleController extends Controller
             return back()->withErrors(['role' => $exception->getMessage()]);
         }
 
-        Flash::success('Role deleted successfully.');
+        Flash::success(__('flash.role.deleted'));
 
         return redirect()->route('admin.roles.index');
     }

@@ -1,12 +1,14 @@
-@extends('layouts.admin', ['heading' => 'Permissions'])
+@extends('layouts.admin', ['heading' => __('roles.permissions.title')])
 
-@section('title', 'Permissions')
+@section('title', __('roles.permissions.title'))
 
 @section('content')
-    <x-ui.page-header title="Permissions" subtitle="System default permissions are managed by the application. Custom permissions can be edited or removed.">
+    <x-ui.page-header :title="__('roles.permissions.title')" :subtitle="__('roles.permissions.subtitle')">
         <x-slot:actions>
             @can('create', Spatie\Permission\Models\Permission::class)
-                <a href="{{ route('admin.permissions.create') }}" class="btn btn-primary">Add Custom Permission</a>
+                <a href="{{ route('admin.permissions.create') }}" class="btn btn-primary">
+                    {{ __('roles.permissions.add_custom') }}
+                </a>
             @endcan
         </x-slot:actions>
     </x-ui.page-header>
@@ -32,25 +34,31 @@
                                                 {{ \App\Support\PermissionRegistry::permissionLabel($permission->name) }}
                                             </div>
                                             @if ($isDefault)
-                                                <span class="badge text-bg-secondary">System</span>
+                                                <span class="badge text-bg-secondary">{{ __('roles.system_badge') }}</span>
                                             @else
-                                                <span class="badge text-bg-primary">Custom</span>
+                                                <span class="badge text-bg-primary">{{ __('roles.custom_badge') }}</span>
                                             @endif
                                         </div>
                                         <div class="sg-permission-item__slug">{{ $permission->name }}</div>
-                                        <div class="small text-muted mt-1">Guard: {{ $permission->guard_name }}</div>
+                                        <div class="small text-muted mt-1">
+                                            {{ __('roles.guard') }}: {{ $permission->guard_name }}
+                                        </div>
                                     </div>
 
                                     @unless ($isDefault)
                                         <div class="sg-permission-card__actions">
                                             @can('update', $permission)
-                                                <a href="{{ route('admin.permissions.edit', $permission) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                <a href="{{ route('admin.permissions.edit', $permission) }}" class="btn btn-sm btn-outline-primary">
+                                                    {{ __('common.actions.edit') }}
+                                                </a>
                                             @endcan
                                             @can('delete', $permission)
-                                                <form action="{{ route('admin.permissions.destroy', $permission) }}" method="POST" onsubmit="return confirm('Delete this permission?')">
+                                                <form action="{{ route('admin.permissions.destroy', $permission) }}" method="POST" onsubmit="return confirm(@js(__('roles.delete_permission_confirm')))">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        {{ __('common.actions.delete') }}
+                                                    </button>
                                                 </form>
                                             @endcan
                                         </div>

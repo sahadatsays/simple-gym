@@ -49,12 +49,26 @@ class PermissionRegistry
 
     public static function groupLabel(string $group): string
     {
+        /** @var array<string, string>|string $groups */
+        $groups = __('roles.permissions.groups');
+
+        if (is_array($groups) && array_key_exists($group, $groups)) {
+            return $groups[$group];
+        }
+
         return config("permissions.group_labels.{$group}")
             ?? str($group)->replace(['-', '_'], ' ')->title()->toString();
     }
 
     public static function permissionLabel(string $permission): string
     {
+        /** @var array<string, string>|string $labels */
+        $labels = __('roles.permissions.labels');
+
+        if (is_array($labels) && array_key_exists($permission, $labels)) {
+            return $labels[$permission];
+        }
+
         return config("permissions.labels.{$permission}")
             ?? str($permission)
                 ->after('.')

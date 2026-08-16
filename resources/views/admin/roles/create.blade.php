@@ -1,9 +1,9 @@
-@extends('layouts.admin', ['heading' => 'Create Role'])
+@extends('layouts.admin', ['heading' => __('roles.create')])
 
-@section('title', 'Create Role')
+@section('title', __('roles.create'))
 
 @section('content')
-    <x-ui.page-header title="Create Role" subtitle="Define a role and assign permissions" />
+    <x-ui.page-header :title="__('roles.create')" :subtitle="__('roles.create_subtitle')" />
 
     <x-ui.card>
         <form action="{{ route('admin.roles.store') }}" method="POST">
@@ -16,8 +16,8 @@
             ])
 
             <div class="d-flex gap-2">
-                <x-ui.button type="submit">Create Role</x-ui.button>
-                <a href="{{ route('admin.roles.index') }}" class="btn btn-light">Cancel</a>
+                <x-ui.button type="submit">{{ __('roles.create') }}</x-ui.button>
+                <a href="{{ route('admin.roles.index') }}" class="btn btn-light">{{ __('common.actions.cancel') }}</a>
             </div>
         </form>
     </x-ui.card>

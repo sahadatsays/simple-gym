@@ -17,6 +17,25 @@ beforeEach(function () {
     $this->admin->assignRole('super-admin');
 });
 
+it('shows roles page in bangla locale', function () {
+    $this->actingAs($this->admin)
+        ->withSession(['locale' => 'bn'])
+        ->get(route('admin.roles.index'))
+        ->assertSuccessful()
+        ->assertSee('ভূমিকা', false)
+        ->assertSee('সুপার অ্যাডমিন', false)
+        ->assertSee('super-admin');
+});
+
+it('shows permissions page in bangla locale', function () {
+    $this->actingAs($this->admin)
+        ->withSession(['locale' => 'bn'])
+        ->get(route('admin.permissions.index'))
+        ->assertSuccessful()
+        ->assertSee('অনুমতি', false)
+        ->assertSee('ড্যাশবোর্ড দেখুন', false);
+});
+
 it('lists roles for authorized users', function () {
     $this->actingAs($this->admin)
         ->get(route('admin.roles.index'))

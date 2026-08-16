@@ -1,28 +1,30 @@
 @php
-    $roleOptions = collect($roles)->mapWithKeys(fn (string $role) => [$role => ucwords(str_replace('-', ' ', $role))])->all();
+    $roleOptions = collect($roles)->mapWithKeys(
+        fn (string $role): array => [$role => __('roles.display_names.'.str_replace('-', '_', $role))]
+    )->all();
 @endphp
 
 <div class="row">
     <div class="col-lg-8">
         <x-forms.input
-            label="Full name"
+            :label="__('common.fields.full_name')"
             name="name"
-            placeholder="John Doe"
+            :placeholder="__('common.placeholders.name_example')"
             :value="$user?->name"
             required
         />
 
         <x-forms.input
-            label="Username"
+            :label="__('common.fields.username')"
             name="username"
-            placeholder="johndoe"
+            :placeholder="__('common.placeholders.username_example')"
             :value="$user?->username"
             required
-            help="Letters, numbers, dashes and underscores only."
+            :help="__('users.form.username_help')"
         />
 
         <x-forms.input
-            label="Email address"
+            :label="__('common.fields.email_address')"
             name="email"
             type="email"
             placeholder="john@example.com"
@@ -31,14 +33,14 @@
         />
 
         <x-forms.input
-            label="Phone"
+            :label="__('common.fields.phone')"
             name="phone"
-            placeholder="+1 555 000 0000"
+            :placeholder="__('common.placeholders.phone_example')"
             :value="$user?->phone"
         />
 
         <x-forms.select
-            label="Role"
+            :label="__('common.table.role')"
             name="role"
             :options="$roleOptions"
             :selected="$user?->roles->first()?->name"
@@ -47,26 +49,26 @@
 
         @unless ($user)
             <x-forms.input
-                label="Password"
+                :label="__('common.fields.password')"
                 name="password"
                 type="password"
-                placeholder="Enter a secure password"
+                :placeholder="__('common.placeholders.secure_password')"
                 required
             />
 
             <x-forms.input
-                label="Confirm password"
+                :label="__('common.fields.confirm_password')"
                 name="password_confirmation"
                 type="password"
-                placeholder="Confirm password"
+                :placeholder="__('common.placeholders.confirm_new_password')"
                 required
             />
         @endunless
 
         <x-forms.select
-            label="Status"
+            :label="__('common.filters.status')"
             name="is_active"
-            :options="['1' => 'Active', '0' => 'Inactive']"
+            :options="['1' => __('common.status.active'), '0' => __('common.status.inactive')]"
             :selected="old('is_active', $user?->is_active ?? true) ? '1' : '0'"
             required
         />

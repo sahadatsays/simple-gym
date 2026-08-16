@@ -27,8 +27,8 @@ return [
         'export_excel' => 'Export Excel',
         'activate' => 'Activate',
         'deactivate' => 'Deactivate',
-        'select_all' => 'Select all',
-        'clear_all' => 'Clear all',
+        'select_all' => 'সব নির্বাচন',
+        'clear_all' => 'সব মুছুন',
         'optional' => 'Optional',
         'processing' => 'Processing...',
         'loading' => 'Loading...',
@@ -63,7 +63,7 @@ return [
         'phone' => 'Phone',
         'email' => 'Email',
         'status' => 'অবস্থা',
-        'actions' => 'Actions',
+        'actions' => 'কাজ',
         'date' => 'তারিখ',
         'amount' => 'পরিমাণ',
         'total' => 'Total',
@@ -92,10 +92,10 @@ return [
         'paid' => 'Paid',
         'due' => 'বকেয়া',
         'balance' => 'ব্যালেন্স',
-        'role' => 'Role',
-        'user' => 'User',
-        'slug' => 'Slug',
-        'permissions' => 'Permissions',
+        'role' => 'ভূমিকা',
+        'user' => 'ব্যবহারকারী',
+        'slug' => 'স্লাগ',
+        'permissions' => 'অনুমতি',
         'order' => 'অর্ডার',
         'invoice' => 'Invoice',
         'details' => 'Details',
@@ -117,8 +117,8 @@ return [
     ],
 
     'status' => [
-        'active' => 'Active',
-        'inactive' => 'Inactive',
+        'active' => 'সক্রিয়',
+        'inactive' => 'নিষ্ক্রিয়',
         'pending' => 'Pending',
         'expired' => 'Expired',
         'suspended' => 'Suspended',
@@ -145,13 +145,13 @@ return [
 
     'empty' => [
         'no_results' => 'No :resource found',
-        'no_results_adjust_filters' => 'Try adjusting your search or filters.',
+        'no_results_adjust_filters' => 'অনুসন্ধান বা ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন।',
         'no_records' => 'No records found.',
         'no_records_for_filters' => 'No records found for the selected filters.',
     ],
 
     'confirm' => [
-        'delete' => 'Delete this :resource?',
+        'delete' => ':resource মুছবেন?',
         'delete_category' => 'Delete this category? Products must be reassigned first.',
         'delete_order' => 'Delete this order? Stock will be restored and all related payments will be removed.',
         'disable_rfid' => 'Disable this RFID card? The member will be removed from all access devices.',
@@ -160,18 +160,18 @@ return [
     ],
 
     'aria' => [
-        'admin_navigation' => 'Admin navigation',
-        'open_menu' => 'Open menu',
-        'close_menu' => 'Close menu',
-        'toggle_sidebar' => 'Toggle sidebar',
-        'expand_sidebar' => 'Expand sidebar',
-        'collapse_sidebar' => 'Collapse sidebar',
-        'notifications' => 'Notifications',
-        'close' => 'Close',
+        'admin_navigation' => 'অ্যাডমিন নেভিগেশন',
+        'open_menu' => 'মেনু খুলুন',
+        'close_menu' => 'মেনু বন্ধ করুন',
+        'toggle_sidebar' => 'সাইডবার টগল করুন',
+        'expand_sidebar' => 'সাইডবার প্রসারিত করুন',
+        'collapse_sidebar' => 'সাইডবার সংকুচিত করুন',
+        'notifications' => 'বিজ্ঞপ্তি',
+        'close' => 'বন্ধ',
     ],
 
     'sidebar' => [
-        'collapse' => 'Collapse',
+        'collapse' => 'সংকুচিত',
     ],
 
     'fields' => [
@@ -220,10 +220,10 @@ return [
     ],
 
     'misc' => [
-        'all' => 'All',
-        'general' => 'General',
-        'unknown_member' => 'Unknown member',
-        'alert' => 'Alert',
+        'all' => 'সব',
+        'general' => 'সাধারণ',
+        'unknown_member' => 'অজানা সদস্য',
+        'alert' => 'সতর্কতা',
         'notification' => 'Notification',
         'guard' => 'Guard',
         'system' => 'System',

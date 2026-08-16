@@ -44,7 +44,7 @@ class PermissionController extends Controller
                 ->withErrors(['name' => $exception->getMessage()]);
         }
 
-        Flash::success('Permission created successfully.');
+        Flash::success(__('flash.permission.created'));
 
         return redirect()->route('admin.permissions.index');
     }
@@ -70,7 +70,7 @@ class PermissionController extends Controller
                 ->withErrors(['name' => $exception->getMessage()]);
         }
 
-        Flash::success('Permission updated successfully.');
+        Flash::success(__('flash.permission.updated'));
 
         return redirect()->route('admin.permissions.index');
     }
@@ -85,7 +85,7 @@ class PermissionController extends Controller
             return back()->withErrors(['permission' => $exception->getMessage()]);
         }
 
-        Flash::success('Permission deleted successfully.');
+        Flash::success(__('flash.permission.deleted'));
 
         return redirect()->route('admin.permissions.index');
     }

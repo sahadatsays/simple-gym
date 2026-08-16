@@ -7,8 +7,8 @@ return [
     'quick_actions' => [
         'title' => 'দ্রুত কাজ',
         'register' => 'নিবন্ধন',
-        'rfid_card' => 'আরএফআইডি কার্ড',
-        'pos' => 'পিওএস',
+        'rfid_card' => 'RFID কার্ড',
+        'pos' => 'POS',
         'orders' => 'অর্ডার',
         'payment' => 'পেমেন্ট',
         'renew' => 'নবায়ন',

@@ -21,7 +21,7 @@
                 type="button"
                 class="btn btn-link sg-sidebar-close d-lg-none"
                 @click="sidebarOpen = false"
-                aria-label="Close menu"
+                aria-label="{{ __('common.aria.close_menu') }}"
             >
                 <i class="bi bi-x-lg" aria-hidden="true"></i>
             </button>
@@ -34,10 +34,10 @@
                 type="button"
                 class="sg-sidebar-collapse-btn"
                 @click="sidebarCollapsed = !sidebarCollapsed"
-                :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                :title="sidebarCollapsed ? @js(__('common.aria.expand_sidebar')) : @js(__('common.aria.collapse_sidebar'))"
             >
                 <i class="bi" :class="sidebarCollapsed ? 'bi-chevron-double-right' : 'bi-chevron-double-left'" aria-hidden="true"></i>
-                <span class="sg-sidebar-link-label">Collapse</span>
+                <span class="sg-sidebar-link-label">{{ __('common.sidebar.collapse') }}</span>
             </button>
         </div>
     </div>
