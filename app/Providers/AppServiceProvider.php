@@ -3,15 +3,27 @@
 namespace App\Providers;
 
 use App\Enums\PaymentMethod;
+use App\Models\Asset;
+use App\Models\AssetCategory;
+use App\Models\AssetDisposal;
+use App\Models\AssetMaintenance;
 use App\Models\AttendanceLog;
 use App\Models\Category;
 use App\Models\GymSetting;
+use App\Models\Investment;
+use App\Models\InvestmentCategory;
 use App\Models\Invoice;
 use App\Models\Role;
 use App\Models\ZktecoDevice;
+use App\Policies\AssetCategoryPolicy;
+use App\Policies\AssetDisposalPolicy;
+use App\Policies\AssetMaintenancePolicy;
+use App\Policies\AssetPolicy;
 use App\Policies\AttendanceLogPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\GymSettingPolicy;
+use App\Policies\InvestmentCategoryPolicy;
+use App\Policies\InvestmentPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
@@ -52,6 +64,12 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(GymSetting::class, GymSettingPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(ZktecoDevice::class, ZktecoDevicePolicy::class);
+        Gate::policy(Investment::class, InvestmentPolicy::class);
+        Gate::policy(InvestmentCategory::class, InvestmentCategoryPolicy::class);
+        Gate::policy(Asset::class, AssetPolicy::class);
+        Gate::policy(AssetCategory::class, AssetCategoryPolicy::class);
+        Gate::policy(AssetMaintenance::class, AssetMaintenancePolicy::class);
+        Gate::policy(AssetDisposal::class, AssetDisposalPolicy::class);
 
         $this->shareGymContext();
 

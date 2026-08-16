@@ -243,6 +243,12 @@ it('uses only configured default permissions across authorization checks', funct
         'settings.view', 'settings.update',
         'zkteco-devices.view', 'zkteco-devices.manage',
         'attendance-logs.view',
+        'investments.view', 'investments.create', 'investments.edit', 'investments.delete',
+        'assets.view', 'assets.create', 'assets.edit', 'assets.delete',
+        'asset-categories.view', 'asset-categories.create', 'asset-categories.edit', 'asset-categories.delete',
+        'asset-maintenances.view', 'asset-maintenances.create', 'asset-maintenances.edit', 'asset-maintenances.delete',
+        'asset-disposals.view', 'asset-disposals.create',
+        'asset-investment-reports.view',
         'roles.view', 'roles.create', 'roles.update', 'roles.delete',
         'permissions.view', 'permissions.create', 'permissions.update', 'permissions.delete',
     ])->sort()->values();
