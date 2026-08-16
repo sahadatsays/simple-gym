@@ -24,6 +24,7 @@ return [
         'payments' => 'Payments',
         'invoices' => 'Invoices',
         'investments' => 'Investments',
+        'investment_categories' => 'Investment Categories',
         'products' => 'Products',
         'categories' => 'Categories',
         'pos' => 'POS',

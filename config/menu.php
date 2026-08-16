@@ -119,6 +119,13 @@ return [
                     'match' => 'admin.investments.*',
                     'icon' => 'piggy-bank',
                 ],
+                [
+                    'key' => 'investment_categories',
+                    'route' => 'admin.investment-categories.index',
+                    'permission' => 'investments.view',
+                    'match' => 'admin.investment-categories.*',
+                    'icon' => 'tags',
+                ],
             ],
         ],
         [

@@ -15,6 +15,7 @@ class ProductionSeeder extends Seeder
             RolePermissionSeeder::class,
             GymSettingSeeder::class,
             CategorySeeder::class,
+            InvestmentCategorySeeder::class,
             AdminUserSeeder::class,
         ]);
     }

@@ -24,6 +24,7 @@ return [
         'payments' => 'পেমেন্ট',
         'invoices' => 'ইনভয়েস',
         'investments' => 'বিনিয়োগ',
+        'investment_categories' => 'বিনিয়োগ বিভাগ',
         'products' => 'পণ্য',
         'categories' => 'ক্যাটাগরি',
         'pos' => 'পিওএস',
