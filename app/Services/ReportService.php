@@ -10,6 +10,7 @@ use App\Enums\ProductStatus;
 use App\Enums\ReportType;
 use App\Models\Asset;
 use App\Models\AssetMaintenance;
+use App\Models\Expense;
 use App\Models\Investment;
 use App\Models\Member;
 use App\Models\Payment;
@@ -54,6 +55,7 @@ class ReportService
             ReportType::Assets => $this->assetReport($filters, $perPage),
             ReportType::AssetMaintenance => $this->assetMaintenanceReport($filters, $perPage),
             ReportType::AssetValueSummary => $this->assetValueSummary($filters),
+            ReportType::Expenses => $this->expenseReport($filters, $perPage),
         };
     }
 
@@ -286,6 +288,95 @@ class ReportService
             'rows' => collect(),
             'columns' => [],
         ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     expense_category_id?: int|null,
+     *     payment_method?: string|null,
+     *     status?: string|null
+     * }  $filters
+     */
+    private function expenseReport(array $filters, ?int $perPage): array
+    {
+        $query = $this->expenseReportQuery($filters)
+            ->with(['category:id,name', 'creator:id,name'])
+            ->latest('expensed_at')
+            ->latest('id');
+
+        $aggregate = (clone $this->expenseReportQuery($filters))
+            ->selectRaw('COALESCE(SUM(amount), 0) as total_expense')
+            ->selectRaw('COUNT(*) as expense_count')
+            ->first();
+
+        $categorySummary = (clone $this->expenseReportQuery($filters))
+            ->join('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
+            ->groupBy('expense_categories.id', 'expense_categories.name')
+            ->select([
+                'expense_categories.name as category',
+            ])
+            ->selectRaw('COALESCE(SUM(expenses.amount), 0) as total_amount')
+            ->selectRaw('COUNT(expenses.id) as expense_count')
+            ->orderByDesc('total_amount')
+            ->get()
+            ->map(fn ($row): array => [
+                'category' => (string) $row->category,
+                'total_amount' => Money::round((float) $row->total_amount),
+                'expense_count' => (int) $row->expense_count,
+            ])
+            ->values();
+
+        $rows = $this->paginateOrGet($query, $perPage, fn (Expense $expense): array => [
+            'expense_number' => $expense->expense_number,
+            'date' => $expense->expensed_at->format('M j, Y'),
+            'category' => $expense->category?->name ?? '—',
+            'amount' => Money::round((float) $expense->amount),
+            'payment_method' => $expense->payment_method->label(),
+            'paid_to' => $expense->paid_to ?: '—',
+            'description' => $expense->description ?: '—',
+            'created_by' => $expense->creator?->name ?? '—',
+        ]);
+
+        return [
+            'summary' => [
+                'total_expense' => Money::round((float) ($aggregate->total_expense ?? 0)),
+                'expense_count' => (int) ($aggregate->expense_count ?? 0),
+            ],
+            'category_summary' => $categorySummary,
+            'rows' => $rows,
+            'columns' => [
+                ['key' => 'expense_number', 'label' => 'Expense No'],
+                ['key' => 'date', 'label' => 'Date'],
+                ['key' => 'category', 'label' => 'Category'],
+                ['key' => 'amount', 'label' => 'Amount', 'align' => 'end'],
+                ['key' => 'payment_method', 'label' => 'Payment Method'],
+                ['key' => 'paid_to', 'label' => 'Paid To'],
+                ['key' => 'description', 'label' => 'Description'],
+                ['key' => 'created_by', 'label' => 'Created By'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     expense_category_id?: int|null,
+     *     payment_method?: string|null,
+     *     status?: string|null
+     * }  $filters
+     * @return Builder<Expense>
+     */
+    private function expenseReportQuery(array $filters): Builder
+    {
+        return Expense::query()
+            ->when(filled($filters['expense_category_id'] ?? null), fn (Builder $query) => $query->where('expense_category_id', $filters['expense_category_id']))
+            ->when(filled($filters['payment_method'] ?? null), fn (Builder $query) => $query->where('payment_method', $filters['payment_method']))
+            ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('expensed_at', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('expensed_at', '<=', $filters['to_date']));
     }
 
     /**

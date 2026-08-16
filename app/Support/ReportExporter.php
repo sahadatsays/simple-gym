@@ -68,6 +68,20 @@ class ReportExporter
                 fputcsv($handle, collect($columns)->map(fn (array $column): mixed => $row[$column['key']] ?? '')->all());
             }
 
+            if (! empty($payload['category_summary'] ?? null)) {
+                fputcsv($handle, []);
+                fputcsv($handle, ['Category-wise Expense Total']);
+                fputcsv($handle, ['Category', 'Expenses', 'Total Amount']);
+
+                foreach ($payload['category_summary'] as $categoryRow) {
+                    fputcsv($handle, [
+                        $categoryRow['category'] ?? '',
+                        $categoryRow['expense_count'] ?? '',
+                        $categoryRow['total_amount'] ?? '',
+                    ]);
+                }
+            }
+
             fclose($handle);
         }, $this->filename($type, 'csv'), [
             'Content-Type' => 'text/csv; charset=UTF-8',

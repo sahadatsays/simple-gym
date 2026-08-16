@@ -17,9 +17,12 @@
         'productCategories' => $productCategories,
         'investmentCategories' => $investmentCategories,
         'assetCategories' => $assetCategories,
+        'expenseCategories' => $expenseCategories,
         'memberStatuses' => $memberStatuses,
         'productStatuses' => $productStatuses,
         'assetStatuses' => $assetStatuses,
+        'expenseStatuses' => $expenseStatuses,
+        'paymentMethods' => $paymentMethods,
         'maintenanceTypes' => $maintenanceTypes,
     ])
 
@@ -27,6 +30,14 @@
         'type' => $type,
         'summary' => $payload['summary'],
     ])
+
+    @if (! empty($payload['category_summary'] ?? null))
+        <div class="mb-4">
+            @include('admin.reports.partials.category-summary', [
+                'categorySummary' => collect($payload['category_summary']),
+            ])
+        </div>
+    @endif
 
     @if (count($payload['columns']) > 0)
         @include('admin.reports.partials.table', [

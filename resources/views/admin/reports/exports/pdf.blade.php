@@ -29,6 +29,30 @@
         @endforeach
     </div>
 
+    @if (! empty($payload['category_summary'] ?? null))
+        <div class="summary">
+            <strong>Category-wise Expense Total</strong>
+        </div>
+        <table style="margin-bottom: 16px;">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th class="text-end">Expenses</th>
+                    <th class="text-end">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($payload['category_summary'] as $row)
+                    <tr>
+                        <td>{{ $row['category'] }}</td>
+                        <td class="text-end">{{ $row['expense_count'] }}</td>
+                        <td class="text-end">{{ $row['total_amount'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     <table>
         <thead>
             <tr>

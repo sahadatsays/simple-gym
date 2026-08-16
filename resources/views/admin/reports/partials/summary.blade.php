@@ -5,6 +5,7 @@
         'total', 'admission_fee', 'membership_fee', 'pos_sale', 'total_sales', 'total_discount',
         'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment',
         'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value',
+        'total_expense',
     ];
 
     $labels = [
@@ -40,6 +41,8 @@
         'maintenance_count' => 'Maintenance Records',
         'total_maintenance_cost' => 'Total Maintenance Cost',
         'current_asset_value' => 'Current Asset Value',
+        'total_expense' => 'Total Expense',
+        'expense_count' => 'Number of Expenses',
     ];
 @endphp
 

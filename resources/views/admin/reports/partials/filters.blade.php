@@ -5,9 +5,12 @@
     'productCategories' => [],
     'investmentCategories' => [],
     'assetCategories' => [],
+    'expenseCategories' => [],
     'memberStatuses' => [],
     'productStatuses' => [],
     'assetStatuses' => [],
+    'expenseStatuses' => [],
+    'paymentMethods' => [],
     'maintenanceTypes' => [],
 ])
 
@@ -108,6 +111,41 @@
                     @foreach ($maintenanceTypes as $maintenanceType)
                         <option value="{{ $maintenanceType->value }}" @selected(($filters['maintenance_type'] ?? '') === $maintenanceType->value)>
                             {{ $maintenanceType->label() }}
+                        </option>
+                    @endforeach
+                </select>
+            </x-admin.filter-field>
+        @endif
+
+        @if ($type->value === 'expenses')
+            <x-admin.filter-field label="Category" for="expense_category_id">
+                <select name="expense_category_id" id="expense_category_id" class="form-select">
+                    <option value="">All categories</option>
+                    @foreach ($expenseCategories as $category)
+                        <option value="{{ $category->id }}" @selected(($filters['expense_category_id'] ?? null) == $category->id)>
+                            {{ $category->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </x-admin.filter-field>
+
+            <x-admin.filter-field label="Payment Method" for="payment_method">
+                <select name="payment_method" id="payment_method" class="form-select">
+                    <option value="">All methods</option>
+                    @foreach ($paymentMethods as $method)
+                        <option value="{{ $method->value }}" @selected(($filters['payment_method'] ?? '') === $method->value)>
+                            {{ $method->label() }}
+                        </option>
+                    @endforeach
+                </select>
+            </x-admin.filter-field>
+
+            <x-admin.filter-field label="Status" for="status">
+                <select name="status" id="status" class="form-select">
+                    <option value="">All statuses</option>
+                    @foreach ($expenseStatuses as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
+                            {{ $status->label() }}
                         </option>
                     @endforeach
                 </select>

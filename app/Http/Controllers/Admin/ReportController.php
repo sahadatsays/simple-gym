@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\AssetMaintenanceType;
 use App\Enums\AssetStatus;
+use App\Enums\ExpenseStatus;
 use App\Enums\MemberStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\ProductStatus;
 use App\Enums\ReportType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReportFilterRequest;
 use App\Models\AssetCategory;
 use App\Models\Category;
+use App\Models\ExpenseCategory;
 use App\Models\GymSetting;
 use App\Models\InvestmentCategory;
 use App\Models\MembershipPlan;
@@ -86,9 +89,12 @@ class ReportController extends Controller
             'productCategories' => Category::query()->ordered()->get(['id', 'name']),
             'investmentCategories' => InvestmentCategory::query()->ordered()->get(['id', 'name']),
             'assetCategories' => AssetCategory::query()->ordered()->get(['id', 'name']),
+            'expenseCategories' => ExpenseCategory::query()->ordered()->get(['id', 'name']),
             'memberStatuses' => MemberStatus::cases(),
             'productStatuses' => ProductStatus::cases(),
             'assetStatuses' => AssetStatus::cases(),
+            'expenseStatuses' => ExpenseStatus::cases(),
+            'paymentMethods' => PaymentMethod::cases(),
             'maintenanceTypes' => AssetMaintenanceType::cases(),
         ]);
     }
@@ -98,7 +104,9 @@ class ReportController extends Controller
         $user = auth()->user();
 
         abort_unless(
-            $user?->can('reports.view') || $user?->can('asset-investment-reports.view'),
+            $user?->can('reports.view')
+            || $user?->can('asset-investment-reports.view')
+            || $user?->can('expense-reports.view'),
             403
         );
     }
@@ -111,6 +119,12 @@ class ReportController extends Controller
             return;
         }
 
+        if ($type->isExpenseReport()) {
+            $this->authorizePermission('expense-reports.view');
+
+            return;
+        }
+
         $this->authorizePermission('reports.view');
     }
 
@@ -118,6 +132,10 @@ class ReportController extends Controller
     {
         if ($type->isAssetInvestmentReport()) {
             return $user->can('asset-investment-reports.view');
+        }
+
+        if ($type->isExpenseReport()) {
+            return $user->can('expense-reports.view');
         }
 
         return $user->can('reports.view');

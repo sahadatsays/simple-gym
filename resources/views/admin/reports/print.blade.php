@@ -102,7 +102,7 @@
             <div class="summary-card">
                 <span>{{ str($key)->headline() }}</span>
                 <strong>
-                    @if (in_array($key, ['total', 'admission_fee', 'membership_fee', 'pos_sale', 'total_sales', 'total_discount', 'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment', 'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value'], true) && is_numeric($value))
+                    @if (in_array($key, ['total', 'admission_fee', 'membership_fee', 'pos_sale', 'total_sales', 'total_discount', 'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment', 'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value', 'total_expense'], true) && is_numeric($value))
                         {{ App\Support\MoneyFormatter::format($value, $gymCurrency) }}
                     @else
                         {{ $value }}
@@ -111,6 +111,28 @@
             </div>
         @endforeach
     </div>
+
+    @if (! empty($payload['category_summary'] ?? null))
+        <h2 style="font-size: 1rem; margin: 0 0 0.75rem;">Category-wise Expense Total</h2>
+        <table style="margin-bottom: 1.5rem;">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th class="text-end">Expenses</th>
+                    <th class="text-end">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($payload['category_summary'] as $row)
+                    <tr>
+                        <td>{{ $row['category'] }}</td>
+                        <td class="text-end">{{ $row['expense_count'] }}</td>
+                        <td class="text-end">{{ App\Support\MoneyFormatter::format($row['total_amount'], $gymCurrency) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
 
     @if (count($payload['columns']) > 0)
         <table>
