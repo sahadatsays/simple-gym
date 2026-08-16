@@ -66,7 +66,7 @@ class InvoiceController extends Controller
     private function paginateInvoices(array $filters): LengthAwarePaginator
     {
         return Invoice::query()
-            ->with(['member', 'payment'])
+            ->with(['member', 'payments'])
             ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
                 $search = $filters['search'];
 

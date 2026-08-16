@@ -130,6 +130,7 @@ it('records product sale and decrements stock from pos payment', function () {
             'items' => [
                 ['product_id' => $product->id, 'quantity' => 3],
             ],
+            'amount_paid' => 150,
             'payment_method' => 'cash',
         ])
         ->assertRedirect();

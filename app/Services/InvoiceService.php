@@ -82,7 +82,7 @@ class InvoiceService extends BaseService
     /**
      * @param  array<int, array{description: string, amount: float}>  $lineItems
      */
-    public function createPosInvoice(?Member $member, array $lineItems, float $discountAmount = 0): Invoice
+    public function createPosInvoice(?Member $member, array $lineItems, float $discountAmount = 0, ?Carbon $dueAt = null): Invoice
     {
         $charges = $this->calculatePosCharges($lineItems, $discountAmount);
 
@@ -97,6 +97,7 @@ class InvoiceService extends BaseService
             'status' => InvoiceStatus::Unpaid,
             'line_items' => $charges['line_items'],
             'issued_at' => now(),
+            'due_at' => $dueAt,
         ]);
     }
 
@@ -120,12 +121,39 @@ class InvoiceService extends BaseService
         ]);
     }
 
+    public function syncPaymentStatus(Invoice $invoice): Invoice
+    {
+        $invoice->refresh();
+
+        if ($invoice->status === InvoiceStatus::Void) {
+            return $invoice;
+        }
+
+        $outstanding = $invoice->outstandingBalance();
+
+        if ($outstanding <= 0) {
+            return $this->invoices->update($invoice, [
+                'status' => InvoiceStatus::Paid,
+                'paid_at' => $invoice->paid_at ?? now(),
+            ]);
+        }
+
+        if ($invoice->amountPaid() > 0) {
+            return $this->invoices->update($invoice, [
+                'status' => InvoiceStatus::Partial,
+                'paid_at' => null,
+            ]);
+        }
+
+        return $this->invoices->update($invoice, [
+            'status' => InvoiceStatus::Unpaid,
+            'paid_at' => null,
+        ]);
+    }
+
     public function markPaid(Invoice $invoice): Invoice
     {
-        return $this->invoices->update($invoice, [
-            'status' => InvoiceStatus::Paid,
-            'paid_at' => now(),
-        ]);
+        return $this->syncPaymentStatus($invoice);
     }
 
     public function calculateRenewedExpiry(Member $member, MembershipPlan $plan): Carbon
@@ -174,8 +202,8 @@ class InvoiceService extends BaseService
     public function unpaidInvoiceOptions(int $limit = 100): array
     {
         return Invoice::query()
-            ->with(['member', 'membershipPlan'])
-            ->where('status', InvoiceStatus::Unpaid)
+            ->with(['member', 'membershipPlan', 'payments'])
+            ->whereIn('status', [InvoiceStatus::Unpaid, InvoiceStatus::Partial])
             ->latest('issued_at')
             ->limit($limit)
             ->get()
@@ -190,6 +218,8 @@ class InvoiceService extends BaseService
                 'subtotal' => (float) $invoice->subtotal,
                 'discount_amount' => (float) $invoice->discount_amount,
                 'total' => (float) $invoice->total,
+                'amount_paid' => $invoice->amountPaid(),
+                'outstanding_balance' => $invoice->outstandingBalance(),
                 'line_items' => $invoice->line_items ?? [],
             ])
             ->values()

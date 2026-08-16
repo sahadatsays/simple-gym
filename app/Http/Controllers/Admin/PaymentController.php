@@ -61,7 +61,7 @@ class PaymentController extends Controller
                 'discount_amount' => (float) ($data['discount_amount'] ?? 0),
                 'reference' => $data['payment_reference'] ?? null,
                 'notes' => $data['notes'] ?? null,
-                'require_full_payment' => true,
+                'require_full_payment' => false,
             ]);
         } catch (PaymentFailedException|InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['amount_paid' => $exception->getMessage()]);

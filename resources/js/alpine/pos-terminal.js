@@ -1,4 +1,7 @@
+import { initDatePicker } from '../pickers';
+
 const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const POS_STORAGE_KEY = 'sg-pos-terminal-state';
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('posTerminal', (config) => ({
@@ -14,6 +17,9 @@ document.addEventListener('alpine:init', () => {
         cart: [],
         memberId: '',
         discountAmount: 0,
+        amountPaid: 0,
+        amountPaidLocked: false,
+        dueAt: '',
         paymentMethod: 'cash',
         paymentReference: '',
         notes: '',
@@ -23,11 +29,98 @@ document.addEventListener('alpine:init', () => {
         cartError: null,
         scanError: null,
         searchDebounce: null,
+        saveDebounce: null,
 
         init() {
+            this.restoreState();
+            this.syncPayAmount();
+
             this.$nextTick(() => {
                 this.$refs.barcodeInput?.focus();
+
+                if (this.searchQuery || this.selectedCategory) {
+                    this.fetchProducts();
+                }
+
+                if (this.paymentStatus !== 'full') {
+                    this.initDueDatePicker();
+                }
             });
+
+            this.$watch('paymentStatus', (status) => {
+                if (status === 'full') {
+                    return;
+                }
+
+                if (! this.dueAt) {
+                    this.dueAt = this.defaultDueDate();
+                }
+
+                this.initDueDatePicker();
+            });
+
+            [
+                'cart',
+                'memberId',
+                'discountAmount',
+                'amountPaid',
+                'amountPaidLocked',
+                'dueAt',
+                'paymentMethod',
+                'paymentReference',
+                'notes',
+                'searchQuery',
+                'selectedCategory',
+            ].forEach((key) => {
+                this.$watch(key, () => this.persistState());
+            });
+
+            this.$watch('totalDue', () => this.syncPayAmount());
+        },
+
+        defaultDueDate() {
+            const date = new Date();
+            date.setDate(date.getDate() + 7);
+
+            return date.toISOString().slice(0, 10);
+        },
+
+        initDueDatePicker() {
+            this.$nextTick(() => {
+                const element = this.$refs.dueDateInput;
+
+                if (! element || this.paymentStatus === 'full') {
+                    return;
+                }
+
+                if (element._flatpickr) {
+                    if (this.dueAt) {
+                        element._flatpickr.setDate(this.dueAt, false);
+                    }
+
+                    return;
+                }
+
+                initDatePicker(element, {
+                    minDate: 'today',
+                    defaultDate: this.dueAt || this.defaultDueDate(),
+                    onChange: (_selectedDates, dateStr) => {
+                        this.dueAt = dateStr;
+                    },
+                });
+
+                if (! this.dueAt) {
+                    this.dueAt = this.defaultDueDate();
+                }
+            });
+        },
+
+        syncDueDatePicker() {
+            const element = this.$refs.dueDateInput;
+
+            if (element?._flatpickr && this.dueAt) {
+                element._flatpickr.setDate(this.dueAt, false);
+            }
         },
 
         get subtotal() {
@@ -38,8 +131,118 @@ document.addEventListener('alpine:init', () => {
             return Math.max(0, this.subtotal - Number(this.discountAmount || 0));
         },
 
+        get payAmount() {
+            return Number(this.amountPaid || 0);
+        },
+
+        get balanceAfterPayment() {
+            return Math.max(0, this.totalDue - this.payAmount);
+        },
+
+        get paymentStatus() {
+            if (this.payAmount <= 0) {
+                return 'due';
+            }
+
+            if (this.payAmount >= this.totalDue) {
+                return 'full';
+            }
+
+            return 'partial';
+        },
+
+        get paymentStatusLabel() {
+            return {
+                full: 'Full payment',
+                partial: 'Partial payment',
+                due: 'Full due',
+            }[this.paymentStatus];
+        },
+
         get cartCount() {
             return this.cart.reduce((count, item) => count + item.quantity, 0);
+        },
+
+        get submitLabel() {
+            if (this.paymentStatus === 'due') {
+                return 'Create Due Order';
+            }
+
+            if (this.paymentStatus === 'partial') {
+                return 'Create Order & Record Payment';
+            }
+
+            return 'Complete Sale';
+        },
+
+        syncPayAmount() {
+            if (this.amountPaidLocked) {
+                if (this.payAmount > this.totalDue) {
+                    this.amountPaid = this.totalDue;
+                }
+
+                return;
+            }
+
+            this.amountPaid = this.totalDue;
+        },
+
+        onPayAmountInput() {
+            this.amountPaidLocked = true;
+        },
+
+        persistState() {
+            clearTimeout(this.saveDebounce);
+
+            this.saveDebounce = setTimeout(() => {
+                localStorage.setItem(POS_STORAGE_KEY, JSON.stringify({
+                    cart: this.cart,
+                    memberId: this.memberId,
+                    discountAmount: this.discountAmount,
+                    amountPaid: this.amountPaid,
+                    amountPaidLocked: this.amountPaidLocked,
+                    dueAt: this.dueAt,
+                    paymentMethod: this.paymentMethod,
+                    paymentReference: this.paymentReference,
+                    notes: this.notes,
+                    searchQuery: this.searchQuery,
+                    selectedCategory: this.selectedCategory,
+                }));
+            }, 150);
+        },
+
+        restoreState() {
+            const raw = localStorage.getItem(POS_STORAGE_KEY);
+
+            if (! raw) {
+                this.dueAt = this.defaultDueDate();
+
+                return;
+            }
+
+            try {
+                const state = JSON.parse(raw);
+
+                this.cart = Array.isArray(state.cart) ? state.cart : [];
+                this.memberId = state.memberId ?? '';
+                this.discountAmount = Number(state.discountAmount ?? 0);
+                this.amountPaid = Number(state.amountPaid ?? 0);
+                this.amountPaidLocked = Boolean(state.amountPaidLocked);
+                this.dueAt = state.dueAt || this.defaultDueDate();
+                this.paymentMethod = state.paymentMethod ?? 'cash';
+                this.paymentReference = state.paymentReference ?? '';
+                this.notes = state.notes ?? '';
+                this.searchQuery = state.searchQuery ?? '';
+                this.selectedCategory = state.selectedCategory ?? '';
+                this.syncDueDatePicker();
+            } catch (error) {
+                localStorage.removeItem(POS_STORAGE_KEY);
+                this.dueAt = this.defaultDueDate();
+            }
+        },
+
+        clearStoredState() {
+            localStorage.removeItem(POS_STORAGE_KEY);
         },
 
         scheduleSearch() {
@@ -191,7 +394,12 @@ document.addEventListener('alpine:init', () => {
             this.paymentReference = '';
             this.notes = '';
             this.memberId = '';
+            this.amountPaid = 0;
+            this.amountPaidLocked = false;
+            this.dueAt = this.defaultDueDate();
+            this.syncDueDatePicker();
             this.cartError = null;
+            this.clearStoredState();
         },
 
         formatMoney(amount) {
@@ -214,7 +422,20 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            if (this.paymentStatus !== 'full' && ! this.memberId) {
+                this.cartError = 'Select a member when the pay amount is less than the billing total.';
+
+                return;
+            }
+
+            if (this.payAmount > this.totalDue) {
+                this.cartError = 'Pay amount cannot exceed the billing total.';
+
+                return;
+            }
+
             this.isSubmitting = true;
+            this.clearStoredState();
             this.$refs.checkoutForm.submit();
         },
     }));

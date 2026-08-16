@@ -53,7 +53,39 @@ class ProductSaleService extends BaseService
      *     unit_price?: float
      * }>  $lineItems
      */
+    public function recordFromPosOrder(Invoice $invoice, array $lineItems, ?Payment $payment = null): void
+    {
+        if ($invoice->productSales()->exists()) {
+            return;
+        }
+
+        $this->recordSales($invoice, $lineItems, $payment, $payment?->receipt_number ?? $invoice->invoice_number);
+    }
+
+    /**
+     * @param  array<int, array{
+     *     product_id?: int|null,
+     *     description: string,
+     *     amount: float,
+     *     quantity?: int,
+     *     unit_price?: float
+     * }>  $lineItems
+     */
     public function recordFromPosPayment(Payment $payment, Invoice $invoice, array $lineItems): void
+    {
+        $this->recordFromPosOrder($invoice, $lineItems, $payment);
+    }
+
+    /**
+     * @param  array<int, array{
+     *     product_id?: int|null,
+     *     description: string,
+     *     amount: float,
+     *     quantity?: int,
+     *     unit_price?: float
+     * }>  $lineItems
+     */
+    private function recordSales(Invoice $invoice, array $lineItems, ?Payment $payment, string $reference): void
     {
         $productLines = collect($lineItems)
             ->filter(fn (array $item): bool => ! empty($item['product_id']))
@@ -72,7 +104,7 @@ class ProductSaleService extends BaseService
 
         $invoiceDiscount = (float) $invoice->discount_amount;
         $invoiceSubtotal = collect($lineItems)->sum('amount');
-        $soldAt = $payment->paid_at ?? now();
+        $soldAt = $payment?->paid_at ?? now();
 
         foreach ($productLines as $lineItem) {
             $product = $products->get((int) $lineItem['product_id']);
@@ -97,8 +129,8 @@ class ProductSaleService extends BaseService
             ProductSale::query()->create([
                 'product_id' => $product->id,
                 'invoice_id' => $invoice->id,
-                'payment_id' => $payment->id,
-                'member_id' => $payment->member_id,
+                'payment_id' => $payment?->id,
+                'member_id' => $invoice->member_id,
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'unit_cost' => (float) $product->purchase_price,
@@ -110,13 +142,13 @@ class ProductSaleService extends BaseService
             $this->productService->adjustStock(
                 $product,
                 -$quantity,
-                "POS sale {$payment->receipt_number}",
+                "POS order {$reference}",
             );
         }
 
-        $this->activityLogger->log('product.sale_recorded', $payment, 'Product sale recorded', [
+        $this->activityLogger->log('product.sale_recorded', $invoice, 'Product sale recorded', [
             'invoice_number' => $invoice->invoice_number,
-            'receipt_number' => $payment->receipt_number,
+            'receipt_number' => $payment?->receipt_number,
             'product_count' => $productLines->count(),
         ]);
     }

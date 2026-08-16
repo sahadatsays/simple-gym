@@ -110,6 +110,7 @@ it('completes a pos sale and reduces stock after payment', function () {
                 ['product_id' => $shake->id, 'quantity' => 1],
             ],
             'member_id' => $member->id,
+            'amount_paid' => 230,
             'discount_amount' => 20,
             'payment_method' => 'cash',
             'payment_reference' => 'POS-001',
@@ -118,7 +119,7 @@ it('completes a pos sale and reduces stock after payment', function () {
     $payment = Payment::query()->latest('id')->first();
 
     $response
-        ->assertRedirect(route('admin.invoices.thermal', ['invoice' => $payment->invoice, 'autoprint' => 1]));
+        ->assertRedirect(route('admin.orders.show', ['invoice' => $payment->invoice, 'print' => 1]));
 
     expect($payment)->not->toBeNull()
         ->and($payment->type)->toBe(PaymentType::PosSale)
@@ -149,6 +150,7 @@ it('rejects pos checkout when stock is insufficient', function () {
             'items' => [
                 ['product_id' => $product->id, 'quantity' => 3],
             ],
+            'amount_paid' => 75,
             'payment_method' => 'cash',
         ])
         ->assertRedirect(route('admin.pos.index'))
@@ -176,6 +178,7 @@ it('completes pos checkout with prices that cause floating point drift', functio
                 ['product_id' => $first->id, 'quantity' => 1],
                 ['product_id' => $second->id, 'quantity' => 1],
             ],
+            'amount_paid' => 123.6,
             'payment_method' => 'cash',
         ])
         ->assertRedirect();

@@ -4,9 +4,9 @@ import 'flatpickr/dist/flatpickr.min.css';
 const datePickerSelector = '[data-picker="date"]';
 const timePickerSelector = '[data-picker="time"]';
 
-function initDatePicker(element) {
+function initDatePicker(element, overrides = {}) {
     if (element._flatpickr) {
-        return;
+        return element._flatpickr;
     }
 
     const options = {
@@ -23,11 +23,13 @@ function initDatePicker(element) {
         options.maxDate = element.dataset.maxDate;
     }
 
-    if (element.dataset.minDate) {
+    if (element.dataset.minDate === 'today') {
+        options.minDate = 'today';
+    } else if (element.dataset.minDate) {
         options.minDate = element.dataset.minDate;
     }
 
-    flatpickr(element, options);
+    return flatpickr(element, { ...options, ...overrides });
 }
 
 function initTimePicker(element) {
@@ -52,4 +54,4 @@ function initPickers(root = document) {
 
 document.addEventListener('DOMContentLoaded', () => initPickers());
 
-export { initPickers };
+export { initDatePicker, initPickers };

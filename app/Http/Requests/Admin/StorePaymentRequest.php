@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentType;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\Money;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -47,7 +48,7 @@ class StorePaymentRequest extends FormRequest
 
     private function validateInvoicePayment(Validator $validator): void
     {
-        $invoice = Invoice::query()->find($this->integer('invoice_id'));
+        $invoice = Invoice::query()->with('payments')->find($this->integer('invoice_id'));
 
         if ($invoice === null) {
             return;
@@ -60,19 +61,15 @@ class StorePaymentRequest extends FormRequest
         }
 
         $discountAmount = (float) ($this->input('discount_amount') ?? 0);
-        $amountPaid = (float) $this->input('amount_paid');
-        $invoiceTotal = max(0, (float) $invoice->subtotal - $discountAmount);
+        $amountPaid = Money::round((float) $this->input('amount_paid'));
+        $outstanding = Money::round($invoice->outstandingBalance());
 
         if ($discountAmount > (float) $invoice->subtotal) {
             $validator->errors()->add('discount_amount', 'Discount cannot exceed the invoice subtotal.');
         }
 
-        if ($amountPaid > $invoiceTotal) {
-            $validator->errors()->add('amount_paid', 'Paid amount cannot exceed the invoice total.');
-        }
-
-        if ($amountPaid < $invoiceTotal) {
-            $validator->errors()->add('amount_paid', 'Paid amount must cover the full invoice total.');
+        if (Money::greaterThan($amountPaid, $outstanding)) {
+            $validator->errors()->add('amount_paid', 'Paid amount cannot exceed the outstanding balance.');
         }
     }
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\PosOrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RfidCardController;
@@ -100,6 +101,9 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('pos', [PosController::class, 'store'])->name('pos.store');
         Route::get('pos/products/search', [PosController::class, 'search'])->name('pos.products.search');
         Route::post('pos/products/scan', [PosController::class, 'scan'])->name('pos.products.scan');
+        Route::get('orders', [PosOrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/{invoice}', [PosOrderController::class, 'show'])->name('orders.show');
+        Route::post('orders/{invoice}/payments', [PosOrderController::class, 'storePayment'])->name('orders.payments.store');
         Route::get('products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
         Route::get('categories', [ProductController::class, 'categories'])->name('categories.index');
         Route::patch('products/{product}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjust-stock');

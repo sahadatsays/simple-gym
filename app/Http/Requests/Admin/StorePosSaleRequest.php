@@ -3,9 +3,11 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PosPaymentMode;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Services\PosService;
+use App\Support\Money;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -28,7 +30,9 @@ class StorePosSaleRequest extends FormRequest
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'member_id' => ['nullable', 'integer', Rule::exists('members', 'id')],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
-            'payment_method' => ['required', 'string', Rule::enum(PaymentMethod::class)],
+            'amount_paid' => ['required', 'numeric', 'min:0'],
+            'due_at' => ['nullable', 'date', 'after_or_equal:today'],
+            'payment_method' => ['nullable', 'string', Rule::enum(PaymentMethod::class), Rule::requiredIf(fn () => (float) $this->input('amount_paid', 0) > 0)],
             'payment_reference' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
         ];
@@ -54,6 +58,18 @@ class StorePosSaleRequest extends FormRequest
 
             if ($discountAmount > $subtotal) {
                 $validator->errors()->add('discount_amount', 'Discount cannot exceed the cart subtotal.');
+            }
+
+            $totalDue = Money::round(max(0, $subtotal - $discountAmount));
+            $amountPaid = Money::round((float) $this->input('amount_paid'));
+            $paymentMode = PosPaymentMode::fromAmount($amountPaid, $totalDue);
+
+            if ($amountPaid > $totalDue) {
+                $validator->errors()->add('amount_paid', 'Pay amount cannot exceed the billing total.');
+            }
+
+            if (in_array($paymentMode, [PosPaymentMode::Partial, PosPaymentMode::Due], true) && blank($this->input('member_id'))) {
+                $validator->errors()->add('member_id', 'Select a member when the pay amount is less than the billing total.');
             }
 
             $productIds = collect($lineItems)->pluck('product_id')->filter()->unique()->values()->all();

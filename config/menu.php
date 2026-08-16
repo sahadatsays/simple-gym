@@ -144,6 +144,13 @@ return [
                     'match' => 'admin.pos.*',
                     'icon' => 'shop-window',
                 ],
+                [
+                    'label' => 'Orders',
+                    'route' => 'admin.orders.index',
+                    'permission' => 'payments.view',
+                    'match' => 'admin.orders.*',
+                    'icon' => 'bag-check',
+                ],
             ],
         ],
         [

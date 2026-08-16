@@ -75,23 +75,30 @@ class PosController extends Controller
         $member = isset($data['member_id']) ? Member::query()->find($data['member_id']) : null;
 
         try {
-            $payment = $this->posService->checkout($member, $data['items'], [
-                'payment_method' => $data['payment_method'],
+            $result = $this->posService->checkout($member, $data['items'], [
+                'payment_method' => $data['payment_method'] ?? 'cash',
+                'amount_paid' => (float) $data['amount_paid'],
                 'discount_amount' => (float) ($data['discount_amount'] ?? 0),
                 'reference' => $data['payment_reference'] ?? null,
                 'notes' => $data['notes'] ?? null,
+                'due_at' => $data['due_at'] ?? null,
             ]);
         } catch (InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['cart' => $exception->getMessage()]);
         }
 
-        Flash::success('Sale completed successfully.');
+        $invoice = $result['invoice'];
+        $isFullyPaid = $invoice->isPaid();
 
-        $payment->load('invoice');
+        Flash::success($isFullyPaid
+            ? 'Sale completed successfully.'
+            : 'Order created successfully. Outstanding balance can be collected later.');
 
-        return redirect()->route('admin.invoices.thermal', [
-            'invoice' => $payment->invoice,
-            'autoprint' => 1,
+        $redirect = redirect()->route('admin.orders.show', [
+            'invoice' => $invoice,
+            'print' => $isFullyPaid ? 1 : 0,
         ]);
+
+        return $redirect;
     }
 }

@@ -25,7 +25,7 @@
                 <span class="badge rounded-pill text-bg-primary px-3 py-2" x-show="cartCount > 0">
                     <span x-text="cartCount"></span> in cart
                 </span>
-                <a href="{{ route('admin.payments.index') }}" class="btn btn-light">Payment History</a>
+                <a href="{{ route('admin.orders.index') }}" class="btn btn-light">Manage Orders</a>
             </div>
         </div>
 
@@ -193,23 +193,24 @@
                             </template>
 
                             <div class="mb-3">
-                                <label class="form-label">Member (optional)</label>
-                                <select name="member_id" x-model="memberId" class="form-select">
+                                <label class="form-label">Member</label>
+                                <select name="member_id" x-model="memberId" class="form-select" :class="{ 'is-invalid': paymentStatus !== 'full' && !memberId }">
                                     <option value="">Walk-in customer</option>
                                     <template x-for="member in members" :key="member.id">
                                         <option :value="member.id" x-text="member.label"></option>
                                     </template>
                                 </select>
+                                <div class="form-text" x-show="paymentStatus !== 'full'" x-cloak>Required when pay amount is less than billing total.</div>
                             </div>
 
                             <div class="row g-3 mb-3">
-                                <div class="col-6">
+                                <div class="col-6" :class="{ 'col-12': payAmount <= 0 }">
                                     <label class="form-label">Discount</label>
                                     <input type="number" name="discount_amount" x-model="discountAmount" min="0" step="0.01" class="form-control">
                                 </div>
-                                <div class="col-6">
+                                <div class="col-6" x-show="payAmount > 0" x-cloak>
                                     <label class="form-label">Payment method</label>
-                                    <select name="payment_method" x-model="paymentMethod" class="form-select" required>
+                                    <select name="payment_method" x-model="paymentMethod" class="form-select" :required="payAmount > 0">
                                         @foreach ($enabledPaymentMethods as $value => $label)
                                             <option value="{{ $value }}">{{ $label }}</option>
                                         @endforeach
@@ -218,11 +219,56 @@
                             </div>
 
                             <div class="mb-3">
+                                <label class="form-label">Pay amount</label>
+                                <input
+                                    type="number"
+                                    name="amount_paid"
+                                    x-model="amountPaid"
+                                    @input="onPayAmountInput()"
+                                    min="0"
+                                    step="0.01"
+                                    class="form-control"
+                                    :max="totalDue"
+                                    required
+                                >
+                                <div class="form-text">
+                                    Billing total: <span x-text="formatMoney(totalDue)"></span>.
+                                    Set to billing total for full payment, less for partial, or 0 for full due.
+                                </div>
+                            </div>
+
+                            <div class="mb-3" x-show="paymentStatus !== 'full'" x-cloak>
+                                <label class="form-label" for="due_at">Due date</label>
+                                <input
+                                    type="text"
+                                    x-ref="dueDateInput"
+                                    name="due_at"
+                                    id="due_at"
+                                    placeholder="Select date"
+                                    data-min-date="today"
+                                    class="form-control sg-date-picker"
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            <div class="mb-3">
                                 <label class="form-label">Reference</label>
                                 <input type="text" name="payment_reference" x-model="paymentReference" class="form-control" placeholder="Optional">
                             </div>
 
                             <div class="sg-pos-totals mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-muted">Payment status</span>
+                                    <span
+                                        class="badge"
+                                        :class="{
+                                            'text-bg-success': paymentStatus === 'full',
+                                            'text-bg-warning': paymentStatus === 'partial',
+                                            'text-bg-danger': paymentStatus === 'due',
+                                        }"
+                                        x-text="paymentStatusLabel"
+                                    ></span>
+                                </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Subtotal</span>
                                     <span x-text="formatMoney(subtotal)"></span>
@@ -231,9 +277,17 @@
                                     <span class="text-muted">Discount</span>
                                     <span class="text-danger" x-text="'-' + formatMoney(discountAmount)"></span>
                                 </div>
-                                <div class="d-flex justify-content-between fw-bold fs-5">
-                                    <span>Total Due</span>
-                                    <span x-text="formatMoney(totalDue)"></span>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Billing total</span>
+                                    <span class="fw-semibold" x-text="formatMoney(totalDue)"></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2" x-show="payAmount > 0">
+                                    <span class="text-muted">Paying now</span>
+                                    <span class="text-success" x-text="formatMoney(payAmount)"></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2" x-show="balanceAfterPayment > 0" x-cloak>
+                                    <span class="text-muted">Balance due</span>
+                                    <span class="text-danger fw-semibold" x-text="formatMoney(balanceAfterPayment)"></span>
                                 </div>
                             </div>
 
@@ -243,7 +297,7 @@
                                 @click="submitSale()"
                                 :disabled="isSubmitting || cart.length === 0"
                             >
-                                <span x-show="! isSubmitting">Complete Sale & Print Receipt</span>
+                                <span x-show="! isSubmitting" x-text="submitLabel"></span>
                                 <span x-show="isSubmitting" x-cloak>Processing...</span>
                             </button>
                         </form>

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'line_items',
     'issued_at',
     'paid_at',
+    'due_at',
 ])]
 class Invoice extends Model
 {
@@ -44,6 +46,7 @@ class Invoice extends Model
             'line_items' => 'array',
             'issued_at' => 'datetime',
             'paid_at' => 'datetime',
+            'due_at' => 'datetime',
         ];
     }
 
@@ -64,11 +67,27 @@ class Invoice extends Model
     }
 
     /**
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->latest('paid_at');
+    }
+
+    /**
      * @return HasOne<Payment, $this>
      */
     public function payment(): HasOne
     {
-        return $this->hasOne(Payment::class);
+        return $this->hasOne(Payment::class)->latestOfMany('paid_at');
+    }
+
+    /**
+     * @return HasMany<ProductSale, $this>
+     */
+    public function productSales(): HasMany
+    {
+        return $this->hasMany(ProductSale::class);
     }
 
     /**
@@ -89,6 +108,16 @@ class Invoice extends Model
         return $this->status === InvoiceStatus::Paid;
     }
 
+    public function isPartiallyPaid(): bool
+    {
+        return $this->status === InvoiceStatus::Partial;
+    }
+
+    public function isOpen(): bool
+    {
+        return in_array($this->status, [InvoiceStatus::Unpaid, InvoiceStatus::Partial], true);
+    }
+
     public function isPosSale(): bool
     {
         return $this->type === InvoiceType::PosSale;
@@ -101,13 +130,11 @@ class Invoice extends Model
 
     public function amountPaid(): float
     {
-        if ($this->relationLoaded('payment') && $this->payment !== null) {
-            return Money::round((float) $this->payment->amount);
+        if ($this->relationLoaded('payments')) {
+            return Money::round((float) $this->payments->sum('amount'));
         }
 
-        $paid = $this->payment()->value('amount');
-
-        return Money::round((float) ($paid ?? 0));
+        return Money::round((float) $this->payments()->sum('amount'));
     }
 
     public function outstandingBalance(): float

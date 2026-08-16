@@ -175,7 +175,91 @@
             <div class="card border-0 shadow-sm mt-4">
                 <div class="card-body p-0">
                     <div class="px-4 py-3 border-bottom">
-                        <h3 class="h6 fw-semibold mb-0">Recent Payments</h3>
+                        <h3 class="h6 fw-semibold mb-0">POS Orders & Due Balances</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Order</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">Paid</th>
+                                    <th class="text-end pe-4">Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($posOrders as $order)
+                                    <tr>
+                                        <td class="ps-4">
+                                            <a href="{{ route('admin.orders.show', $order) }}">{{ $order->invoice_number }}</a>
+                                        </td>
+                                        <td class="text-muted">{{ $order->issued_at?->format('M j, Y') }}</td>
+                                        <td>{{ $order->status->label() }}</td>
+                                        <td class="text-end">{{ App\Support\MoneyFormatter::format($order->total, $gymCurrency) }}</td>
+                                        <td class="text-end">{{ App\Support\MoneyFormatter::format($order->amountPaid(), $gymCurrency) }}</td>
+                                        <td class="text-end pe-4 {{ $order->outstandingBalance() > 0 ? 'text-danger fw-semibold' : '' }}">
+                                            {{ App\Support\MoneyFormatter::format($order->outstandingBalance(), $gymCurrency) }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">No POS orders yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body p-0">
+                    <div class="px-4 py-3 border-bottom">
+                        <h3 class="h6 fw-semibold mb-0">POS Payment History</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Receipt</th>
+                                    <th>Order</th>
+                                    <th class="text-end pe-4">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($posPayments as $payment)
+                                    <tr>
+                                        <td class="ps-4 text-muted">{{ $payment->paid_at->format('M j, Y') }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.payments.show', $payment) }}">{{ $payment->receipt_number }}</a>
+                                        </td>
+                                        <td>
+                                            @if ($payment->invoice)
+                                                <a href="{{ route('admin.orders.show', $payment->invoice) }}">{{ $payment->invoice->invoice_number }}</a>
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
+                                        <td class="text-end pe-4">{{ App\Support\MoneyFormatter::format($payment->amount, $gymCurrency) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted">No POS payments yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body p-0">
+                    <div class="px-4 py-3 border-bottom">
+                        <h3 class="h6 fw-semibold mb-0">Membership Payment History</h3>
                     </div>
                     <div class="table-responsive">
                         <table class="table align-middle mb-0">
@@ -183,21 +267,23 @@
                                 <tr>
                                     <th class="ps-4">Date</th>
                                     <th>Type</th>
+                                    <th>Receipt</th>
                                     <th class="text-end pe-4">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($member->payments as $payment)
+                                @forelse ($membershipPayments as $payment)
                                     <tr>
                                         <td class="ps-4 text-muted">{{ $payment->paid_at->format('M j, Y') }}</td>
                                         <td>{{ $payment->type->label() }}</td>
-                                        <td class="text-end pe-4">
-                                            {{ App\Support\MoneyFormatter::format($payment->amount, $gymCurrency) }}
+                                        <td>
+                                            <a href="{{ route('admin.payments.show', $payment) }}">{{ $payment->receipt_number }}</a>
                                         </td>
+                                        <td class="text-end pe-4">{{ App\Support\MoneyFormatter::format($payment->amount, $gymCurrency) }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center py-4 text-muted">No payments recorded yet.</td>
+                                        <td colspan="4" class="text-center py-4 text-muted">No membership payments yet.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

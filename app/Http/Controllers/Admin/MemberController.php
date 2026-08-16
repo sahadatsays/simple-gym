@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Contracts\Repositories\MemberRepositoryInterface;
+use App\Enums\InvoiceType;
+use App\Enums\PaymentType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\IndexMemberRequest;
 use App\Http\Requests\Admin\StoreMemberRequest;
@@ -57,13 +59,26 @@ class MemberController extends Controller
     {
         $this->authorize('view', $member);
 
+        $member->load([
+            'membershipPlan',
+            'activeRfidCard',
+            'payments' => fn ($query) => $query->with('invoice')->latest('paid_at'),
+            'invoices' => fn ($query) => $query
+                ->where('type', InvoiceType::PosSale)
+                ->with('payments')
+                ->latest('issued_at'),
+            'membershipRenewals' => fn ($query) => $query->with(['membershipPlan', 'invoice.payment'])->latest('renewed_at')->limit(10),
+        ]);
+
         return view('admin.members.show', [
-            'member' => $member->load([
-                'membershipPlan',
-                'activeRfidCard',
-                'payments' => fn ($query) => $query->latest()->limit(10),
-                'membershipRenewals' => fn ($query) => $query->with(['membershipPlan', 'invoice.payment'])->latest('renewed_at')->limit(10),
-            ]),
+            'member' => $member,
+            'membershipPayments' => $member->payments
+                ->whereIn('type', [PaymentType::AdmissionFee, PaymentType::MembershipFee])
+                ->values(),
+            'posPayments' => $member->payments
+                ->where('type', PaymentType::PosSale)
+                ->values(),
+            'posOrders' => $member->invoices,
         ]);
     }
 

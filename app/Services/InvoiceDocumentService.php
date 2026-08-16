@@ -44,7 +44,7 @@ class InvoiceDocumentService
         $invoice->load([
             'member',
             'membershipPlan',
-            'payment',
+            'payments',
             'membershipRenewal',
         ]);
 
@@ -65,7 +65,7 @@ class InvoiceDocumentService
                 'amount_paid' => $amountPaid,
                 'outstanding_balance' => $outstandingBalance,
             ],
-            'payment_summary' => $this->paymentSummary($payment),
+            'payment_summary' => $this->paymentSummary($invoice),
             'qr_code_svg' => $this->qrCode->forInvoice($invoice),
             'verification_url' => route('admin.invoices.show', $invoice),
         ];
@@ -80,18 +80,17 @@ class InvoiceDocumentService
      *     reference: ?string
      * }>
      */
-    private function paymentSummary(?Payment $payment): array
+    private function paymentSummary(Invoice $invoice): array
     {
-        if ($payment === null) {
-            return [];
-        }
-
-        return [[
-            'receipt_number' => $payment->receipt_number,
-            'paid_at' => $payment->paid_at->format('M j, Y g:i A'),
-            'method' => $payment->payment_method->label(),
-            'amount' => Money::round((float) $payment->amount),
-            'reference' => $payment->reference,
-        ]];
+        return $invoice->payments
+            ->map(fn (Payment $payment): array => [
+                'receipt_number' => $payment->receipt_number,
+                'paid_at' => $payment->paid_at->format('M j, Y g:i A'),
+                'method' => $payment->payment_method->label(),
+                'amount' => Money::round((float) $payment->amount),
+                'reference' => $payment->reference,
+            ])
+            ->values()
+            ->all();
     }
 }

@@ -165,6 +165,7 @@ it('records a pos sale with optional member', function () {
             'items' => [
                 ['product_id' => Product::factory()->create(['selling_price' => 500, 'stock' => 10])->id, 'quantity' => 1],
             ],
+            'amount_paid' => 500,
             'payment_method' => PaymentMethod::MobileBanking->value,
             'payment_reference' => 'MBK-12345',
         ])

@@ -12,6 +12,7 @@ use App\Models\Member;
 use App\Models\Payment;
 use App\Support\ActivityLogger;
 use App\Support\Money;
+use Illuminate\Support\Carbon;
 
 class PaymentService extends BaseService
 {
@@ -74,20 +75,20 @@ class PaymentService extends BaseService
             }
 
             $amountPaid = Money::round((float) $data['amount_paid']);
-            $invoiceTotal = Money::round((float) $invoice->total);
+            $outstanding = Money::round($invoice->outstandingBalance());
 
             if ($amountPaid <= 0) {
                 throw PaymentFailedException::declined();
             }
 
-            if (Money::greaterThan($amountPaid, $invoiceTotal)) {
-                throw PaymentFailedException::exceedsInvoiceAmount($invoiceTotal, $amountPaid);
+            if (Money::greaterThan($amountPaid, $outstanding)) {
+                throw PaymentFailedException::exceedsInvoiceAmount($outstanding, $amountPaid);
             }
 
             $requireFullPayment = $data['require_full_payment'] ?? true;
 
-            if ($requireFullPayment && Money::lessThan($amountPaid, $invoiceTotal)) {
-                throw PaymentFailedException::insufficientAmount($invoiceTotal, $amountPaid);
+            if ($requireFullPayment && Money::lessThan($amountPaid, $outstanding)) {
+                throw PaymentFailedException::insufficientAmount($outstanding, $amountPaid);
             }
 
             $payment = $this->payments->create([
@@ -104,8 +105,6 @@ class PaymentService extends BaseService
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            $this->invoiceService->markPaid($invoice);
-
             if ($invoice->isPosSale() && ! empty($data['line_items'] ?? null)) {
                 $this->productSaleService->recordFromPosPayment(
                     $payment,
@@ -113,6 +112,8 @@ class PaymentService extends BaseService
                     $data['line_items'],
                 );
             }
+
+            $this->invoiceService->syncPaymentStatus($invoice->fresh(['payments']));
 
             $this->activityLogger->log('payment.received', $payment, 'Payment received', [
                 'invoice_number' => $invoice->invoice_number,
@@ -128,6 +129,50 @@ class PaymentService extends BaseService
     /**
      * @param  array<int, array{product_id?: int|null, description: string, amount: float, quantity?: int, unit_price?: float}>  $lineItems
      * @param  array{
+     *     payment_method?: string,
+     *     amount_paid?: float,
+     *     discount_amount?: float,
+     *     reference?: string|null,
+     *     notes?: string|null,
+     *     due_at?: Carbon|string|null
+     * }  $paymentData
+     * @return array{invoice: Invoice, payment: ?Payment}
+     */
+    public function createPosOrder(?Member $member, array $lineItems, array $paymentData): array
+    {
+        return $this->transaction(function () use ($member, $lineItems, $paymentData): array {
+            $discountAmount = (float) ($paymentData['discount_amount'] ?? 0);
+            $dueAt = isset($paymentData['due_at']) ? Carbon::parse($paymentData['due_at']) : null;
+
+            $invoice = $this->invoiceService->createPosInvoice($member, $lineItems, $discountAmount, $dueAt);
+
+            $this->productSaleService->recordFromPosOrder($invoice, $lineItems);
+
+            $amountPaid = Money::round((float) ($paymentData['amount_paid'] ?? 0));
+            $payment = null;
+
+            if ($amountPaid > 0) {
+                $payment = $this->receiveForInvoice($invoice, [
+                    'member_id' => $member?->id,
+                    'type' => PaymentType::PosSale,
+                    'amount_paid' => $amountPaid,
+                    'payment_method' => $paymentData['payment_method'] ?? PaymentMethod::Cash->value,
+                    'discount_amount' => 0,
+                    'reference' => $paymentData['reference'] ?? null,
+                    'notes' => $paymentData['notes'] ?? null,
+                    'require_full_payment' => false,
+                ]);
+            }
+
+            return [
+                'invoice' => $invoice->fresh(['payments', 'member', 'productSales']),
+                'payment' => $payment,
+            ];
+        });
+    }
+
+    /**
+     * @param  array{
      *     type: PaymentType,
      *     amount_paid: float,
      *     payment_method: string,
@@ -135,24 +180,17 @@ class PaymentService extends BaseService
      *     reference?: string|null,
      *     notes?: string|null
      * }  $paymentData
+     *
+     * @deprecated Use createPosOrder() instead.
      */
     public function receivePosSale(?Member $member, array $lineItems, array $paymentData): Payment
     {
-        return $this->transaction(function () use ($member, $lineItems, $paymentData): Payment {
-            $discountAmount = (float) ($paymentData['discount_amount'] ?? 0);
-            $invoice = $this->invoiceService->createPosInvoice($member, $lineItems, $discountAmount);
+        $result = $this->createPosOrder($member, $lineItems, $paymentData);
 
-            return $this->receiveForInvoice($invoice, [
-                'member_id' => $member?->id,
-                'type' => PaymentType::PosSale,
-                'amount_paid' => (float) $paymentData['amount_paid'],
-                'payment_method' => $paymentData['payment_method'],
-                'discount_amount' => 0,
-                'reference' => $paymentData['reference'] ?? null,
-                'notes' => $paymentData['notes'] ?? null,
-                'require_full_payment' => true,
-                'line_items' => $lineItems,
-            ]);
-        });
+        if ($result['payment'] === null) {
+            throw PaymentFailedException::declined();
+        }
+
+        return $result['payment'];
     }
 }
