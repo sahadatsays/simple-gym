@@ -14,6 +14,10 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <div class="mb-4">
+        @include('admin.members.partials.transaction-summary', ['summary' => $transactionSummary])
+    </div>
+
     <div class="row g-4">
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm">

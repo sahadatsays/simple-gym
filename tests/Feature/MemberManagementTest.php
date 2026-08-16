@@ -111,7 +111,10 @@ it('shows member profile page', function () {
         ->assertSuccessful()
         ->assertSee('Profile Member')
         ->assertSee($member->member_code)
-        ->assertSee('Monthly Plan');
+        ->assertSee('Monthly Plan')
+        ->assertSee('Transaction Summary')
+        ->assertSee('Total Paid')
+        ->assertSee('Total Due');
 });
 
 it('updates a member profile without changing membership', function () {

@@ -48,6 +48,15 @@ return [
         'no_membership_payments' => 'No membership payments yet.',
         'previous_expiry' => 'Previous Expiry',
         'new_expiry' => 'New Expiry',
+        'transaction_summary' => 'Transaction Summary',
+        'transaction_summary_help' => 'Lifetime totals from membership and POS activity.',
+        'total_paid' => 'Total Paid',
+        'total_admission_fee' => 'Admission Fees',
+        'total_membership_fee' => 'Membership Fees',
+        'total_renewal_fee' => 'Renewal Fees',
+        'total_pos_paid' => 'POS Payments',
+        'total_due' => 'Total Due',
+        'payment_count' => '{0} No payments|{1} :count payment|[2,*] :count payments',
     ],
 
     'form' => [

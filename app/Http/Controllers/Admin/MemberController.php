@@ -13,6 +13,7 @@ use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Services\MemberService;
 use App\Support\Flash;
+use App\Support\MemberTransactionSummary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use InvalidArgumentException;
@@ -73,6 +74,7 @@ class MemberController extends Controller
 
         return view('admin.members.show', [
             'member' => $member,
+            'transactionSummary' => MemberTransactionSummary::forMember($member),
             'membershipPayments' => $member->payments
                 ->whereIn('type', [PaymentType::AdmissionFee, PaymentType::MembershipFee])
                 ->values(),
