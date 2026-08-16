@@ -9,6 +9,7 @@ use App\Models\Expense;
 use App\Models\Investment;
 use App\Services\DashboardAlertService;
 use App\Services\DashboardService;
+use App\Services\FinancialSummaryService;
 use App\Services\GymNotificationService;
 use App\Services\GymSettingService;
 use App\Support\DashboardDateRange;
@@ -22,6 +23,7 @@ class DashboardController extends Controller
         private DashboardAlertService $dashboardAlerts,
         private GymNotificationService $notifications,
         private GymSettingService $gymSettings,
+        private FinancialSummaryService $financialSummary,
     ) {}
 
     public function index(DashboardFilterRequest $request): View
@@ -34,9 +36,16 @@ class DashboardController extends Controller
         $canViewInvestments = $request->user()->can('viewAny', Investment::class);
         $canViewAssets = $request->user()->can('viewAny', Asset::class);
         $canViewExpenses = $request->user()->can('viewAny', Expense::class);
+        $canViewPayments = $request->user()->can('payments.view');
 
         return view('admin.dashboard', [
             'stats' => $this->dashboard->stats($range, $currency),
+            'financialSummary' => ($canViewPayments || $canViewExpenses || $canViewInvestments)
+                ? $this->financialSummary->forRange($range)
+                : null,
+            'canViewFinancialRevenue' => $canViewPayments,
+            'canViewFinancialExpenses' => $canViewExpenses,
+            'canViewFinancialInvestment' => $canViewInvestments,
             'assetInvestmentStats' => ($canViewInvestments || $canViewAssets)
                 ? $this->dashboard->assetInvestmentStats($range)
                 : null,

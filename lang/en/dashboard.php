@@ -17,6 +17,7 @@ return [
     'sections' => [
         'assets_investments' => 'Assets & Investments',
         'expenses' => 'Expenses',
+        'financial_summary' => 'Financial Summary',
     ],
 
     'stats' => [
@@ -47,6 +48,13 @@ return [
         'expense_today' => 'Expense Today',
         'this_month_in_selected_period' => 'This month in selected period',
         'today_in_selected_period' => 'Today in selected period',
+        'revenue' => 'Revenue',
+        'operating_expenses' => 'Expenses',
+        'net_operating_result' => 'Net Operating Result',
+        'owner_investment' => 'Owner Investment',
+        'membership_and_pos_revenue' => 'Membership payments + POS sales',
+        'revenue_minus_expenses' => 'Revenue minus expenses',
+        'not_included_in_revenue' => 'Not included in revenue',
     ],
 
     'charts' => [

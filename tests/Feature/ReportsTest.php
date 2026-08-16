@@ -1,6 +1,13 @@
 <?php
 
+use App\Enums\ExpenseStatus;
 use App\Enums\MemberStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\PaymentType;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
+use App\Models\Investment;
+use App\Models\InvestmentCategory;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\Payment;
@@ -33,6 +40,58 @@ it('shows the reports hub for authorized users', function () {
         ->assertSee('Reports')
         ->assertSee('Daily Collection')
         ->assertSee('Stock Report');
+});
+
+it('shows financial summary report with operating totals', function () {
+    $investmentCategory = InvestmentCategory::factory()->create();
+    $expenseCategory = ExpenseCategory::factory()->create();
+    $reportDate = now()->subYear()->startOfMonth();
+    $from = $reportDate->copy()->startOfMonth()->toDateString();
+    $to = $reportDate->copy()->endOfMonth()->toDateString();
+
+    Payment::factory()->create([
+        'type' => PaymentType::MembershipFee,
+        'status' => PaymentStatus::Completed,
+        'amount' => 6000,
+        'paid_at' => $reportDate,
+    ]);
+
+    Payment::factory()->create([
+        'type' => PaymentType::PosSale,
+        'status' => PaymentStatus::Completed,
+        'amount' => 1500,
+        'paid_at' => $reportDate,
+    ]);
+
+    Expense::factory()->create([
+        'expense_category_id' => $expenseCategory->id,
+        'expensed_at' => $reportDate,
+        'amount' => 2500,
+        'status' => ExpenseStatus::Paid,
+    ]);
+
+    Investment::factory()->create([
+        'investment_category_id' => $investmentCategory->id,
+        'invested_at' => $reportDate,
+        'amount' => 12000,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.reports.show', [
+            'report' => 'financial-summary',
+            'from_date' => $from,
+            'to_date' => $to,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Financial Summary')
+        ->assertSee('Revenue')
+        ->assertSee('Expenses')
+        ->assertSee('Net Operating Result')
+        ->assertSee('Owner Investment')
+        ->assertSee('7,500')
+        ->assertSee('2,500')
+        ->assertSee('5,000')
+        ->assertSee('12,000');
 });
 
 it('shows daily collection report with totals', function () {

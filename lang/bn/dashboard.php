@@ -17,6 +17,7 @@ return [
     'sections' => [
         'assets_investments' => 'সম্পদ ও বিনিয়োগ',
         'expenses' => 'খরচ',
+        'financial_summary' => 'আর্থিক সারাংশ',
     ],
 
     'stats' => [
@@ -47,6 +48,13 @@ return [
         'expense_today' => 'আজকের খরচ',
         'this_month_in_selected_period' => 'নির্বাচিত সময়কালে এই মাস',
         'today_in_selected_period' => 'নির্বাচিত সময়কালে আজ',
+        'revenue' => 'আয়',
+        'operating_expenses' => 'খরচ',
+        'net_operating_result' => 'নিট পরিচালন ফলাফল',
+        'owner_investment' => 'মালিকের বিনিয়োগ',
+        'membership_and_pos_revenue' => 'সদস্যতা পেমেন্ট + POS বিক্রয়',
+        'revenue_minus_expenses' => 'আয় minus খরচ',
+        'not_included_in_revenue' => 'আয়ের অন্তর্ভুক্ত নয়',
     ],
 
     'charts' => [

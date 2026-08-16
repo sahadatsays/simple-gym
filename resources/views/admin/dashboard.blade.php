@@ -78,6 +78,68 @@
         </div>
     </div>
 
+    @if ($financialSummary !== null)
+        <h2 class="h5 fw-bold mb-3">{{ __('dashboard.sections.financial_summary') }}</h2>
+
+        <div class="row g-3 g-xl-4 mb-4">
+            @if ($canViewFinancialRevenue)
+                <div class="col-6 col-xl-3">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.revenue')"
+                        :value="App\Support\MoneyFormatter::format($financialSummary['revenue'], $stats['currency'])"
+                        icon="wallet"
+                        variant="success"
+                        formatted
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.membership_and_pos_revenue') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+            @endif
+
+            @if ($canViewFinancialExpenses)
+                <div class="col-6 col-xl-3">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.operating_expenses')"
+                        :value="App\Support\MoneyFormatter::format($financialSummary['expenses'], $stats['currency'])"
+                        icon="shopping"
+                        variant="danger"
+                        formatted
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.in_selected_period') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+            @endif
+
+            @if ($canViewFinancialRevenue && $canViewFinancialExpenses)
+                <div class="col-6 col-xl-3">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.net_operating_result')"
+                        :value="App\Support\MoneyFormatter::format($financialSummary['net_operating_result'], $stats['currency'])"
+                        icon="chart"
+                        :variant="$financialSummary['net_operating_result'] >= 0 ? 'success' : 'danger'"
+                        formatted
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.revenue_minus_expenses') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+            @endif
+
+            @if ($canViewFinancialInvestment)
+                <div class="col-6 col-xl-3">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.owner_investment')"
+                        :value="App\Support\MoneyFormatter::format($financialSummary['owner_investment'], $stats['currency'])"
+                        icon="wallet"
+                        variant="info"
+                        formatted
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.not_included_in_revenue') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+            @endif
+        </div>
+    @endif
+
     @if ($assetInvestmentStats !== null)
         <h2 class="h5 fw-bold mb-3">{{ __('dashboard.sections.assets_investments') }}</h2>
 

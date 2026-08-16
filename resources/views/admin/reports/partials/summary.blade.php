@@ -6,6 +6,7 @@
         'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment',
         'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value',
         'total_expense',
+        'revenue', 'expenses', 'net_operating_result', 'owner_investment',
     ];
 
     $labels = [
@@ -43,6 +44,10 @@
         'current_asset_value' => 'Current Asset Value',
         'total_expense' => 'Total Expense',
         'expense_count' => 'Number of Expenses',
+        'revenue' => 'Revenue',
+        'expenses' => 'Expenses',
+        'net_operating_result' => 'Net Operating Result',
+        'owner_investment' => 'Owner Investment',
     ];
 @endphp
 

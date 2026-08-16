@@ -1,6 +1,9 @@
 <?php
 
 use App\Enums\AssetStatus;
+use App\Enums\ExpenseStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\PaymentType;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetMaintenance;
@@ -10,6 +13,7 @@ use App\Models\Investment;
 use App\Models\InvestmentCategory;
 use App\Models\Invoice;
 use App\Models\Member;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\DashboardService;
@@ -83,6 +87,58 @@ it('displays asset and investment dashboard widgets for authorized users', funct
         ->assertSee('Assets Requiring Maintenance')
         ->assertSee('Recent Investments')
         ->assertSee('Recent Asset Purchases');
+});
+
+it('displays financial summary on the dashboard', function () {
+    $investmentCategory = InvestmentCategory::factory()->create();
+    $expenseCategory = ExpenseCategory::factory()->create();
+    $reportDate = now()->subYear()->startOfMonth();
+
+    Payment::factory()->create([
+        'type' => PaymentType::MembershipFee,
+        'status' => PaymentStatus::Completed,
+        'amount' => 5000,
+        'paid_at' => $reportDate,
+    ]);
+
+    Payment::factory()->create([
+        'type' => PaymentType::PosSale,
+        'status' => PaymentStatus::Completed,
+        'amount' => 2000,
+        'paid_at' => $reportDate,
+    ]);
+
+    Expense::factory()->create([
+        'expense_category_id' => $expenseCategory->id,
+        'expensed_at' => $reportDate,
+        'amount' => 3000,
+        'status' => ExpenseStatus::Paid,
+    ]);
+
+    Investment::factory()->create([
+        'investment_category_id' => $investmentCategory->id,
+        'invested_at' => $reportDate,
+        'amount' => 10000,
+    ]);
+
+    $from = $reportDate->copy()->startOfMonth()->toDateString();
+    $to = $reportDate->copy()->endOfMonth()->toDateString();
+
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard', [
+            'preset' => 'custom',
+            'from_date' => $from,
+            'to_date' => $to,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Financial Summary')
+        ->assertSee('Revenue')
+        ->assertSee('Net Operating Result')
+        ->assertSee('Owner Investment')
+        ->assertSee('7,000')
+        ->assertSee('3,000')
+        ->assertSee('4,000')
+        ->assertSee('10,000');
 });
 
 it('displays expense dashboard widgets for authorized users', function () {

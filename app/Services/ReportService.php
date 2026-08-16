@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AssetStatus;
+use App\Enums\DashboardDatePreset;
 use App\Enums\MemberStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
@@ -16,6 +17,7 @@ use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductSale;
+use App\Support\DashboardDateRange;
 use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,6 +27,10 @@ use Illuminate\Support\Facades\DB;
 
 class ReportService
 {
+    public function __construct(
+        private FinancialSummaryService $financialSummary,
+    ) {}
+
     /**
      * @param  array{
      *     from_date: string,
@@ -56,7 +62,33 @@ class ReportService
             ReportType::AssetMaintenance => $this->assetMaintenanceReport($filters, $perPage),
             ReportType::AssetValueSummary => $this->assetValueSummary($filters),
             ReportType::Expenses => $this->expenseReport($filters, $perPage),
+            ReportType::FinancialSummary => $this->financialSummaryReport($filters),
         };
+    }
+
+    /**
+     * @param  array{from_date: string, to_date: string}  $filters
+     */
+    private function financialSummaryReport(array $filters): array
+    {
+        $range = DashboardDateRange::fromPreset(
+            DashboardDatePreset::Custom,
+            Carbon::parse($filters['from_date']),
+            Carbon::parse($filters['to_date']),
+        );
+
+        $summary = $this->financialSummary->forRange($range);
+
+        return [
+            'summary' => [
+                'revenue' => $summary['revenue'],
+                'expenses' => $summary['expenses'],
+                'net_operating_result' => $summary['net_operating_result'],
+                'owner_investment' => $summary['owner_investment'],
+            ],
+            'rows' => collect(),
+            'columns' => [],
+        ];
     }
 
     /**

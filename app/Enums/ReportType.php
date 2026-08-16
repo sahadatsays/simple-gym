@@ -19,6 +19,7 @@ enum ReportType: string
     case AssetMaintenance = 'asset-maintenance';
     case AssetValueSummary = 'asset-value-summary';
     case Expenses = 'expenses';
+    case FinancialSummary = 'financial-summary';
 
     /**
      * @return array<string, string>
@@ -52,6 +53,7 @@ enum ReportType: string
             self::AssetMaintenance => 'Maintenance Report',
             self::AssetValueSummary => 'Asset Value Summary',
             self::Expenses => 'Expense Report',
+            self::FinancialSummary => 'Financial Summary',
         };
     }
 
@@ -71,13 +73,14 @@ enum ReportType: string
             self::AssetMaintenance => 'Maintenance history with costs and service schedules.',
             self::AssetValueSummary => 'Purchase value, current asset value, and maintenance spend.',
             self::Expenses => 'Expense transactions with category totals and payment details.',
+            self::FinancialSummary => 'Operating revenue, expenses, net result, and owner investment.',
         };
     }
 
     public function icon(): string
     {
         return match ($this) {
-            self::DailyCollection, self::MonthlyCollection, self::AssetValueSummary => 'chart',
+            self::DailyCollection, self::MonthlyCollection, self::AssetValueSummary, self::FinancialSummary => 'chart',
             self::Membership, self::ExpiredMembers, self::UpcomingExpiry => 'users',
             self::PosSales, self::ProductSales, self::Assets => 'shopping',
             self::Stock, self::AssetMaintenance => 'alert',
