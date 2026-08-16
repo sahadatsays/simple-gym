@@ -12,7 +12,7 @@ interface ProductRepositoryInterface extends RepositoryInterface
      * @param  array{
      *     search?: string|null,
      *     status?: string|null,
-     *     category?: string|null,
+     *     category_id?: int|null,
      *     stock?: string|null,
      *     barcode?: string|null
      * }  $filters
@@ -25,14 +25,11 @@ interface ProductRepositoryInterface extends RepositoryInterface
     public function findBySku(string $sku): ?Product;
 
     /**
+     * Active category names for POS filters.
+     *
      * @return list<string>
      */
     public function categories(): array;
-
-    /**
-     * @return Collection<int, object{category: string, products_count: int, active_count: int}>
-     */
-    public function categorySummaries(): Collection;
 
     /**
      * @return Collection<int, Product>

@@ -5,12 +5,14 @@ namespace App\Services;
 use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Models\Product;
 use App\Support\ActivityLogger;
+use App\Support\ProductSkuGenerator;
 use InvalidArgumentException;
 
 class ProductService extends BaseService
 {
     public function __construct(
         private ProductRepositoryInterface $products,
+        private ProductSkuGenerator $skuGenerator,
         private ActivityLogger $activityLogger,
     ) {}
 
@@ -20,6 +22,10 @@ class ProductService extends BaseService
     public function create(array $data): Product
     {
         return $this->transaction(function () use ($data): Product {
+            if (blank($data['sku'] ?? null)) {
+                $data['sku'] = $this->skuGenerator->generate();
+            }
+
             $product = $this->products->create($data);
 
             $this->activityLogger->log('product.created', $product, 'Product created', [
@@ -37,6 +43,10 @@ class ProductService extends BaseService
     public function update(Product $product, array $data): Product
     {
         return $this->transaction(function () use ($product, $data): Product {
+            if (blank($data['sku'] ?? null)) {
+                $data['sku'] = $product->sku ?: $this->skuGenerator->generate();
+            }
+
             $updatedProduct = $this->products->update($product, $data);
 
             $this->activityLogger->log('product.updated', $updatedProduct, 'Product updated', [

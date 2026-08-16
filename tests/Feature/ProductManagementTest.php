@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\ProductStatus;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
+use Database\Seeders\CategorySeeder;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,6 +14,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
     $this->seed(GymSettingSeeder::class);
+    $this->seed(CategorySeeder::class);
 
     $this->admin = User::factory()->create([
         'username' => 'adminuser',
@@ -21,11 +24,13 @@ beforeEach(function () {
 });
 
 it('lists products with search and filters', function () {
+    $category = Category::query()->where('name', 'Supplements')->first();
+
     Product::factory()->create([
         'name' => 'Protein Shake',
         'sku' => 'SKU-1001',
         'barcode' => '1234567890123',
-        'category' => 'Supplements',
+        'category_id' => $category->id,
         'status' => ProductStatus::Active,
         'stock' => 20,
     ]);
@@ -33,7 +38,7 @@ it('lists products with search and filters', function () {
     Product::factory()->inactive()->create([
         'name' => 'Old Towel',
         'sku' => 'SKU-2002',
-        'category' => 'Apparel',
+        'category_id' => Category::query()->where('name', 'Apparel')->value('id'),
     ]);
 
     $this->actingAs($this->admin)
@@ -45,12 +50,14 @@ it('lists products with search and filters', function () {
 });
 
 it('creates a product', function () {
+    $category = Category::query()->where('name', 'Beverages')->first();
+
     $this->actingAs($this->admin)
         ->post(route('admin.products.store'), [
             'sku' => 'SKU-NEW-01',
             'barcode' => '9876543210987',
             'name' => 'Energy Drink',
-            'category' => 'Beverages',
+            'category_id' => $category->id,
             'purchase_price' => 50,
             'selling_price' => 80,
             'stock' => 25,
@@ -63,8 +70,27 @@ it('creates a product', function () {
 
     expect($product)->not->toBeNull()
         ->and($product->name)->toBe('Energy Drink')
+        ->and($product->category_id)->toBe($category->id)
         ->and((float) $product->selling_price)->toBe(80.0)
         ->and($product->stock)->toBe(25);
+});
+
+it('auto generates sku when creating a product without one', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.products.store'), [
+            'name' => 'Auto SKU Product',
+            'purchase_price' => 10,
+            'selling_price' => 20,
+            'stock' => 5,
+            'minimum_stock' => 1,
+            'status' => 'active',
+        ])
+        ->assertRedirect(route('admin.products.index'));
+
+    $product = Product::query()->where('name', 'Auto SKU Product')->first();
+
+    expect($product)->not->toBeNull()
+        ->and($product->sku)->toStartWith('PRD-');
 });
 
 it('validates required product fields and unique sku', function () {
@@ -72,7 +98,7 @@ it('validates required product fields and unique sku', function () {
 
     $this->actingAs($this->admin)
         ->post(route('admin.products.store'), [])
-        ->assertSessionHasErrors(['sku', 'name', 'purchase_price', 'selling_price', 'stock', 'minimum_stock', 'status']);
+        ->assertSessionHasErrors(['name', 'purchase_price', 'selling_price', 'stock', 'minimum_stock', 'status']);
 
     $this->actingAs($this->admin)
         ->post(route('admin.products.store'), [
@@ -88,6 +114,7 @@ it('validates required product fields and unique sku', function () {
 });
 
 it('updates a product', function () {
+    $category = Category::query()->where('name', 'Accessories')->first();
     $product = Product::factory()->create([
         'sku' => 'SKU-EDIT',
         'name' => 'Old Name',
@@ -98,7 +125,7 @@ it('updates a product', function () {
             'sku' => 'SKU-EDIT',
             'barcode' => '1112223334445',
             'name' => 'Updated Name',
-            'category' => 'Accessories',
+            'category_id' => $category->id,
             'purchase_price' => 100,
             'selling_price' => 150,
             'stock' => 12,
@@ -110,6 +137,7 @@ it('updates a product', function () {
     $product->refresh();
 
     expect($product->name)->toBe('Updated Name')
+        ->and($product->category_id)->toBe($category->id)
         ->and($product->status)->toBe(ProductStatus::Inactive)
         ->and($product->barcode)->toBe('1112223334445');
 });

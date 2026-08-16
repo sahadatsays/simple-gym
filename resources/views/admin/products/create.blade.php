@@ -3,18 +3,20 @@
 @section('title', 'Create Product')
 
 @section('content')
-    <x-ui.page-header title="Create Product" subtitle="Add a new product to inventory" />
+    <x-ui.page-header title="Create Product" subtitle="Add a new product to inventory">
+        <x-slot:actions>
+            <a href="{{ route('admin.products.index') }}" class="btn btn-light">Back to Products</a>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <x-ui.card>
-        <form action="{{ route('admin.products.store') }}" method="POST">
-            @csrf
+    <form action="{{ route('admin.products.store') }}" method="POST">
+        @csrf
 
-            @include('admin.products.partials.form', ['product' => null, 'categories' => $categories])
+        @include('admin.products.partials.form', ['product' => null, 'categories' => $categories])
 
-            <div class="d-flex gap-2 mt-4">
-                <x-ui.button type="submit">Create Product</x-ui.button>
-                <a href="{{ route('admin.products.index') }}" class="btn btn-light">Cancel</a>
-            </div>
-        </form>
-    </x-ui.card>
+        <div class="d-flex gap-2 mt-4">
+            <x-ui.button type="submit">Create Product</x-ui.button>
+            <a href="{{ route('admin.products.index') }}" class="btn btn-light">Cancel</a>
+        </div>
+    </form>
 @endsection

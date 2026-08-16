@@ -3,31 +3,33 @@
 @section('title', 'Edit '.$product->name)
 
 @section('content')
-    <x-ui.page-header :title="$product->name" subtitle="Update product details and stock levels" />
+    <x-ui.page-header :title="$product->name" subtitle="Update product details and stock levels">
+        <x-slot:actions>
+            <a href="{{ route('admin.products.index') }}" class="btn btn-light">Back to Products</a>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <x-ui.card>
-        <form action="{{ route('admin.products.update', $product) }}" method="POST">
-            @csrf
-            @method('PUT')
+    <form action="{{ route('admin.products.update', $product) }}" method="POST">
+        @csrf
+        @method('PUT')
 
-            @include('admin.products.partials.form', ['product' => $product, 'categories' => $categories])
+        @include('admin.products.partials.form', ['product' => $product, 'categories' => $categories])
 
-            <div class="d-flex flex-wrap gap-2 mt-4">
-                <x-ui.button type="submit">Save Changes</x-ui.button>
-                @can('update', $product)
-                    <button
-                        type="button"
-                        class="btn btn-light"
-                        data-bs-toggle="modal"
-                        data-bs-target="#adjustStockModal-{{ $product->id }}"
-                    >
-                        Adjust Stock
-                    </button>
-                @endcan
-                <a href="{{ route('admin.products.index') }}" class="btn btn-light">Cancel</a>
-            </div>
-        </form>
-    </x-ui.card>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <x-ui.button type="submit">Save Changes</x-ui.button>
+            @can('update', $product)
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    data-bs-toggle="modal"
+                    data-bs-target="#adjustStockModal-{{ $product->id }}"
+                >
+                    Adjust Stock
+                </button>
+            @endcan
+            <a href="{{ route('admin.products.index') }}" class="btn btn-light">Cancel</a>
+        </div>
+    </form>
 
     @can('update', $product)
         <div class="modal fade" id="adjustStockModal-{{ $product->id }}" tabindex="-1" aria-hidden="true">

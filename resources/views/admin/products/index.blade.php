@@ -40,12 +40,12 @@
                 >
             </x-admin.filter-field>
 
-            <x-admin.filter-field label="Category" for="category">
-                <select name="category" id="category" class="form-select">
+            <x-admin.filter-field label="Category" for="category_id">
+                <select name="category_id" id="category_id" class="form-select">
                     <option value="">All categories</option>
                     @foreach ($categories as $category)
-                        <option value="{{ $category }}" @selected(($filters['category'] ?? '') === $category)>
-                            {{ $category }}
+                        <option value="{{ $category->id }}" @selected(($filters['category_id'] ?? '') == $category->id)>
+                            {{ $category->name }}
                         </option>
                     @endforeach
                 </select>
@@ -107,7 +107,7 @@
                                 </td>
                                 <td><code>{{ $product->sku }}</code></td>
                                 <td class="text-muted">{{ $product->barcode ?? '—' }}</td>
-                                <td>{{ $product->category ?? '—' }}</td>
+                                <td>{{ $product->category?->name ?? '—' }}</td>
                                 <td>{{ App\Support\MoneyFormatter::format($product->purchase_price, $gymCurrency) }}</td>
                                 <td>{{ App\Support\MoneyFormatter::format($product->selling_price, $gymCurrency) }}</td>
                                 <td>

@@ -284,9 +284,9 @@ class ReportService
             ->with(['product', 'member', 'payment'])
             ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('sold_at', '>=', $filters['from_date']))
             ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('sold_at', '<=', $filters['to_date']))
-            ->when(filled($filters['category'] ?? null), fn (Builder $query) => $query->whereHas(
+            ->when(filled($filters['category_id'] ?? null), fn (Builder $query) => $query->whereHas(
                 'product',
-                fn (Builder $productQuery) => $productQuery->where('category', $filters['category'])
+                fn (Builder $productQuery) => $productQuery->where('category_id', $filters['category_id'])
             ))
             ->latest('sold_at');
 
@@ -338,7 +338,8 @@ class ReportService
     private function stockReport(array $filters, ?int $perPage): array
     {
         $query = Product::query()
-            ->when(filled($filters['category'] ?? null), fn (Builder $query) => $query->where('category', $filters['category']))
+            ->with('category')
+            ->when(filled($filters['category_id'] ?? null), fn (Builder $query) => $query->where('category_id', $filters['category_id']))
             ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
             ->orderBy('name');
 
@@ -347,7 +348,7 @@ class ReportService
         $rows = $this->paginateOrGet($query, $perPage, fn (Product $product): array => [
             'sku' => $product->sku,
             'name' => $product->name,
-            'category' => $product->category ?? '—',
+            'category' => $product->category?->name ?? '—',
             'status' => $product->status->label(),
             'stock' => $product->stock,
             'minimum_stock' => $product->minimum_stock,

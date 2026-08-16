@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ProductRepositoryInterface;
-use App\Enums\ProductStatus;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -19,7 +19,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
      * @param  array{
      *     search?: string|null,
      *     status?: string|null,
-     *     category?: string|null,
+     *     category_id?: int|null,
      *     stock?: string|null,
      *     barcode?: string|null
      * }  $filters
@@ -28,6 +28,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
     public function paginateWithFilters(array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->newQuery()
+            ->with('category')
             ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
                 $search = $filters['search'];
 
@@ -35,7 +36,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
                     $nested->where('name', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%")
                         ->orWhere('barcode', 'like', "%{$search}%")
-                        ->orWhere('category', 'like', "%{$search}%");
+                        ->orWhereHas('category', fn ($categoryQuery) => $categoryQuery->where('name', 'like', "%{$search}%"));
                 });
             })
             ->when(filled($filters['barcode'] ?? null), function ($query) use ($filters): void {
@@ -44,8 +45,8 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
             ->when(filled($filters['status'] ?? null), function ($query) use ($filters): void {
                 $query->where('status', $filters['status']);
             })
-            ->when(filled($filters['category'] ?? null), function ($query) use ($filters): void {
-                $query->where('category', $filters['category']);
+            ->when(filled($filters['category_id'] ?? null), function ($query) use ($filters): void {
+                $query->where('category_id', $filters['category_id']);
             })
             ->when(filled($filters['stock'] ?? null), function ($query) use ($filters): void {
                 match ($filters['stock']) {
@@ -70,6 +71,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
     public function findActiveForPosByBarcode(string $barcode): ?Product
     {
         return $this->newQuery()
+            ->with('category')
             ->active()
             ->where('barcode', $barcode)
             ->where('stock', '>', 0)
@@ -79,6 +81,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
     public function findActiveForPosBySku(string $sku): ?Product
     {
         return $this->newQuery()
+            ->with('category')
             ->active()
             ->where('sku', $sku)
             ->where('stock', '>', 0)
@@ -98,6 +101,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
     public function searchForPos(?string $search, ?string $category, int $limit = 24): Collection
     {
         return $this->newQuery()
+            ->with('category')
             ->active()
             ->where('stock', '>', 0)
             ->when(filled($search), function ($query) use ($search): void {
@@ -107,7 +111,10 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
                         ->orWhere('barcode', 'like', "%{$search}%");
                 });
             })
-            ->when(filled($category), fn ($query) => $query->where('category', $category))
+            ->when(filled($category), fn ($query) => $query->whereHas(
+                'category',
+                fn ($categoryQuery) => $categoryQuery->where('name', $category)
+            ))
             ->orderBy('name')
             ->limit($limit)
             ->get();
@@ -118,26 +125,10 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
      */
     public function categories(): array
     {
-        return $this->newQuery()
-            ->whereNotNull('category')
-            ->where('category', '!=', '')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category')
+        return Category::query()
+            ->active()
+            ->ordered()
+            ->pluck('name')
             ->all();
-    }
-
-    /**
-     * @return Collection<int, object{category: string, products_count: int, active_count: int}>
-     */
-    public function categorySummaries(): Collection
-    {
-        return $this->newQuery()
-            ->selectRaw('category, COUNT(*) as products_count, SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_count', [ProductStatus::Active->value])
-            ->whereNotNull('category')
-            ->where('category', '!=', '')
-            ->groupBy('category')
-            ->orderBy('category')
-            ->get();
     }
 }

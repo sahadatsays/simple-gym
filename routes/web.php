@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AttendanceLogController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GymSettingController;
 use App\Http\Controllers\Admin\InvoiceController;
@@ -106,7 +107,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::delete('orders/{invoice}', [PosOrderController::class, 'destroy'])->name('orders.destroy');
         Route::post('orders/{invoice}/payments', [PosOrderController::class, 'storePayment'])->name('orders.payments.store');
         Route::get('products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
-        Route::get('categories', [ProductController::class, 'categories'])->name('categories.index');
+        Route::resource('categories', CategoryController::class)->except(['show']);
         Route::patch('products/{product}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjust-stock');
         Route::resource('products', ProductController::class)->except(['show']);
         Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');

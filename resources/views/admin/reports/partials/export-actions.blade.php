@@ -6,7 +6,7 @@
         'to_date' => $filters['to_date'] ?? null,
         'membership_plan_id' => $filters['membership_plan_id'] ?? null,
         'status' => $filters['status'] ?? null,
-        'category' => $filters['category'] ?? null,
+        'category_id' => $filters['category_id'] ?? null,
         'days' => $filters['days'] ?? null,
     ], fn ($value) => filled($value));
 @endphp

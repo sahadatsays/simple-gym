@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\IndexProductRequest;
 use App\Http\Requests\Admin\ShowProductRequest;
 use App\Http\Requests\Admin\StoreProductRequest;
 use App\Http\Requests\Admin\UpdateProductRequest;
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\ProductReportService;
 use App\Services\ProductService;
@@ -34,38 +35,14 @@ class ProductController extends Controller
         return view('admin.products.index', [
             'products' => $this->products->paginateWithFilters($filters, config('gym.pagination.per_page')),
             'filters' => $filters,
-            'categories' => $this->products->categories(),
-        ]);
-    }
-
-    public function categories(): View
-    {
-        $this->authorize('viewAny', Product::class);
-
-        $summaries = $this->products->categorySummaries()->keyBy('category');
-        $configuredCategories = collect(config('gym.product_categories', []))
-            ->map(function (string $category) use ($summaries): object {
-                $summary = $summaries->get($category);
-
-                return (object) [
-                    'category' => $category,
-                    'products_count' => (int) ($summary->products_count ?? 0),
-                    'active_count' => (int) ($summary->active_count ?? 0),
-                ];
-            });
-
-        $extraCategories = $summaries
-            ->reject(fn (object $summary): bool => in_array($summary->category, config('gym.product_categories', []), true))
-            ->values();
-
-        return view('admin.categories.index', [
-            'categories' => $configuredCategories->concat($extraCategories),
+            'categories' => Category::query()->ordered()->get(['id', 'name']),
         ]);
     }
 
     public function show(ShowProductRequest $request, Product $product): View
     {
         $filters = $request->validated();
+        $product->load('category');
 
         return view('admin.products.show', [
             'product' => $product,
@@ -82,7 +59,7 @@ class ProductController extends Controller
         $this->authorize('create', Product::class);
 
         return view('admin.products.create', [
-            'categories' => $this->products->categories(),
+            'categories' => Category::query()->active()->ordered()->get(['id', 'name']),
         ]);
     }
 
@@ -103,7 +80,7 @@ class ProductController extends Controller
 
         return view('admin.products.edit', [
             'product' => $product,
-            'categories' => $this->products->categories(),
+            'categories' => Category::query()->ordered()->get(['id', 'name']),
         ]);
     }
 
@@ -173,13 +150,15 @@ class ProductController extends Controller
             return response()->json(['message' => 'Product not found.'], 404);
         }
 
+        $product->load('category');
+
         return response()->json([
             'data' => [
                 'id' => $product->id,
                 'sku' => $product->sku,
                 'barcode' => $product->barcode,
                 'name' => $product->name,
-                'category' => $product->category,
+                'category' => $product->category?->name,
                 'selling_price' => (float) $product->selling_price,
                 'stock' => $product->stock,
                 'status' => $product->status->value,

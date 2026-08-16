@@ -14,6 +14,7 @@ class ProductionSeeder extends Seeder
         $this->call([
             RolePermissionSeeder::class,
             GymSettingSeeder::class,
+            CategorySeeder::class,
             AdminUserSeeder::class,
         ]);
     }

@@ -46,12 +46,12 @@
         @endif
 
         @if ($type->value === 'product-sales')
-            <x-admin.filter-field label="Category" for="category">
-                <select name="category" id="category" class="form-select">
+            <x-admin.filter-field label="Category" for="category_id">
+                <select name="category_id" id="category_id" class="form-select">
                     <option value="">All categories</option>
                     @foreach ($productCategories as $category)
-                        <option value="{{ $category }}" @selected(($filters['category'] ?? '') === $category)>
-                            {{ $category }}
+                        <option value="{{ $category->id }}" @selected(($filters['category_id'] ?? null) == $category->id)>
+                            {{ $category->name }}
                         </option>
                     @endforeach
                 </select>
@@ -59,12 +59,12 @@
         @endif
 
         @if ($type->value === 'stock')
-            <x-admin.filter-field label="Category" for="category">
-                <select name="category" id="category" class="form-select">
+            <x-admin.filter-field label="Category" for="category_id">
+                <select name="category_id" id="category_id" class="form-select">
                     <option value="">All categories</option>
                     @foreach ($productCategories as $category)
-                        <option value="{{ $category }}" @selected(($filters['category'] ?? '') === $category)>
-                            {{ $category }}
+                        <option value="{{ $category->id }}" @selected(($filters['category_id'] ?? null) == $category->id)>
+                            {{ $category->name }}
                         </option>
                     @endforeach
                 </select>

@@ -7,6 +7,7 @@ use App\Enums\ProductStatus;
 use App\Enums\ReportType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReportFilterRequest;
+use App\Models\Category;
 use App\Models\GymSetting;
 use App\Models\MembershipPlan;
 use App\Services\ReportService;
@@ -70,7 +71,7 @@ class ReportController extends Controller
             'payload' => $payload,
             'filters' => $filters,
             'membershipPlans' => MembershipPlan::query()->orderBy('name')->get(['id', 'name']),
-            'productCategories' => config('gym.product_categories', []),
+            'productCategories' => Category::query()->ordered()->get(['id', 'name']),
             'memberStatuses' => MemberStatus::cases(),
             'productStatuses' => ProductStatus::cases(),
         ]);

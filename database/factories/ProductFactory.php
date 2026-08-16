@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ProductStatus;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -25,7 +26,7 @@ class ProductFactory extends Factory
             'sku' => fake()->unique()->bothify('SKU-####'),
             'barcode' => fake()->unique()->numerify('############'),
             'name' => fake()->words(3, true),
-            'category' => fake()->randomElement(['Supplements', 'Apparel', 'Accessories', 'Equipment']),
+            'category_id' => Category::factory(),
             'purchase_price' => $purchasePrice,
             'selling_price' => $sellingPrice,
             'stock' => fake()->numberBetween(0, 100),

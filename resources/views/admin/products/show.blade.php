@@ -65,7 +65,7 @@
                         <dd class="col-7">{{ $product->barcode ?? '—' }}</dd>
 
                         <dt class="col-5">Category</dt>
-                        <dd class="col-7">{{ $product->category ?? '—' }}</dd>
+                        <dd class="col-7">{{ $product->category?->name ?? '—' }}</dd>
 
                         <dt class="col-5">Purchase price</dt>
                         <dd class="col-7">{{ App\Support\MoneyFormatter::format($product->purchase_price, $gymCurrency) }}</dd>

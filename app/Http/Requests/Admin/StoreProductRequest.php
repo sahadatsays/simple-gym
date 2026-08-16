@@ -20,10 +20,10 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sku' => ['required', 'string', 'max:50', Rule::unique('products', 'sku')->whereNull('deleted_at')],
+            'sku' => ['nullable', 'string', 'max:50', Rule::unique('products', 'sku')->whereNull('deleted_at')],
             'barcode' => ['nullable', 'string', 'max:100', Rule::unique('products', 'barcode')->whereNull('deleted_at')],
             'name' => ['required', 'string', 'max:255'],
-            'category' => ['nullable', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')],
             'purchase_price' => ['required', 'numeric', 'min:0', 'max:9999999.99'],
             'selling_price' => ['required', 'numeric', 'min:0', 'max:9999999.99'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -38,8 +38,12 @@ class StoreProductRequest extends FormRequest
             $this->merge(['barcode' => null]);
         }
 
-        if ($this->filled('category') && $this->string('category')->trim()->isEmpty()) {
-            $this->merge(['category' => null]);
+        if ($this->filled('sku') && $this->string('sku')->trim()->isEmpty()) {
+            $this->merge(['sku' => null]);
+        }
+
+        if ($this->input('category_id') === '') {
+            $this->merge(['category_id' => null]);
         }
     }
 }

@@ -23,7 +23,7 @@ class IndexProductRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:100'],
             'barcode' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'string', Rule::enum(ProductStatus::class)],
-            'category' => ['nullable', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')],
             'stock' => ['nullable', 'string', Rule::in(['low', 'out', 'available'])],
         ];
     }

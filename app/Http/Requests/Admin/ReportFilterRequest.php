@@ -23,7 +23,7 @@ class ReportFilterRequest extends FormRequest
             'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
             'membership_plan_id' => ['nullable', 'integer', Rule::exists('membership_plans', 'id')],
             'status' => ['nullable', 'string'],
-            'category' => ['nullable', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')],
             'days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'export' => ['nullable', 'string', Rule::in(['pdf', 'excel', 'print'])],
         ];
@@ -35,7 +35,7 @@ class ReportFilterRequest extends FormRequest
      *     to_date: string,
      *     membership_plan_id: ?int,
      *     status: ?string,
-     *     category: ?string,
+     *     category_id: ?int,
      *     days: int
      * }
      */
@@ -53,7 +53,9 @@ class ReportFilterRequest extends FormRequest
                 ? (int) $validated['membership_plan_id']
                 : null,
             'status' => $validated['status'] ?? null,
-            'category' => $validated['category'] ?? null,
+            'category_id' => isset($validated['category_id'])
+                ? (int) $validated['category_id']
+                : null,
             'days' => (int) ($validated['days'] ?? 30),
         ];
     }
@@ -81,8 +83,8 @@ class ReportFilterRequest extends FormRequest
             $this->merge(['status' => null]);
         }
 
-        if ($this->filled('category') && $this->input('category') === '') {
-            $this->merge(['category' => null]);
+        if ($this->input('category_id') === '') {
+            $this->merge(['category_id' => null]);
         }
     }
 }

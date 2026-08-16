@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'sku',
     'barcode',
     'name',
-    'category',
+    'category_id',
     'purchase_price',
     'selling_price',
     'stock',
@@ -37,6 +38,14 @@ class Product extends Model
             'selling_price' => 'decimal:2',
             'status' => ProductStatus::class,
         ];
+    }
+
+    /**
+     * @return BelongsTo<Category, $this>
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function isLowStock(): bool
@@ -69,7 +78,7 @@ class Product extends Model
             'sku' => $this->sku,
             'barcode' => $this->barcode,
             'name' => $this->name,
-            'category' => $this->category,
+            'category' => $this->category?->name,
             'selling_price' => (float) $this->selling_price,
             'stock' => $this->stock,
             'is_low_stock' => $this->isLowStock(),
