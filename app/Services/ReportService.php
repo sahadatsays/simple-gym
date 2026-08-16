@@ -2,11 +2,15 @@
 
 namespace App\Services;
 
+use App\Enums\AssetStatus;
 use App\Enums\MemberStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use App\Enums\ProductStatus;
 use App\Enums\ReportType;
+use App\Models\Asset;
+use App\Models\AssetMaintenance;
+use App\Models\Investment;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Product;
@@ -16,6 +20,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ReportService
 {
@@ -45,7 +50,272 @@ class ReportService
             ReportType::PosSales => $this->posSales($filters, $perPage),
             ReportType::ProductSales => $this->productSales($filters, $perPage),
             ReportType::Stock => $this->stockReport($filters, $perPage),
+            ReportType::Investments => $this->investmentReport($filters, $perPage),
+            ReportType::Assets => $this->assetReport($filters, $perPage),
+            ReportType::AssetMaintenance => $this->assetMaintenanceReport($filters, $perPage),
+            ReportType::AssetValueSummary => $this->assetValueSummary($filters),
         };
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     investment_category_id?: int|null,
+     *     search?: string|null
+     * }  $filters
+     */
+    private function investmentReport(array $filters, ?int $perPage): array
+    {
+        $query = Investment::query()
+            ->with('category')
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->where(function (Builder $nested) use ($search): void {
+                    $nested->where('investment_number', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('category', fn (Builder $categoryQuery) => $categoryQuery->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when(filled($filters['investment_category_id'] ?? null), fn (Builder $query) => $query->where('investment_category_id', $filters['investment_category_id']))
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('invested_at', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('invested_at', '<=', $filters['to_date']))
+            ->latest('invested_at')
+            ->latest('id');
+
+        $aggregate = (clone $query)
+            ->selectRaw('COALESCE(SUM(amount), 0) as total_amount')
+            ->selectRaw('COUNT(*) as investment_count')
+            ->first();
+
+        $rows = $this->paginateOrGet($query, $perPage, fn (Investment $investment): array => [
+            'date' => $investment->invested_at->format('M j, Y'),
+            'investment_number' => $investment->investment_number,
+            'category' => $investment->category?->name ?? '—',
+            'amount' => Money::round((float) $investment->amount),
+            'payment_method' => $investment->payment_method->label(),
+            'description' => $investment->description ?: '—',
+        ]);
+
+        return [
+            'summary' => [
+                'total_investment' => Money::round((float) ($aggregate->total_amount ?? 0)),
+                'investment_count' => (int) ($aggregate->investment_count ?? 0),
+            ],
+            'rows' => $rows,
+            'columns' => [
+                ['key' => 'date', 'label' => 'Date'],
+                ['key' => 'investment_number', 'label' => 'Investment No'],
+                ['key' => 'category', 'label' => 'Category'],
+                ['key' => 'amount', 'label' => 'Amount', 'align' => 'end'],
+                ['key' => 'payment_method', 'label' => 'Payment Method'],
+                ['key' => 'description', 'label' => 'Description'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     asset_category_id?: int|null,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     */
+    private function assetReport(array $filters, ?int $perPage): array
+    {
+        $query = $this->assetReportQuery($filters)->latest('purchased_at')->latest('id');
+
+        $aggregate = (clone $query)
+            ->selectRaw('COALESCE(SUM(purchase_price), 0) as total_purchase_value')
+            ->selectRaw('COALESCE(SUM(current_value), 0) as total_current_value')
+            ->selectRaw('COUNT(*) as asset_count')
+            ->first();
+
+        $rows = $this->paginateOrGet($query, $perPage, fn (Asset $asset): array => [
+            'asset_code' => $asset->asset_code,
+            'name' => $asset->name,
+            'category' => $asset->category?->name ?? '—',
+            'purchase_date' => $asset->purchased_at->format('M j, Y'),
+            'purchase_price' => Money::round((float) $asset->purchase_price),
+            'current_value' => Money::round((float) ($asset->current_value ?? 0)),
+            'condition' => $asset->condition?->label() ?? '—',
+            'status' => $asset->status?->label() ?? '—',
+            'location' => $asset->location ?: '—',
+        ]);
+
+        return [
+            'summary' => [
+                'asset_count' => (int) ($aggregate->asset_count ?? 0),
+                'total_purchase_value' => Money::round((float) ($aggregate->total_purchase_value ?? 0)),
+                'total_current_value' => Money::round((float) ($aggregate->total_current_value ?? 0)),
+            ],
+            'rows' => $rows,
+            'columns' => [
+                ['key' => 'asset_code', 'label' => 'Asset Code'],
+                ['key' => 'name', 'label' => 'Asset'],
+                ['key' => 'category', 'label' => 'Category'],
+                ['key' => 'purchase_date', 'label' => 'Purchase Date'],
+                ['key' => 'purchase_price', 'label' => 'Purchase Price', 'align' => 'end'],
+                ['key' => 'current_value', 'label' => 'Current Value', 'align' => 'end'],
+                ['key' => 'condition', 'label' => 'Condition'],
+                ['key' => 'status', 'label' => 'Status'],
+                ['key' => 'location', 'label' => 'Location'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     asset_category_id?: int|null,
+     *     maintenance_type?: string|null,
+     *     search?: string|null
+     * }  $filters
+     */
+    private function assetMaintenanceReport(array $filters, ?int $perPage): array
+    {
+        $query = AssetMaintenance::query()
+            ->with(['asset.category'])
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->where(function (Builder $nested) use ($search): void {
+                    $nested->where('description', 'like', "%{$search}%")
+                        ->orWhere('service_provider', 'like', "%{$search}%")
+                        ->orWhereHas('asset', function (Builder $assetQuery) use ($search): void {
+                            $assetQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('asset_code', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when(filled($filters['asset_category_id'] ?? null), fn (Builder $query) => $query->whereHas(
+                'asset',
+                fn (Builder $assetQuery) => $assetQuery->where('asset_category_id', $filters['asset_category_id'])
+            ))
+            ->when(filled($filters['maintenance_type'] ?? null), fn (Builder $query) => $query->where('type', $filters['maintenance_type']))
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('maintained_at', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('maintained_at', '<=', $filters['to_date']))
+            ->latest('maintained_at')
+            ->latest('id');
+
+        $aggregate = (clone $query)
+            ->selectRaw('COALESCE(SUM(cost), 0) as total_maintenance_cost')
+            ->selectRaw('COUNT(*) as maintenance_count')
+            ->first();
+
+        $rows = $this->paginateOrGet($query, $perPage, fn (AssetMaintenance $maintenance): array => [
+            'asset' => $maintenance->asset
+                ? "{$maintenance->asset->name} ({$maintenance->asset->asset_code})"
+                : '—',
+            'date' => $maintenance->maintained_at->format('M j, Y'),
+            'maintenance_type' => $maintenance->type->label(),
+            'cost' => $maintenance->cost !== null ? Money::round((float) $maintenance->cost) : null,
+            'service_provider' => $maintenance->service_provider ?: '—',
+            'next_maintenance_date' => $maintenance->next_maintenance_at?->format('M j, Y') ?? '—',
+        ]);
+
+        return [
+            'summary' => [
+                'maintenance_count' => (int) ($aggregate->maintenance_count ?? 0),
+                'total_maintenance_cost' => Money::round((float) ($aggregate->total_maintenance_cost ?? 0)),
+            ],
+            'rows' => $rows,
+            'columns' => [
+                ['key' => 'asset', 'label' => 'Asset'],
+                ['key' => 'date', 'label' => 'Date'],
+                ['key' => 'maintenance_type', 'label' => 'Maintenance Type'],
+                ['key' => 'cost', 'label' => 'Cost', 'align' => 'end'],
+                ['key' => 'service_provider', 'label' => 'Service Provider'],
+                ['key' => 'next_maintenance_date', 'label' => 'Next Maintenance Date'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     asset_category_id?: int|null,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     */
+    private function assetValueSummary(array $filters): array
+    {
+        $purchaseQuery = $this->assetReportQuery($filters);
+
+        $currentValueQuery = Asset::query()
+            ->when(filled($filters['asset_category_id'] ?? null), fn (Builder $query) => $query->where('asset_category_id', $filters['asset_category_id']))
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->where(function (Builder $nested) use ($search): void {
+                    $nested->where('name', 'like', "%{$search}%")
+                        ->orWhere('asset_code', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%");
+                });
+            })
+            ->where('status', AssetStatus::Active);
+
+        $maintenanceQuery = AssetMaintenance::query()
+            ->when(filled($filters['asset_category_id'] ?? null), fn (Builder $query) => $query->whereHas(
+                'asset',
+                fn (Builder $assetQuery) => $assetQuery->where('asset_category_id', $filters['asset_category_id'])
+            ))
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->whereHas('asset', function (Builder $assetQuery) use ($search): void {
+                    $assetQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('asset_code', 'like', "%{$search}%");
+                });
+            })
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('maintained_at', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('maintained_at', '<=', $filters['to_date']));
+
+        return [
+            'summary' => [
+                'total_purchase_value' => Money::round((float) $purchaseQuery->sum('purchase_price')),
+                'current_asset_value' => Money::round((float) $currentValueQuery->sum(DB::raw('COALESCE(current_value, 0)'))),
+                'total_maintenance_cost' => Money::round((float) $maintenanceQuery->sum(DB::raw('COALESCE(cost, 0)'))),
+            ],
+            'rows' => collect(),
+            'columns' => [],
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     asset_category_id?: int|null,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     * @return Builder<Asset>
+     */
+    private function assetReportQuery(array $filters): Builder
+    {
+        return Asset::query()
+            ->with('category')
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->where(function (Builder $nested) use ($search): void {
+                    $nested->where('name', 'like', "%{$search}%")
+                        ->orWhere('asset_code', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%")
+                        ->orWhere('supplier', 'like', "%{$search}%");
+                });
+            })
+            ->when(filled($filters['asset_category_id'] ?? null), fn (Builder $query) => $query->where('asset_category_id', $filters['asset_category_id']))
+            ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('purchased_at', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('purchased_at', '<=', $filters['to_date']));
     }
 
     /**

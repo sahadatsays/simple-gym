@@ -76,6 +76,7 @@
         $moneyKeys = [
             'admission_fee', 'membership_fee', 'pos_sale', 'total', 'discount', 'amount',
             'unit_price', 'line_total', 'profit', 'purchase_value', 'retail_value',
+            'purchase_price', 'current_value', 'cost',
         ];
 
         $items = $payload['rows'] instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator
@@ -101,7 +102,7 @@
             <div class="summary-card">
                 <span>{{ str($key)->headline() }}</span>
                 <strong>
-                    @if (in_array($key, ['total', 'admission_fee', 'membership_fee', 'pos_sale', 'total_sales', 'total_discount', 'total_revenue', 'gross_profit', 'total_retail_value'], true) && is_numeric($value))
+                    @if (in_array($key, ['total', 'admission_fee', 'membership_fee', 'pos_sale', 'total_sales', 'total_discount', 'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment', 'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value'], true) && is_numeric($value))
                         {{ App\Support\MoneyFormatter::format($value, $gymCurrency) }}
                     @else
                         {{ $value }}
@@ -111,38 +112,40 @@
         @endforeach
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                @foreach ($payload['columns'] as $column)
-                    <th @class(['text-end' => ($column['align'] ?? '') === 'end'])>{{ $column['label'] }}</th>
-                @endforeach
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($items as $row)
+    @if (count($payload['columns']) > 0)
+        <table>
+            <thead>
                 <tr>
                     @foreach ($payload['columns'] as $column)
-                        @php
-                            $value = $row[$column['key']] ?? '—';
-                            $isMoney = in_array($column['key'], $moneyKeys, true) && is_numeric($value);
-                        @endphp
-                        <td @class(['text-end' => ($column['align'] ?? '') === 'end'])>
-                            @if ($isMoney)
-                                {{ App\Support\MoneyFormatter::format($value, $gymCurrency) }}
-                            @else
-                                {{ $value }}
-                            @endif
-                        </td>
+                        <th @class(['text-end' => ($column['align'] ?? '') === 'end'])>{{ $column['label'] }}</th>
                     @endforeach
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="{{ count($payload['columns']) }}">No records found for the selected filters.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse ($items as $row)
+                    <tr>
+                        @foreach ($payload['columns'] as $column)
+                            @php
+                                $value = $row[$column['key']] ?? '—';
+                                $isMoney = in_array($column['key'], $moneyKeys, true) && is_numeric($value);
+                            @endphp
+                            <td @class(['text-end' => ($column['align'] ?? '') === 'end'])>
+                                @if ($isMoney)
+                                    {{ App\Support\MoneyFormatter::format($value, $gymCurrency) }}
+                                @else
+                                    {{ $value }}
+                                @endif
+                            </td>
+                        @endforeach
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="{{ count($payload['columns']) }}">No records found for the selected filters.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    @endif
 
     <script>
         window.addEventListener('load', () => window.print());

@@ -3,7 +3,8 @@
 @php
     $moneyKeys = [
         'total', 'admission_fee', 'membership_fee', 'pos_sale', 'total_sales', 'total_discount',
-        'total_revenue', 'gross_profit', 'total_retail_value',
+        'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment',
+        'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value',
     ];
 
     $labels = [
@@ -31,6 +32,14 @@
         'low_stock_products' => 'Low Stock',
         'out_of_stock_products' => 'Out of Stock',
         'total_retail_value' => 'Retail Value',
+        'total_investment' => 'Total Investment',
+        'investment_count' => 'Investments',
+        'asset_count' => 'Assets',
+        'total_purchase_value' => 'Total Purchase Value',
+        'total_current_value' => 'Current Asset Value',
+        'maintenance_count' => 'Maintenance Records',
+        'total_maintenance_cost' => 'Total Maintenance Cost',
+        'current_asset_value' => 'Current Asset Value',
     ];
 @endphp
 

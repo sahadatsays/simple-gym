@@ -14,6 +14,10 @@ enum ReportType: string
     case PosSales = 'pos-sales';
     case ProductSales = 'product-sales';
     case Stock = 'stock';
+    case Investments = 'investments';
+    case Assets = 'assets';
+    case AssetMaintenance = 'asset-maintenance';
+    case AssetValueSummary = 'asset-value-summary';
 
     /**
      * @return array<string, string>
@@ -42,6 +46,10 @@ enum ReportType: string
             self::PosSales => 'POS Sales',
             self::ProductSales => 'Product Sales',
             self::Stock => 'Stock Report',
+            self::Investments => 'Investment Report',
+            self::Assets => 'Asset Report',
+            self::AssetMaintenance => 'Maintenance Report',
+            self::AssetValueSummary => 'Asset Value Summary',
         };
     }
 
@@ -56,16 +64,31 @@ enum ReportType: string
             self::PosSales => 'Point-of-sale transactions and totals.',
             self::ProductSales => 'Product-level sales with revenue and profit.',
             self::Stock => 'Current inventory levels and stock value.',
+            self::Investments => 'Owner investments with category, amount, and payment details.',
+            self::Assets => 'Asset register with purchase, value, condition, and status.',
+            self::AssetMaintenance => 'Maintenance history with costs and service schedules.',
+            self::AssetValueSummary => 'Purchase value, current asset value, and maintenance spend.',
         };
     }
 
     public function icon(): string
     {
         return match ($this) {
-            self::DailyCollection, self::MonthlyCollection => 'chart',
+            self::DailyCollection, self::MonthlyCollection, self::AssetValueSummary => 'chart',
             self::Membership, self::ExpiredMembers, self::UpcomingExpiry => 'users',
-            self::PosSales, self::ProductSales => 'shopping',
-            self::Stock => 'alert',
+            self::PosSales, self::ProductSales, self::Assets => 'shopping',
+            self::Stock, self::AssetMaintenance => 'alert',
+            self::Investments => 'wallet',
         };
+    }
+
+    public function isAssetInvestmentReport(): bool
+    {
+        return in_array($this, [
+            self::Investments,
+            self::Assets,
+            self::AssetMaintenance,
+            self::AssetValueSummary,
+        ], true);
     }
 }

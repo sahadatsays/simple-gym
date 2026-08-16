@@ -7,6 +7,10 @@
         'membership_plan_id' => $filters['membership_plan_id'] ?? null,
         'status' => $filters['status'] ?? null,
         'category_id' => $filters['category_id'] ?? null,
+        'investment_category_id' => $filters['investment_category_id'] ?? null,
+        'asset_category_id' => $filters['asset_category_id'] ?? null,
+        'maintenance_type' => $filters['maintenance_type'] ?? null,
+        'search' => $filters['search'] ?? null,
         'days' => $filters['days'] ?? null,
     ], fn ($value) => filled($value));
 @endphp

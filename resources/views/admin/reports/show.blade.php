@@ -15,8 +15,12 @@
         'filters' => $filters,
         'membershipPlans' => $membershipPlans,
         'productCategories' => $productCategories,
+        'investmentCategories' => $investmentCategories,
+        'assetCategories' => $assetCategories,
         'memberStatuses' => $memberStatuses,
         'productStatuses' => $productStatuses,
+        'assetStatuses' => $assetStatuses,
+        'maintenanceTypes' => $maintenanceTypes,
     ])
 
     @include('admin.reports.partials.summary', [
@@ -24,8 +28,10 @@
         'summary' => $payload['summary'],
     ])
 
-    @include('admin.reports.partials.table', [
-        'columns' => $payload['columns'],
-        'rows' => $payload['rows'],
-    ])
+    @if (count($payload['columns']) > 0)
+        @include('admin.reports.partials.table', [
+            'columns' => $payload['columns'],
+            'rows' => $payload['rows'],
+        ])
+    @endif
 @endsection
