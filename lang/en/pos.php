@@ -1,0 +1,68 @@
+<?php
+
+return [
+    'title' => 'Point of Sale',
+    'subtitle' => 'Search products, scan barcodes, and complete sales quickly.',
+    'manage_orders' => 'Manage Orders',
+    'barcode_scanner' => 'Barcode Scanner',
+    'barcode_placeholder' => 'Scan barcode or enter SKU, then press Enter',
+    'search_products' => 'Search Products',
+    'search_placeholder' => 'Name, SKU, or barcode',
+    'cart' => 'Cart',
+    'cart_empty' => 'Scan a barcode or tap a product to begin.',
+    'no_products' => 'No products found',
+    'no_products_help' => 'Try another search term or category.',
+    'billing_total' => 'Billing total',
+    'pay_amount' => 'Pay amount',
+    'paying_now' => 'Paying now',
+    'balance_due' => 'Balance due',
+    'payment_status' => 'Payment status',
+    'pay_amount_help' => 'Billing total: :total. Set to billing total for full payment, less for partial, or 0 for full due.',
+    'member_required_help' => 'Required when pay amount is less than billing total.',
+    'loading_products' => 'Loading products...',
+
+    'payment_status_labels' => [
+        'full' => 'Full payment',
+        'partial' => 'Partial payment',
+        'due' => 'Full due',
+    ],
+
+    'submit' => [
+        'complete_sale' => 'Complete Sale',
+        'create_due_order' => 'Create Due Order',
+        'create_and_pay' => 'Create Order & Record Payment',
+    ],
+
+    'errors' => [
+        'load_products' => 'Unable to load products.',
+        'product_not_found' => 'Product not found.',
+        'scan_failed' => 'Unable to scan barcode.',
+        'stock_limit' => 'Only :stock units of :name available.',
+        'cart_empty' => 'Add at least one product to the cart.',
+        'total_zero' => 'Total due must be greater than zero.',
+        'member_required' => 'Select a member when the pay amount is less than the billing total.',
+        'pay_exceeds_total' => 'Pay amount cannot exceed the billing total.',
+    ],
+
+    'orders' => [
+        'title' => 'Manage Orders',
+        'subtitle' => 'Track POS sales, due balances, and payment history',
+        'show_subtitle' => 'POS order details and payment history',
+        'all_orders' => 'All Orders',
+        'new_sale' => 'New Sale',
+        'start_new_sale' => 'Start New Sale',
+        'delete_order' => 'Delete Order',
+        'record_payment' => 'Record Payment',
+        'print_receipt' => 'Print Receipt',
+        'order_complete' => 'Order Complete',
+        'order_summary' => 'Order Summary',
+        'amount_received' => 'Amount received',
+        'balance_due' => 'Balance due',
+        'fully_paid' => 'This order has been fully paid.',
+        'no_payments' => 'No payments recorded yet.',
+        'no_orders' => 'No orders found.',
+        'view_order' => 'View Order',
+        'search_placeholder' => 'Order number, member...',
+        'due_date' => 'Due date',
+    ],
+];
