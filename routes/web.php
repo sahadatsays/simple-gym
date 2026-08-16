@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\ZktecoDeviceController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ZktecoController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,8 @@ Route::get('/', function () {
         ? redirect()->route('admin.dashboard')
         : redirect()->route('login');
 });
+
+Route::get('locale/{locale}', LocaleController::class)->name('locale.switch');
 
 Route::prefix('iclock')->group(function (): void {
     Route::match(['get', 'post'], 'cdata', [ZktecoController::class, 'cdata']);

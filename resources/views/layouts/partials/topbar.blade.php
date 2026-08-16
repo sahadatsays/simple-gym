@@ -25,6 +25,8 @@
     </div>
 
     <div class="d-flex align-items-center gap-2">
+        <x-ui.locale-switcher />
+
         @can('dashboard.view')
             <div class="dropdown">
                 <button
