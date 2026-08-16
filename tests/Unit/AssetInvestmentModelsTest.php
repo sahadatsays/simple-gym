@@ -107,7 +107,7 @@ it('persists asset and investment records with relationships', function () {
     $disposal = AssetDisposal::query()->create([
         'asset_id' => $asset->id,
         'disposed_at' => '2028-01-01',
-        'disposal_type' => AssetDisposalType::Sale,
+        'disposal_type' => AssetDisposalType::Sold,
         'sale_amount' => 20000,
         'buyer' => 'Second Hand Gym',
         'reason' => 'Upgrade',

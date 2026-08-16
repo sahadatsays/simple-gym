@@ -18,6 +18,13 @@
                         </a>
                     @endif
                 @endcan
+                @can('create', App\Models\AssetDisposal::class)
+                    @if ($asset->isEligibleForDisposal())
+                        <a href="{{ route('admin.asset-disposals.create', ['asset_id' => $asset->id]) }}" class="btn btn-outline-danger">
+                            Dispose Asset
+                        </a>
+                    @endif
+                @endcan
                 @can('update', $asset)
                     <a href="{{ route('admin.assets.edit', $asset) }}" class="btn btn-primary">Edit</a>
                 @endcan
@@ -139,6 +146,11 @@
                             —
                         @endif
                     </x-admin.detail-item>
+                    @if ($asset->disposal)
+                        <x-admin.detail-item label="Disposal record">
+                            <a href="{{ route('admin.asset-disposals.show', $asset->disposal) }}">View disposal details</a>
+                        </x-admin.detail-item>
+                    @endif
                 </x-admin.detail-list>
             </x-admin.detail-section>
         </div>

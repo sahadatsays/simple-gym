@@ -60,7 +60,7 @@ beforeEach(function () {
     $this->disposal = AssetDisposal::query()->create([
         'asset_id' => $this->asset->id,
         'disposed_at' => '2028-01-01',
-        'disposal_type' => AssetDisposalType::Sale,
+        'disposal_type' => AssetDisposalType::Sold,
         'sale_amount' => 20000,
     ]);
 });

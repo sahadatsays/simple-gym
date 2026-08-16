@@ -140,7 +140,7 @@ it('shows disposal information on the asset details page', function () {
     AssetDisposal::query()->create([
         'asset_id' => $asset->id,
         'disposed_at' => '2026-08-01',
-        'disposal_type' => AssetDisposalType::Sale,
+        'disposal_type' => AssetDisposalType::Sold,
         'sale_amount' => 20000,
     ]);
 
@@ -148,7 +148,7 @@ it('shows disposal information on the asset details page', function () {
         ->get(route('admin.assets.show', $asset))
         ->assertSuccessful()
         ->assertSee('Disposed')
-        ->assertSee('Sale')
+        ->assertSee('Sold')
         ->assertSee('20,000');
 });
 

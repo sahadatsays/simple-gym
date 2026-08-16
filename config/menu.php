@@ -146,6 +146,13 @@ return [
                     'match' => 'admin.asset-maintenances.*',
                     'icon' => 'tools',
                 ],
+                [
+                    'key' => 'asset_disposals',
+                    'route' => 'admin.asset-disposals.index',
+                    'permission' => 'asset-disposals.view',
+                    'match' => 'admin.asset-disposals.*',
+                    'icon' => 'archive',
+                ],
             ],
         ],
         [

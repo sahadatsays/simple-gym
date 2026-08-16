@@ -28,6 +28,7 @@ return [
         'investment_categories' => 'বিনিয়োগ বিভাগ',
         'assets' => 'সম্পদ',
         'asset_maintenances' => 'রক্ষণাবেক্ষণ',
+        'asset_disposals' => 'নিষ্পত্তি',
         'products' => 'পণ্য',
         'categories' => 'ক্যাটাগরি',
         'pos' => 'পিওএস',

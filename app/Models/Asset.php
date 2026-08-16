@@ -91,6 +91,33 @@ class Asset extends Model
         return $this->status !== null && ! $this->status->isTerminal();
     }
 
+    public function isEligibleForDisposal(): bool
+    {
+        if ($this->status === AssetStatus::Disposed || $this->status === AssetStatus::Sold) {
+            return false;
+        }
+
+        if ($this->relationLoaded('disposal')) {
+            return $this->disposal === null;
+        }
+
+        return ! $this->disposal()->exists();
+    }
+
+    /**
+     * @param  Builder<Asset>  $query
+     * @return Builder<Asset>
+     */
+    public function scopeDisposable(Builder $query): Builder
+    {
+        return $query
+            ->whereNotIn('status', [
+                AssetStatus::Disposed,
+                AssetStatus::Sold,
+            ])
+            ->whereDoesntHave('disposal');
+    }
+
     /**
      * @param  Builder<Asset>  $query
      * @return Builder<Asset>

@@ -28,6 +28,7 @@ return [
         'investment_categories' => 'Investment Categories',
         'assets' => 'Assets',
         'asset_maintenances' => 'Maintenance',
+        'asset_disposals' => 'Disposals',
         'products' => 'Products',
         'categories' => 'Categories',
         'pos' => 'POS',

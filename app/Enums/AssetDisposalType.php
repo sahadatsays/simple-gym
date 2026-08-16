@@ -4,11 +4,10 @@ namespace App\Enums;
 
 enum AssetDisposalType: string
 {
-    case Sale = 'sale';
-    case Scrap = 'scrap';
-    case Donation = 'donation';
-    case WriteOff = 'write_off';
-    case Other = 'other';
+    case Sold = 'sold';
+    case Disposed = 'disposed';
+    case Lost = 'lost';
+    case DamagedBeyondRepair = 'damaged_beyond_repair';
 
     /**
      * @return array<string, string>
@@ -23,11 +22,25 @@ enum AssetDisposalType: string
     public function label(): string
     {
         return match ($this) {
-            self::Sale => 'Sale',
-            self::Scrap => 'Scrap',
-            self::Donation => 'Donation',
-            self::WriteOff => 'Write Off',
-            self::Other => 'Other',
+            self::Sold => 'Sold',
+            self::Disposed => 'Disposed',
+            self::Lost => 'Lost',
+            self::DamagedBeyondRepair => 'Damaged Beyond Repair',
+        };
+    }
+
+    public function requiresSaleAmount(): bool
+    {
+        return $this === self::Sold;
+    }
+
+    public function toAssetStatus(): AssetStatus
+    {
+        return match ($this) {
+            self::Sold => AssetStatus::Sold,
+            self::Disposed => AssetStatus::Disposed,
+            self::Lost => AssetStatus::Lost,
+            self::DamagedBeyondRepair => AssetStatus::Damaged,
         };
     }
 }
