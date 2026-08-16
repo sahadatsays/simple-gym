@@ -26,6 +26,7 @@ return [
         'invoices' => 'ইনভয়েস',
         'investments' => 'বিনিয়োগ',
         'investment_categories' => 'বিনিয়োগ বিভাগ',
+        'expense_categories' => 'খরচের বিভাগ',
         'assets' => 'সম্পদ',
         'asset_maintenances' => 'রক্ষণাবেক্ষণ',
         'asset_disposals' => 'নিষ্পত্তি',

@@ -244,6 +244,7 @@ it('uses only configured default permissions across authorization checks', funct
         'zkteco-devices.view', 'zkteco-devices.manage',
         'attendance-logs.view',
         'investments.view', 'investments.create', 'investments.edit', 'investments.delete',
+        'expense-categories.view', 'expense-categories.create', 'expense-categories.edit', 'expense-categories.delete',
         'assets.view', 'assets.create', 'assets.edit', 'assets.delete',
         'asset-categories.view', 'asset-categories.create', 'asset-categories.edit', 'asset-categories.delete',
         'asset-maintenances.view', 'asset-maintenances.create', 'asset-maintenances.edit', 'asset-maintenances.delete',

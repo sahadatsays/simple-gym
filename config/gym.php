@@ -109,6 +109,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Expense Categories
+    |--------------------------------------------------------------------------
+    */
+
+    'expense_categories' => [
+        'Rent',
+        'Electricity',
+        'Gas',
+        'Water',
+        'Internet',
+        'Salary',
+        'Maintenance',
+        'Cleaning',
+        'Marketing',
+        'Transportation',
+        'Office Supplies',
+        'Equipment Repair',
+        'Other',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Local Development Login
     |--------------------------------------------------------------------------
     |

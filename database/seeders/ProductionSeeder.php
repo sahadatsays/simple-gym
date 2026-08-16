@@ -16,6 +16,7 @@ class ProductionSeeder extends Seeder
             GymSettingSeeder::class,
             CategorySeeder::class,
             InvestmentCategorySeeder::class,
+            ExpenseCategorySeeder::class,
             AdminUserSeeder::class,
         ]);
     }

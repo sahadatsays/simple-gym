@@ -126,6 +126,13 @@ return [
                     'match' => 'admin.investment-categories.*',
                     'icon' => 'tags',
                 ],
+                [
+                    'key' => 'expense_categories',
+                    'route' => 'admin.expense-categories.index',
+                    'permission' => 'expense-categories.view',
+                    'match' => 'admin.expense-categories.*',
+                    'icon' => 'tags',
+                ],
             ],
         ],
         [

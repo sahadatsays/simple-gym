@@ -6,6 +6,7 @@ use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\AssetDisposalRepositoryInterface;
 use App\Contracts\Repositories\AssetMaintenanceRepositoryInterface;
 use App\Contracts\Repositories\AssetRepositoryInterface;
+use App\Contracts\Repositories\ExpenseCategoryRepositoryInterface;
 use App\Contracts\Repositories\GymSettingRepositoryInterface;
 use App\Contracts\Repositories\InvestmentCategoryRepositoryInterface;
 use App\Contracts\Repositories\InvestmentRepositoryInterface;
@@ -20,6 +21,7 @@ use App\Repositories\ActivityLogRepository;
 use App\Repositories\AssetDisposalRepository;
 use App\Repositories\AssetMaintenanceRepository;
 use App\Repositories\AssetRepository;
+use App\Repositories\ExpenseCategoryRepository;
 use App\Repositories\GymSettingRepository;
 use App\Repositories\InvestmentCategoryRepository;
 use App\Repositories\InvestmentRepository;
@@ -45,6 +47,7 @@ class RepositoryServiceProvider extends ServiceProvider
         PaymentRepositoryInterface::class => PaymentRepository::class,
         InvestmentRepositoryInterface::class => InvestmentRepository::class,
         InvestmentCategoryRepositoryInterface::class => InvestmentCategoryRepository::class,
+        ExpenseCategoryRepositoryInterface::class => ExpenseCategoryRepository::class,
         AssetRepositoryInterface::class => AssetRepository::class,
         AssetMaintenanceRepositoryInterface::class => AssetMaintenanceRepository::class,
         AssetDisposalRepositoryInterface::class => AssetDisposalRepository::class,
