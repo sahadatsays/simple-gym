@@ -18,9 +18,14 @@ class ZktecoCommandBuilder
         return 'REBOOT';
     }
 
-    public function restart(): string
+    public function clearLog(): string
     {
-        return 'RESTART';
+        return 'CLEAR LOG';
+    }
+
+    public function clearUsers(): string
+    {
+        return 'CLEAR DATA';
     }
 
     public function deleteUser(string $pim): string

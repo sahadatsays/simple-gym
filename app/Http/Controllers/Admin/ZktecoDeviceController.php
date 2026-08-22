@@ -11,7 +11,9 @@ use App\Models\RfidCard;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
 use App\Services\MemberDeviceAccessService;
+use App\Services\ZktecoDataResetService;
 use App\Services\ZktecoDeviceService;
+use App\Services\ZktecoUserClearService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +25,8 @@ class ZktecoDeviceController extends Controller
 {
     public function __construct(
         private ZktecoDeviceService $devices,
+        private ZktecoDataResetService $dataReset,
+        private ZktecoUserClearService $userClear,
         private MemberDeviceAccessService $memberDeviceAccess,
     ) {}
 
@@ -144,18 +148,35 @@ class ZktecoDeviceController extends Controller
 
         $this->devices->reboot($device);
 
-        Flash::success('Reboot command queued. The device will receive it on its next push poll.');
+        Flash::success(__('settings.zkteco.reboot_queued'));
 
         return redirect()->route('admin.zkteco-devices.show', $device);
     }
 
-    public function restart(ZktecoDevice $device): RedirectResponse
+    public function resetData(ZktecoDevice $device): RedirectResponse
     {
         $this->authorize('manage', $device);
 
-        $this->devices->restart($device);
+        $result = $this->dataReset->resetDevice($device);
 
-        Flash::success('Restart command queued. The device will receive it on its next push poll.');
+        Flash::success(__('settings.zkteco.data_reset', [
+            'logs' => $result['attendance_logs_deleted'],
+            'failures' => $result['attendance_failures_deleted'],
+        ]));
+
+        return redirect()->route('admin.zkteco-devices.show', $device);
+    }
+
+    public function clearUsers(ZktecoDevice $device): RedirectResponse
+    {
+        $this->authorize('manage', $device);
+
+        $result = $this->userClear->clearAllUsersWithCards($device);
+
+        Flash::success(__('settings.zkteco.users_cleared', [
+            'cards' => $result['assigned_cards'],
+            'commands' => $result['delete_commands_queued'],
+        ]));
 
         return redirect()->route('admin.zkteco-devices.show', $device);
     }

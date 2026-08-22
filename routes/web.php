@@ -145,7 +145,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::patch('/{device}/approve', 'approve')->name('approve');
             Route::patch('/{device}/suspend', 'suspend')->name('suspend');
             Route::post('/{device}/reboot', 'reboot')->name('reboot');
-            Route::post('/{device}/restart', 'restart')->name('restart');
+            Route::post('/{device}/reset-data', 'resetData')->name('reset-data');
+            Route::post('/{device}/clear-users', 'clearUsers')->name('clear-users');
             Route::post('/{device}/users', 'storeUser')->name('users.store');
             Route::delete('/{device}/users', 'destroyUser')->name('users.destroy');
         });

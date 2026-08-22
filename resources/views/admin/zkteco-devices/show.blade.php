@@ -5,49 +5,7 @@
 @section('content')
     <x-ui.page-header :title="$device->serial_number" subtitle="ZKTeco attendance device">
         <x-slot:actions>
-            <div class="d-flex flex-wrap gap-2">
-                @can('manage', $device)
-                    @if ($device->status === App\Enums\ZktecoDeviceStatus::Pending)
-                        <form action="{{ route('admin.zkteco-devices.approve', $device) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn btn-primary">Approve Device</button>
-                        </form>
-                    @endif
-
-                    @if ($device->status === App\Enums\ZktecoDeviceStatus::Active)
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#syncUserModal">
-                            Sync User
-                        </button>
-                        <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
-                            Delete User
-                        </button>
-                        <form action="{{ route('admin.zkteco-devices.restart', $device) }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-light">Queue Restart</button>
-                        </form>
-                        <form action="{{ route('admin.zkteco-devices.reboot', $device) }}" method="POST" class="d-inline" onsubmit="return confirm('Queue a reboot for this device?')">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-danger">Queue Reboot</button>
-                        </form>
-                        <form action="{{ route('admin.zkteco-devices.suspend', $device) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn btn-outline-secondary">Suspend</button>
-                        </form>
-                    @endif
-
-                    @if ($device->status === App\Enums\ZktecoDeviceStatus::Suspended)
-                        <form action="{{ route('admin.zkteco-devices.approve', $device) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn btn-primary">Re-approve Device</button>
-                        </form>
-                    @endif
-                @endcan
-
-                <a href="{{ route('admin.zkteco-devices.index') }}" class="btn btn-light">Back to Devices</a>
-            </div>
+            <x-admin.zkteco-device-show-actions :device="$device" />
         </x-slot:actions>
     </x-ui.page-header>
 

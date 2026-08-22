@@ -11,6 +11,7 @@ use App\Models\ZktecoDevice;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -81,12 +82,77 @@ it('queues a reboot command', function () {
         ->and($command->status)->toBe('pending');
 });
 
-it('queues a restart command', function () {
+it('resets attendance data and queues clear log command', function () {
+    DB::table('attendance_logs')->insert([
+        'sn' => $this->device->serial_number,
+        'pim' => '1001',
+        'timestamp' => now(),
+        'punch_status' => '0',
+        'verify_mode' => '1',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('attendance_log_failures')->insert([
+        'sn' => $this->device->serial_number,
+        'pim' => '1001',
+        'timestamp' => now(),
+        'punch_status' => '0',
+        'verify_mode' => '0',
+        'card_number' => '123456',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->device->update([
+        'stamps' => ['ATTLOG' => '12345'],
+    ]);
+
     $this->actingAs($this->user)
-        ->post(route('admin.zkteco-devices.restart', $this->device))
+        ->post(route('admin.zkteco-devices.reset-data', $this->device))
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
-    expect(ZktecoCommand::query()->first()->command)->toBe('RESTART');
+    expect(DB::table('attendance_logs')->count())->toBe(0)
+        ->and(DB::table('attendance_log_failures')->count())->toBe(0)
+        ->and($this->device->fresh()->stamps)->toBeNull()
+        ->and(ZktecoCommand::query()->value('command'))->toBe('CLEAR LOG');
+});
+
+it('clears all card users and queues clear user command', function () {
+    $member = Member::factory()->create([
+        'member_code' => 'M10005',
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addMonth(),
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => '123456',
+        'status' => RfidCardStatus::Active,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+
+    Member::factory()->create();
+    $unassignedCard = RfidCard::factory()->create([
+        'card_number' => '999999',
+        'status' => RfidCardStatus::Unassigned,
+        'member_id' => null,
+    ]);
+
+    $this->actingAs($this->user)
+        ->post(route('admin.zkteco-devices.clear-users', $this->device))
+        ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
+
+    $commands = ZktecoCommand::query()
+        ->where('serial_number', $this->device->serial_number)
+        ->orderBy('id')
+        ->pluck('command');
+
+    expect($commands)->toHaveCount(2)
+        ->and($commands[0])->toBe('DATA DELETE user Pin='.$card->id)
+        ->and($commands[1])->toBe('CLEAR USER');
+
+    expect(RfidCard::query()->find($unassignedCard->id))->not->toBeNull();
 });
 
 it('queues a delete user command', function () {

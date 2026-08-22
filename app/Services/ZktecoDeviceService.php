@@ -177,11 +177,19 @@ class ZktecoDeviceService extends BaseService
         );
     }
 
-    public function restart(ZktecoDevice $device): ZktecoCommand
+    public function clearLog(ZktecoDevice $device): ZktecoCommand
     {
         return $this->commands->queue(
             $device,
-            $this->commandBuilder->restart(),
+            $this->commandBuilder->clearLog(),
+        );
+    }
+
+    public function clearUsers(ZktecoDevice $device): ZktecoCommand
+    {
+        return $this->commands->queue(
+            $device,
+            $this->commandBuilder->clearUsers(),
         );
     }
 

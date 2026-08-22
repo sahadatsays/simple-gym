@@ -280,11 +280,10 @@ it('is idempotent when the same acknowledgement is sent twice', function () {
         ->and($command->acknowledged_at?->eq($acknowledgedAt))->toBeTrue();
 });
 
-it('builds reboot restart delete and upsert command strings', function () {
+it('builds reboot delete and upsert command strings', function () {
     $builder = app(ZktecoCommandBuilder::class);
 
     expect($builder->reboot())->toBe('REBOOT')
-        ->and($builder->restart())->toBe('RESTART')
         ->and($builder->deleteUser('1005'))->toBe('DATA DELETE user Pin=1005')
         ->and($builder->upsertUser([
             'pim' => '7',
