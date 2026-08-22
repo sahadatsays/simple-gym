@@ -9,12 +9,16 @@ use App\Http\Requests\Admin\UpdateGymSettingRequest;
 use App\Services\GymSettingService;
 use App\Support\CurrencyRegistry;
 use App\Support\Flash;
+use App\Support\MemberAccessRestrictionWindow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class GymSettingController extends Controller
 {
-    public function __construct(private GymSettingService $gymSettingService) {}
+    public function __construct(
+        private GymSettingService $gymSettingService,
+        private MemberAccessRestrictionWindow $restrictionWindow,
+    ) {}
 
     public function edit(): View
     {
@@ -28,6 +32,7 @@ class GymSettingController extends Controller
             'currencies' => CurrencyRegistry::options(),
             'paymentMethods' => PaymentMethod::options(),
             'restrictionGroups' => MemberAccessRestrictionGroup::options(),
+            'restrictionStatus' => $this->restrictionWindow->status($settings),
             'canUpdate' => auth()->user()?->can('update', $settings) ?? false,
         ]);
     }

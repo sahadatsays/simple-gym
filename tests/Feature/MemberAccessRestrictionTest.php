@@ -142,7 +142,7 @@ it('removes active male members from devices when the restriction starts', funct
 
     $processed = app(MemberAccessRestrictionService::class)->applyRestrictionStart();
 
-    expect($processed)->toBe(1)
+    expect($processed['processed'])->toBe(1)
         ->and(ZktecoCommand::query()->count())->toBe(1)
         ->and(ZktecoCommand::query()->value('command'))->toBe('DATA DELETE user Pin='.$card->id);
 });
@@ -162,9 +162,9 @@ it('restores eligible male members when the restriction ends', function () {
 
     $processed = app(MemberAccessRestrictionService::class)->applyRestrictionEnd();
 
-    expect($processed)->toBe(1)
+    expect($processed['processed'])->toBe(1)
         ->and(ZktecoCommand::query()->latest('id')->value('command'))
-        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Restore Male\tCardID={$card->card_number}\tPri=0\tGrp=1");
+        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Restore Male\tCardNo={$card->card_number}\tPri=0\tGrp=1");
 });
 
 it('does not restore expired male members after the restriction ends', function () {
@@ -183,7 +183,7 @@ it('does not restore expired male members after the restriction ends', function 
 
     $processed = app(MemberAccessRestrictionService::class)->applyRestrictionEnd();
 
-    expect($processed)->toBe(0)
+    expect($processed['processed'])->toBe(0)
         ->and(ZktecoCommand::query()->where('command', 'like', 'DATA UPDATE%')->count())->toBe(0);
 });
 
@@ -273,8 +273,8 @@ it('is idempotent when the restriction start job runs twice', function () {
 
     $service = app(MemberAccessRestrictionService::class);
 
-    expect($service->applyRestrictionStart())->toBe(1)
-        ->and($service->applyRestrictionStart())->toBe(0)
+    expect($service->applyRestrictionStart()['processed'])->toBe(1)
+        ->and($service->applyRestrictionStart()['processed'])->toBe(0)
         ->and(ZktecoCommand::query()->count())->toBe(1);
 });
 
@@ -292,8 +292,8 @@ it('is idempotent when the restriction end job runs twice', function () {
 
     $service = app(MemberAccessRestrictionService::class);
 
-    expect($service->applyRestrictionEnd())->toBe(1)
-        ->and($service->applyRestrictionEnd())->toBe(0)
+    expect($service->applyRestrictionEnd()['processed'])->toBe(1)
+        ->and($service->applyRestrictionEnd()['processed'])->toBe(0)
         ->and(ZktecoCommand::query()->where('command', 'like', 'DATA UPDATE%')->count())->toBe(1);
 });
 
@@ -331,6 +331,33 @@ it('dispatches boundary jobs only once per configured time', function () {
     $this->artisan('access:restriction:dispatch')->assertSuccessful();
 
     Queue::assertPushed(MemberAccessRestrictionEndJob::class, 1);
+});
+
+it('catches up a missed start when the window is already active', function () {
+    enableMaleAccessRestriction();
+
+    Queue::fake();
+
+    travelToRestriction('19:15');
+
+    $this->artisan('access:restriction:dispatch')->assertSuccessful();
+
+    Queue::assertPushed(MemberAccessRestrictionStartJob::class, 1);
+});
+
+it('formats remaining restriction time for understanding', function () {
+    enableMaleAccessRestriction('18:00', '22:00');
+    travelToRestriction('20:58:57');
+
+    $window = app(MemberAccessRestrictionWindow::class);
+    $settings = GymSetting::query()->firstOrFail();
+    $status = $window->status($settings);
+
+    expect($status['active'])->toBeTrue()
+        ->and($status['start_time'])->toBe('18:00')
+        ->and($status['end_time'])->toBe('22:00')
+        ->and($status['seconds_remaining'])->toBe(3663)
+        ->and($status['remaining_label'])->toBe('1 hour 1 minute 3 seconds remaining');
 });
 
 afterEach(function () {

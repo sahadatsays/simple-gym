@@ -13,4 +13,4 @@ Schedule::command('access:expire')->dailyAt('01:00');
 Schedule::command('zkteco:clear-commands')
     ->dailyAt('02:30')
     ->withoutOverlapping();
-Schedule::command('access:restriction:dispatch')->everyMinute();
+Schedule::command('access:restriction:dispatch')->everyMinute()->withoutOverlapping();

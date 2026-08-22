@@ -31,11 +31,14 @@ class MemberAccessRestrictionStartJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(MemberAccessRestrictionService $restrictionService): void
     {
-        $processed = $restrictionService->applyRestrictionStart();
+        $result = $restrictionService->applyRestrictionStart();
 
         Log::info('MemberAccessRestrictionStartJob completed', [
             'boundary_key' => $this->boundaryKey,
-            'processed' => $processed,
+            'members_blocked' => $result['processed'],
+            'group' => $result['group'],
+            'start_time' => $result['start_time'],
+            'end_time' => $result['end_time'],
         ]);
     }
 

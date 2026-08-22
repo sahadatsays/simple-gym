@@ -38,6 +38,13 @@ return [
         'start_time' => 'Restriction start time',
         'end_time' => 'Restriction end time',
         'overnight_help' => 'Supports overnight windows, e.g. 22:00 to 06:00.',
+        'status_title' => 'Live status',
+        'status_disabled' => 'Restriction is disabled. All eligible cards can sync to devices.',
+        'status_inactive' => 'Outside the restriction window. Eligible cards should work on devices.',
+        'status_active' => 'Restriction is active. Restricted-group cards are blocked until the end time.',
+        'configured_window' => 'Configured window',
+        'remaining' => 'Time remaining',
+        'cards_restored_hint' => 'When the end time is reached, eligible cards are automatically restored to all active devices.',
     ],
 
     'zkteco' => [

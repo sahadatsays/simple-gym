@@ -144,21 +144,54 @@
                     </div>
                 </x-ui.card>
 
-                <x-ui.card title="Device Access Restriction" class="mb-4">
+                <x-ui.card title="{{ __('settings.sections.device_access_restriction') }}" class="mb-4">
                     <p class="text-muted small">
-                        Temporarily block selected member groups from ZKTeco devices during a daily time window.
-                        Member and RFID records stay active; only device access is removed and restored at the configured boundaries.
+                        {{ __('settings.device_restriction.description') }}
                     </p>
 
+                    <div
+                        class="border rounded-3 p-3 mb-3 bg-light"
+                        x-data="restrictionCountdown(@js($restrictionStatus))"
+                        x-init="start()"
+                    >
+                        <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                            <strong class="small">{{ __('settings.device_restriction.status_title') }}</strong>
+                            <span class="badge" :class="badgeClass" x-text="badgeLabel"></span>
+                        </div>
+
+                        <p class="small mb-2" x-text="statusMessage"></p>
+
+                        <dl class="row small mb-0">
+                            <dt class="col-sm-4">{{ __('settings.device_restriction.configured_window') }}</dt>
+                            <dd class="col-sm-8 mb-1">
+                                <span x-text="startTime || '—'"></span>
+                                –
+                                <span x-text="endTime || '—'"></span>
+                                <span class="text-muted">(<span x-text="timezone"></span>)</span>
+                            </dd>
+
+                            <template x-if="active">
+                                <dt class="col-sm-4">{{ __('settings.device_restriction.remaining') }}</dt>
+                            </template>
+                            <template x-if="active">
+                                <dd class="col-sm-8 mb-0 fw-semibold text-danger" x-text="remainingLabel"></dd>
+                            </template>
+                        </dl>
+
+                        <p class="text-muted small mb-0 mt-2">
+                            {{ __('settings.device_restriction.cards_restored_hint') }}
+                        </p>
+                    </div>
+
                     <x-forms.checkbox
-                        label="Enable member group access restriction"
+                        label="{{ __('settings.device_restriction.enable') }}"
                         name="member_access_restriction_enabled"
                         :checked="old('member_access_restriction_enabled', $settings->member_access_restriction_enabled)"
                         :disabled="! $canUpdate"
                     />
 
                     <x-forms.select
-                        label="Restricted group"
+                        label="{{ __('settings.device_restriction.restricted_group') }}"
                         name="member_access_restriction_group"
                         :options="$restrictionGroups"
                         :selected="old('member_access_restriction_group', $settings->member_access_restriction_group?->value ?? 'male')"
@@ -168,7 +201,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <x-forms.time-picker
-                                label="Restriction start time"
+                                label="{{ __('settings.device_restriction.start_time') }}"
                                 name="member_access_restriction_start_time"
                                 :value="old('member_access_restriction_start_time', optional($settings->member_access_restriction_start_time)?->format('H:i'))"
                                 :disabled="! $canUpdate"
@@ -176,10 +209,10 @@
                         </div>
                         <div class="col-md-6">
                             <x-forms.time-picker
-                                label="Restriction end time"
+                                label="{{ __('settings.device_restriction.end_time') }}"
                                 name="member_access_restriction_end_time"
                                 :value="old('member_access_restriction_end_time', optional($settings->member_access_restriction_end_time)?->format('H:i'))"
-                                help="Supports overnight windows, e.g. 22:00 to 06:00."
+                                help="{{ __('settings.device_restriction.overnight_help') }}"
                                 :disabled="! $canUpdate"
                             />
                         </div>
@@ -266,6 +299,93 @@
         </div>
     </form>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('restrictionCountdown', (status) => ({
+                enabled: Boolean(status.enabled),
+                active: Boolean(status.active),
+                startTime: status.start_time,
+                endTime: status.end_time,
+                timezone: status.timezone,
+                periodStartMs: status.period_start_at ? new Date(status.period_start_at).getTime() : null,
+                periodEndMs: status.period_end_at ? new Date(status.period_end_at).getTime() : null,
+                secondsRemaining: status.seconds_remaining,
+                timer: null,
+                messages: {
+                    disabled: @js(__('settings.device_restriction.status_disabled')),
+                    inactive: @js(__('settings.device_restriction.status_inactive')),
+                    active: @js(__('settings.device_restriction.status_active')),
+                },
+
+                start() {
+                    this.tick();
+                    this.timer = setInterval(() => this.tick(), 1000);
+                },
+
+                tick() {
+                    if (! this.enabled || this.periodStartMs === null || this.periodEndMs === null) {
+                        this.active = false;
+                        this.secondsRemaining = null;
+
+                        return;
+                    }
+
+                    const nowMs = Date.now();
+                    this.active = nowMs >= this.periodStartMs && nowMs < this.periodEndMs;
+                    this.secondsRemaining = this.active
+                        ? Math.max(0, Math.floor((this.periodEndMs - nowMs) / 1000))
+                        : null;
+                },
+
+                get remainingLabel() {
+                    if (this.secondsRemaining === null) {
+                        return '';
+                    }
+
+                    const hours = Math.floor(this.secondsRemaining / 3600);
+                    const minutes = Math.floor((this.secondsRemaining % 3600) / 60);
+                    const seconds = this.secondsRemaining % 60;
+                    const parts = [];
+
+                    if (hours > 0) {
+                        parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+                    }
+
+                    parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+                    parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'} remaining`);
+
+                    return parts.join(' ');
+                },
+
+                get statusMessage() {
+                    if (! this.enabled) {
+                        return this.messages.disabled;
+                    }
+
+                    return this.active ? this.messages.active : this.messages.inactive;
+                },
+
+                get badgeLabel() {
+                    if (! this.enabled) {
+                        return 'Disabled';
+                    }
+
+                    return this.active ? 'Active' : 'Inactive';
+                },
+
+                get badgeClass() {
+                    if (! this.enabled) {
+                        return 'text-bg-secondary';
+                    }
+
+                    return this.active ? 'text-bg-danger' : 'text-bg-success';
+                },
+            }));
+        });
+    </script>
+@endpush
 
 @push('styles')
     <style>

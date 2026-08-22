@@ -9,7 +9,7 @@ use InvalidArgumentException;
  *
  * Device mapping:
  * - Pin: rfid_cards.id (PIM)
- * - CardID: rfid_cards.card_number
+ * - CardNo: rfid_cards.card_number
  */
 class ZktecoCommandBuilder
 {
