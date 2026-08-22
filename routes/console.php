@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('inspire', function () {
     logger('inspire');
     $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+})->purpose('Display an inspiring quote')->withoutOverlapping()->everyMinute();
 
 Schedule::command('notifications:sync-gym-alerts')->dailyAt('06:00');
 Schedule::command('access:expire')->dailyAt('01:00');
