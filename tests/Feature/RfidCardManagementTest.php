@@ -210,11 +210,10 @@ it('enables a disabled card for a non-expired member and queues device sync', fu
 
     expect($card->fresh()->status)->toBe(RfidCardStatus::Active)
         ->and($member->fresh()->rfid_card)->toBe('RFIDENABLE011')
-        ->and(ZktecoCommand::query()->count())->toBe(4)
-        ->and(ZktecoCommand::query()->orderByDesc('id')->value('command'))
+        ->and(ZktecoCommand::query()->count())->toBe(1)
+        ->and(ZktecoCommand::query()->value('command'))
         ->toContain('Pin='.$card->id)
-        ->toContain('CardNo=RFIDENABLE011')
-        ->toContain('TZ=1');
+        ->toContain('CardNo=RFIDENABLE011');
 });
 
 it('prevents enabling a card for an expired member', function () {

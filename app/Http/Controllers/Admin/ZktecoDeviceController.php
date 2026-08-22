@@ -199,7 +199,7 @@ class ZktecoDeviceController extends Controller
             return back()->withInput();
         }
 
-        Flash::success('Factory-access reset packet queued (timezone, group, unlock, user).');
+        Flash::success('User sync command queued for the device.');
 
         return redirect()->route('admin.zkteco-devices.show', $device);
     }
