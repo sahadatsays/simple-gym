@@ -207,15 +207,47 @@ class ZktecoDeviceService extends BaseService
      *     name?: string|null,
      *     card_number?: string|null,
      *     privilege?: int|null,
-     *     group?: int|null
+     *     group?: int|null,
+     *     timezone?: int|null
      * }  $userData
+     * @return list<ZktecoCommand>
      */
-    public function upsertUser(ZktecoDevice $device, array $userData): ZktecoCommand
+    public function upsertUser(ZktecoDevice $device, array $userData): array
     {
-        return $this->commands->queue(
-            $device,
-            $this->commandBuilder->upsertUser($userData),
-        );
+        return $this->queueFactoryAccessReset($device, $userData);
+    }
+
+    /**
+     * Clear the device command queue, then issue the F22 factory-access reset packet:
+     * timezone → group → unlockcomb → user (Grp + TZ).
+     *
+     * @param  array{
+     *     pim: string|int,
+     *     name?: string|null,
+     *     card_number?: string|null,
+     *     privilege?: int|null,
+     *     group?: int|null,
+     *     timezone?: int|null
+     * }  $userData
+     * @return list<ZktecoCommand>
+     */
+    public function queueFactoryAccessReset(ZktecoDevice $device, array $userData): array
+    {
+        return $this->transaction(function () use ($device, $userData): array {
+            $this->commands->clearActiveCommands($device);
+
+            $packet = $this->commandBuilder->factoryAccessResetPacket($userData);
+            $queued = $this->commands->queueSequence($device, $packet);
+
+            Log::info('ZKTeco F22 factory-access reset packet queued', [
+                'serial_number' => $device->serial_number,
+                'pim' => $userData['pim'] ?? null,
+                'card_number' => $userData['card_number'] ?? null,
+                'commands' => count($queued),
+            ]);
+
+            return $queued;
+        });
     }
 
     public function logUnexpectedPushRequest(Request $request): void

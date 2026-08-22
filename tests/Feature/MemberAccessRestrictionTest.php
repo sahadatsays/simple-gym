@@ -121,7 +121,7 @@ it('allows female members to sync while the restriction window is active', funct
     $synced = app(MemberDeviceAccessService::class)->grantMemberAccess($member->id);
 
     expect($synced)->toBeTrue()
-        ->and(ZktecoCommand::query()->count())->toBe(1);
+        ->and(ZktecoCommand::query()->count())->toBe(4);
 });
 
 it('removes active male members from devices when the restriction starts', function () {
@@ -134,7 +134,7 @@ it('removes active male members from devices when the restriction starts', funct
 
     app(MemberDeviceAccessService::class)->grantMemberAccess($member->id);
 
-    expect(ZktecoCommand::query()->where('command', 'like', 'DATA UPDATE%')->count())->toBe(1);
+    expect(ZktecoCommand::query()->where('command', 'like', 'DATA UPDATE%')->count())->toBe(4);
 
     ZktecoCommand::query()->delete();
 
@@ -163,8 +163,9 @@ it('restores eligible male members when the restriction ends', function () {
     $processed = app(MemberAccessRestrictionService::class)->applyRestrictionEnd();
 
     expect($processed['processed'])->toBe(1)
-        ->and(ZktecoCommand::query()->latest('id')->value('command'))
-        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Restore Male\tCardNo={$card->card_number}\tPri=0\tGrp=1");
+        ->and(ZktecoCommand::query()->count())->toBe(4)
+        ->and(ZktecoCommand::query()->orderByDesc('id')->value('command'))
+        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Restore Male\tCardNo={$card->card_number}\tPri=0\tGrp=1\tTZ=1");
 });
 
 it('does not restore expired male members after the restriction ends', function () {
@@ -235,8 +236,8 @@ it('restores access when a male member becomes female during an active restricti
     $member->update(['gender' => Gender::Female]);
     app(MemberDeviceAccessService::class)->reconcileMemberDeviceAccess($member->id);
 
-    expect(ZktecoCommand::query()->count())->toBe(1)
-        ->and(ZktecoCommand::query()->value('command'))->toContain('DATA UPDATE user');
+    expect(ZktecoCommand::query()->count())->toBe(4)
+        ->and(ZktecoCommand::query()->orderByDesc('id')->value('command'))->toContain('DATA UPDATE user');
 });
 
 it('removes access when a female member becomes male during an active restriction', function () {
@@ -294,7 +295,7 @@ it('is idempotent when the restriction end job runs twice', function () {
 
     expect($service->applyRestrictionEnd()['processed'])->toBe(1)
         ->and($service->applyRestrictionEnd()['processed'])->toBe(0)
-        ->and(ZktecoCommand::query()->where('command', 'like', 'DATA UPDATE%')->count())->toBe(1);
+        ->and(ZktecoCommand::query()->where('command', 'like', 'DATA UPDATE user%')->count())->toBe(1);
 });
 
 it('evaluates overnight restriction windows correctly', function () {

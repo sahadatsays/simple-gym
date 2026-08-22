@@ -4,6 +4,7 @@ use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
 use App\Services\ZktecoCommandBuilder;
 use App\Services\ZktecoDeviceCommandService;
+use App\Services\ZktecoDeviceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -280,17 +281,75 @@ it('is idempotent when the same acknowledgement is sent twice', function () {
         ->and($command->acknowledged_at?->eq($acknowledgedAt))->toBeTrue();
 });
 
-it('builds reboot delete and upsert command strings', function () {
+it('builds reboot delete factory-access and upsert command strings', function () {
     $builder = app(ZktecoCommandBuilder::class);
+
+    $timezone = $builder->upsertTimezone(1);
+    $group = $builder->upsertGroup(1, 1);
+    $unlock = $builder->upsertUnlockCombination(1, 1);
+    $user = $builder->upsertUser([
+        'pim' => '7',
+        'name' => 'Asma',
+        'privilege' => 0,
+        'card_number' => '123456',
+    ]);
 
     expect($builder->reboot())->toBe('REBOOT')
         ->and($builder->deleteUser('1005'))->toBe('DATA DELETE user Pin=1005')
-        ->and($builder->upsertUser([
+        ->and($timezone)->toStartWith('DATA UPDATE timezone TNo=1')
+        ->and($timezone)->toContain('SunTime1=00002359')
+        ->and($timezone)->toContain('SatTime1=00002359')
+        ->and($group)->toBe("SET DATA GROUP GNo=1\tName=Full_Access\tValid=1\tGTimezone=1")
+        ->and($unlock)->toBe("SET DATA UNLOCKCOMB CombNo=1\tGNo1=1")
+        ->and($user)->toBe("DATA UPDATE user Pin=7\tName=Asma\tCardNo=123456\tPri=0\tGrp=1\tTZ=1")
+        ->and($builder->factoryAccessResetPacket([
             'pim' => '7',
             'name' => 'Asma',
             'privilege' => 0,
             'card_number' => '123456',
-        ]))->toBe("DATA UPDATE user Pin=7\tName=Asma\tCardID=123456\tPri=0\tGrp=1");
+        ]))->toBe([$timezone, $group, $unlock, $user]);
+});
+
+it('clears active commands then queues the factory-access reset packet', function () {
+    $device = ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => 'active',
+    ]);
+
+    ZktecoCommand::query()->create([
+        'serial_number' => $device->serial_number,
+        'command' => 'REBOOT',
+        'status' => 'pending',
+    ]);
+
+    ZktecoCommand::query()->create([
+        'serial_number' => $device->serial_number,
+        'command' => 'CLEAR LOG',
+        'status' => 'completed',
+    ]);
+
+    $queued = app(ZktecoDeviceService::class)->queueFactoryAccessReset($device, [
+        'pim' => '12',
+        'name' => 'Test User',
+        'card_number' => '1233447',
+        'privilege' => 0,
+        'group' => 1,
+        'timezone' => 1,
+    ]);
+
+    expect($queued)->toHaveCount(4)
+        ->and(ZktecoCommand::query()->where('status', 'pending')->count())->toBe(4)
+        ->and(ZktecoCommand::query()->where('command', 'REBOOT')->exists())->toBeFalse()
+        ->and(ZktecoCommand::query()->where('command', 'CLEAR LOG')->exists())->toBeTrue()
+        ->and(ZktecoCommand::query()->where('status', 'pending')->orderBy('id')->pluck('command')->all())
+        ->toBe(app(ZktecoCommandBuilder::class)->factoryAccessResetPacket([
+            'pim' => '12',
+            'name' => 'Test User',
+            'card_number' => '1233447',
+            'privilege' => 0,
+            'group' => 1,
+            'timezone' => 1,
+        ]));
 });
 
 it('updates last seen when a device polls getrequest', function () {

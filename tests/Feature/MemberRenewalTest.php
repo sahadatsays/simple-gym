@@ -402,9 +402,9 @@ it('reactivates a disabled card and syncs the member to the device after renewal
     expect($member->fresh()->status)->toBe(MemberStatus::Active)
         ->and($member->fresh()->rfid_card)->toBe('1233447')
         ->and($card->fresh()->status)->toBe(RfidCardStatus::Active)
-        ->and(ZktecoCommand::query()->count())->toBe(1)
-        ->and(ZktecoCommand::query()->value('command'))
-        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Renewed Member\tCardID=1233447\tPri=0\tGrp=1");
+        ->and(ZktecoCommand::query()->count())->toBe(4)
+        ->and(ZktecoCommand::query()->orderByDesc('id')->value('command'))
+        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Renewed Member\tCardNo=1233447\tPri=0\tGrp=1\tTZ=1");
 });
 
 it('syncs an already active card to the device when a member renews early', function () {
@@ -437,8 +437,9 @@ it('syncs an already active card to the device when a member renews early', func
         ])
         ->assertRedirect();
 
-    expect(ZktecoCommand::query()->count())->toBe(1)
-        ->and(ZktecoCommand::query()->value('command'))
+    expect(ZktecoCommand::query()->count())->toBe(4)
+        ->and(ZktecoCommand::query()->orderByDesc('id')->value('command'))
         ->toContain('Pin='.$card->id)
-        ->toContain('CardID=7654321');
+        ->toContain('CardNo=7654321')
+        ->toContain('TZ=1');
 });

@@ -8,6 +8,7 @@ use App\Models\RfidCard;
 use App\Models\User;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
+use App\Services\ZktecoCommandBuilder;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -150,7 +151,7 @@ it('clears all card users and queues clear user command', function () {
 
     expect($commands)->toHaveCount(2)
         ->and($commands[0])->toBe('DATA DELETE user Pin='.$card->id)
-        ->and($commands[1])->toBe('CLEAR USER');
+        ->and($commands[1])->toBe('CLEAR DATA');
 
     expect(RfidCard::query()->find($unassignedCard->id))->not->toBeNull();
 });
@@ -200,8 +201,16 @@ it('queues a user upsert command from rfid card pim', function () {
         ])
         ->assertRedirect(route('admin.zkteco-devices.show', $this->device));
 
-    expect(ZktecoCommand::query()->first()->command)
-        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Asma\tCardID=123456\tPri=0\tGrp=1");
+    expect(ZktecoCommand::query()->count())->toBe(4)
+        ->and(ZktecoCommand::query()->orderBy('id')->pluck('command')->all())
+        ->toBe(app(ZktecoCommandBuilder::class)->factoryAccessResetPacket([
+            'pim' => $card->id,
+            'name' => 'Asma',
+            'card_number' => '123456',
+            'privilege' => 0,
+            'group' => 1,
+            'timezone' => 1,
+        ]));
 });
 
 it('returns not found for an invalid device id', function () {

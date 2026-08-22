@@ -54,12 +54,14 @@ it('queues device user sync when assigning an rfid card', function () {
         ])
         ->assertRedirect(route('admin.rfid-cards.index'));
 
-    expect(ZktecoCommand::query()->count())->toBe(1);
+    expect(ZktecoCommand::query()->count())->toBe(4);
 
-    $command = ZktecoCommand::query()->first();
+    $commands = ZktecoCommand::query()->orderBy('id')->pluck('command');
 
-    expect($command->serial_number)->toBe('JJA1254800833')
-        ->and($command->command)->toBe("DATA UPDATE user Pin={$card->fresh()->id}\tName=Sahadat Hossain\tCardID=1233447\tPri=0\tGrp=1");
+    expect($commands[0])->toStartWith('DATA UPDATE timezone TNo=1')
+        ->and($commands[1])->toBe("SET DATA GROUP GNo=1\tName=Full_Access\tValid=1\tGTimezone=1")
+        ->and($commands[2])->toBe("SET DATA UNLOCKCOMB CombNo=1\tGNo1=1")
+        ->and($commands[3])->toBe("DATA UPDATE user Pin={$card->fresh()->id}\tName=Sahadat Hossain\tCardNo=1233447\tPri=0\tGrp=1\tTZ=1");
 });
 
 it('queues device user sync when replacing a member card', function () {
@@ -91,10 +93,12 @@ it('queues device user sync when replacing a member card', function () {
 
     $newCard = RfidCard::query()->where('card_number', '1233447')->first();
 
-    expect(ZktecoCommand::query()->count())->toBe(1)
-        ->and(ZktecoCommand::query()->value('command'))
+    expect(ZktecoCommand::query()->count())->toBe(4)
+        ->and(ZktecoCommand::query()->orderBy('id')->value('command'))->toStartWith('DATA UPDATE timezone')
+        ->and(ZktecoCommand::query()->orderByDesc('id')->value('command'))
         ->toContain('Pin='.$newCard->id)
-        ->toContain('CardID=1233447');
+        ->toContain('CardNo=1233447')
+        ->toContain('TZ=1');
 });
 
 it('dispatches member access job after card assignment', function () {
@@ -162,5 +166,5 @@ it('clears prior access removal records when granting access again', function ()
     app(MemberDeviceAccessService::class)->grantMemberAccess($member->id);
 
     expect($member->zktecoAccessRemovals()->count())->toBe(0)
-        ->and(ZktecoCommand::query()->count())->toBe(1);
+        ->and(ZktecoCommand::query()->count())->toBe(4);
 });

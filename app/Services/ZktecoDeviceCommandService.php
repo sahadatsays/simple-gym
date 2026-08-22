@@ -28,6 +28,55 @@ class ZktecoDeviceCommandService extends BaseService
         });
     }
 
+    /**
+     * Remove undelivered commands so a new sequential packet is delivered in order.
+     */
+    public function clearActiveCommands(ZktecoDevice $device): int
+    {
+        return $this->transaction(function () use ($device): int {
+            $deleted = ZktecoCommand::query()
+                ->where('serial_number', $device->serial_number)
+                ->whereIn('status', ['pending', 'sent'])
+                ->delete();
+
+            if ($deleted > 0) {
+                Log::info('ZKTeco active commands cleared before factory-access reset', [
+                    'serial_number' => $device->serial_number,
+                    'deleted' => $deleted,
+                ]);
+            }
+
+            return $deleted;
+        });
+    }
+
+    /**
+     * @param  list<string>  $commands
+     * @return list<ZktecoCommand>
+     */
+    public function queueSequence(ZktecoDevice $device, array $commands): array
+    {
+        return $this->transaction(function () use ($device, $commands): array {
+            $queued = [];
+
+            foreach ($commands as $command) {
+                $queued[] = ZktecoCommand::query()->create([
+                    'serial_number' => $device->serial_number,
+                    'command' => $command,
+                    'status' => 'pending',
+                ]);
+            }
+
+            Log::info('ZKTeco command sequence queued', [
+                'serial_number' => $device->serial_number,
+                'count' => count($queued),
+                'commands' => $commands,
+            ]);
+
+            return $queued;
+        });
+    }
+
     public function getNextPendingCommand(ZktecoDevice $device): ?ZktecoCommand
     {
         return $this->transaction(function () use ($device): ?ZktecoCommand {

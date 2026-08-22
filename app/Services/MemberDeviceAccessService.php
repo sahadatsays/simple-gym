@@ -105,17 +105,19 @@ class MemberDeviceAccessService extends BaseService
                     continue;
                 }
 
-                $command = $this->devices->upsertUser($device, $userData);
+                $commands = $this->devices->upsertUser($device, $userData);
+                $command = $commands[array_key_last($commands)];
 
                 $queuedAnyCommand = true;
 
-                Log::info('Queued ZKTeco user sync for member', [
+                Log::info('Queued ZKTeco F22 factory-access reset for member', [
                     'member_id' => $member->id,
                     'uid' => $userPin,
                     'pim' => $userData['pim'],
                     'card_number' => $userData['card_number'],
                     'serial_number' => $device->serial_number,
                     'command_id' => $command->id,
+                    'packet_size' => count($commands),
                 ]);
             }
         });
@@ -160,7 +162,8 @@ class MemberDeviceAccessService extends BaseService
      *     name: string,
      *     card_number: string,
      *     privilege: int,
-     *     group: int
+     *     group: int,
+     *     timezone: int
      * }
      */
     public function resolveDeviceUserDataFromPim(int $rfidCardId): array
@@ -201,7 +204,8 @@ class MemberDeviceAccessService extends BaseService
      *     name: string,
      *     card_number: string,
      *     privilege: int,
-     *     group: int
+     *     group: int,
+     *     timezone: int
      * }
      */
     private function buildUserPayload(Member $member, RfidCard $card): array
@@ -212,6 +216,7 @@ class MemberDeviceAccessService extends BaseService
             'card_number' => $card->card_number,
             'privilege' => 0,
             'group' => 1,
+            'timezone' => 1,
         ];
     }
 
@@ -221,16 +226,17 @@ class MemberDeviceAccessService extends BaseService
      *     name: string,
      *     card_number: string,
      *     privilege: int,
-     *     group: int
+     *     group: int,
+     *     timezone: int
      * }  $userData
      */
     private function hasPendingUpsertCommand(ZktecoDevice $device, array $userData): bool
     {
-        $upsertCommand = $this->commandBuilder->upsertUser($userData);
+        $packet = $this->commandBuilder->factoryAccessResetPacket($userData);
 
         return ZktecoCommand::query()
             ->where('serial_number', $device->serial_number)
-            ->where('command', $upsertCommand)
+            ->where('command', $packet[array_key_last($packet)])
             ->whereIn('status', ['pending', 'sent'])
             ->exists();
     }
