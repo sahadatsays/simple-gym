@@ -16,9 +16,24 @@ return [
     | messages to your logs. The value provided here should match one of
     | the channels present in the list of "channels" configured below.
     |
+    | Outside local/development/testing, AppServiceProvider forces the
+    | "null" channel unless LOG_ENABLED is explicitly set.
+    |
     */
 
     'default' => env('LOG_CHANNEL', 'stack'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Force Logging On/Off
+    |--------------------------------------------------------------------------
+    |
+    | When null/empty, logging is auto-enabled only for local, development,
+    | and testing. Set LOG_ENABLED=true|false to override that behavior.
+    |
+    */
+
+    'enabled' => env('LOG_ENABLED'),
 
     /*
     |--------------------------------------------------------------------------

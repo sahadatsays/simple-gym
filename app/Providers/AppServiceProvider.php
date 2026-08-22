@@ -32,6 +32,7 @@ use App\Policies\InvoicePolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\ZktecoDevicePolicy;
+use App\Support\AppLogging;
 use App\Support\MenuBuilder;
 use App\Support\MoneyFormatter;
 use Illuminate\Pagination\Paginator;
@@ -49,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->configureEnvironmentLogging();
     }
 
     /**
@@ -82,6 +83,20 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['layouts.admin', 'layouts.partials.sidebar'], function ($view): void {
             $view->with('menuGroups', MenuBuilder::authorizedGroups());
         });
+    }
+
+    /**
+     * Keep Log:: calls active in local/development/testing only.
+     * Production (and other non-dev envs) use the null channel so nothing is written.
+     */
+    private function configureEnvironmentLogging(): void
+    {
+        if (AppLogging::enabled()) {
+            return;
+        }
+
+        $this->app->make('config')->set('logging.default', 'null');
+        $this->app->make('config')->set('logging.deprecations.channel', 'null');
     }
 
     private function shareGymContext(): void
