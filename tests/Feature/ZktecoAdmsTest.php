@@ -231,15 +231,16 @@ it('ingests f22 key value attlog lines', function () {
         ->and($attendance->verify_mode)->toBe('4');
 });
 
-it('stores failed card verifications separately from successful attendance logs', function () {
+it('stores only successful unlocks and ignores denied card reads', function () {
     ZktecoDevice::query()->create([
         'serial_number' => 'JJA1254800833',
         'status' => 'active',
     ]);
 
     $body = implode("\n", [
-        "time=2026-08-11 21:47:45\tpin=1\tcardno=1233447\tverifytype=4\tinoutstatus=0",
-        "time=2026-08-11 21:48:00\tpin=1\tcardno=\tverifytype=0\tinoutstatus=0",
+        "time=2026-08-11 21:47:45\tpin=1\tcardno=1233447\tverifytype=4\tinoutstatus=0\tevent=0",
+        "time=2026-08-11 21:48:00\tpin=1\tcardno=\tverifytype=0\tinoutstatus=0\tevent=0",
+        "time=2026-08-23 01:24:41\tpin=0\tcardno=7937357\teventaddr=1\tevent=27\tinoutstatus=0\tverifytype=4\tindex=605",
     ]);
 
     $this->call(
@@ -254,8 +255,54 @@ it('stores failed card verifications separately from successful attendance logs'
 
     expect(AttendanceLog::query()->count())->toBe(1)
         ->and(AttendanceLog::query()->first()->verify_mode)->toBe('4')
-        ->and(DB::table('attendance_log_failures')->count())->toBe(1)
-        ->and(DB::table('attendance_log_failures')->value('verify_mode'))->toBe('0');
+        ->and(AttendanceLog::query()->first()->pim)->toBe('1')
+        ->and(DB::table('attendance_log_failures')->count())->toBe(0);
+});
+
+it('counts f22 rtlog unlock events and rejects denied access events', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => 'active',
+    ]);
+
+    $success = "time=2026-08-23 01:27:00\tpin=4\tcardno=7937357\teventaddr=1\tevent=3\tinoutstatus=0\tverifytype=4\tindex=606\tsitecode=0\tlinkid=0\tmaskflag=0\ttemperature=0\tconvtemperature=0";
+    $denied = "time=2026-08-23 01:24:41\tpin=0\tcardno=7937357\teventaddr=1\tevent=27\tinoutstatus=0\tverifytype=4\tindex=605\tsitecode=0\tlinkid=0\tmaskflag=0\ttemperature=0\tconvtemperature=0";
+
+    $this->call(
+        'POST',
+        '/iclock/cdata?SN=JJA1254800833&table=rtlog',
+        [],
+        [],
+        [],
+        ['CONTENT_TYPE' => 'text/plain'],
+        $denied."\n".$success,
+    )->assertSuccessful();
+
+    expect(AttendanceLog::query()->count())->toBe(1)
+        ->and(AttendanceLog::query()->value('pim'))->toBe('4')
+        ->and(DB::table('attendance_log_failures')->count())->toBe(0);
+});
+
+it('acknowledges rtstate heartbeats without storing attendance', function () {
+    ZktecoDevice::query()->create([
+        'serial_number' => 'JJA1254800833',
+        'status' => 'active',
+    ]);
+
+    $this->call(
+        'POST',
+        '/iclock/cdata?SN=JJA1254800833&table=rtstate',
+        [],
+        [],
+        [],
+        ['CONTENT_TYPE' => 'text/plain'],
+        "time=2026-08-23 01:24:14\tsensor=01\trelay=00\talarm=0000000000000000\tdoor=01",
+    )
+        ->assertSuccessful()
+        ->assertSee('OK');
+
+    expect(AttendanceLog::query()->count())->toBe(0)
+        ->and(DB::table('attendance_log_failures')->count())->toBe(0);
 });
 
 it('accepts unknown cdata tables as a no-op', function () {
