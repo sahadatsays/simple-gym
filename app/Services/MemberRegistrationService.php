@@ -12,6 +12,7 @@ use App\Models\MembershipPlan;
 use App\Models\RfidCard;
 use App\Support\ActivityLogger;
 use App\Support\MemberPhotoStorage;
+use App\Support\Money;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
@@ -53,7 +54,9 @@ class MemberRegistrationService extends BaseService
 
             $member = $this->members->create($memberAttributes);
 
-            $invoice = $this->invoiceService->createForMember($member, $plan);
+            $discountAmount = Money::round((float) ($data['discount_amount'] ?? 0));
+
+            $invoice = $this->invoiceService->createForMember($member, $plan, $discountAmount);
 
             $payment = $this->paymentService->receive(
                 invoice: $invoice,
@@ -61,7 +64,7 @@ class MemberRegistrationService extends BaseService
                 amountPaid: (float) $data['amount_received'],
                 paymentMethod: $data['payment_method'],
                 type: PaymentType::MembershipFee,
-                discountAmount: (float) ($data['discount_amount'] ?? 0),
+                discountAmount: $discountAmount,
                 reference: $data['payment_reference'] ?? null,
             );
 

@@ -6,6 +6,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PlanStatus;
 use App\Models\Member;
 use App\Models\MembershipPlan;
+use App\Support\Money;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -25,14 +26,6 @@ class StoreMemberRenewalRequest extends FormRequest
      */
     public function rules(): array
     {
-        $planId = $this->integer('membership_plan_id');
-        $planTotal = 0.0;
-
-        if ($planId) {
-            $plan = MembershipPlan::query()->find($planId);
-            $planTotal = $plan ? (float) $plan->membership_fee : 0.0;
-        }
-
         return [
             'membership_plan_id' => [
                 'required',
@@ -70,22 +63,39 @@ class StoreMemberRenewalRequest extends FormRequest
                 return;
             }
 
-            $subtotal = (float) $plan->membership_fee;
-            $discountAmount = (float) ($this->input('discount_amount') ?? 0);
-            $amountReceived = (float) $this->input('amount_received');
-            $invoiceTotal = max(0, $subtotal - $discountAmount);
+            $subtotal = Money::round((float) $plan->membership_fee);
+            $discountAmount = Money::round((float) ($this->input('discount_amount') ?? 0));
+            $amountReceived = Money::round((float) $this->input('amount_received'));
+            $invoiceTotal = Money::round(max(0, $subtotal - $discountAmount));
 
-            if ($discountAmount > $subtotal) {
+            if (Money::greaterThan($discountAmount, $subtotal)) {
                 $validator->errors()->add('discount_amount', 'Discount cannot exceed the invoice subtotal.');
             }
 
-            if ($amountReceived > $invoiceTotal) {
+            if (Money::greaterThan($amountReceived, $invoiceTotal)) {
                 $validator->errors()->add('amount_received', 'Paid amount cannot exceed the invoice total.');
             }
 
-            if ($amountReceived < $invoiceTotal) {
+            if (Money::lessThan($amountReceived, $invoiceTotal)) {
                 $validator->errors()->add('amount_received', 'Payment amount must cover the full invoice total.');
             }
         });
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $normalized = [];
+
+        if (is_numeric($this->input('discount_amount'))) {
+            $normalized['discount_amount'] = Money::round((float) $this->input('discount_amount'));
+        }
+
+        if (is_numeric($this->input('amount_received'))) {
+            $normalized['amount_received'] = Money::round((float) $this->input('amount_received'));
+        }
+
+        if ($normalized !== []) {
+            $this->merge($normalized);
+        }
     }
 }

@@ -5,23 +5,38 @@ document.addEventListener('alpine:init', () => {
         ...createMemberPhotoHandlers(),
         plans: config.plans,
         selectedPlanId: config.selectedPlanId ? String(config.selectedPlanId) : '',
+        discountAmount: config.discountAmount ?? 0,
         amountReceived: config.amountReceived ?? '',
         currencySymbol: config.currencySymbol,
 
         init() {
-            this.syncAmount();
+            this.$nextTick(() => this.syncAmount());
         },
 
         get selectedPlan() {
             return this.plans.find((plan) => String(plan.id) === String(this.selectedPlanId)) ?? null;
         },
 
-        get totalDue() {
+        get subtotal() {
             if (! this.selectedPlan) {
                 return 0;
             }
 
-            return this.selectedPlan.admission_fee + this.selectedPlan.membership_fee;
+            return Number(this.selectedPlan.admission_fee) + Number(this.selectedPlan.membership_fee);
+        },
+
+        get normalizedDiscount() {
+            const discount = Number(this.discountAmount || 0);
+
+            if (discount <= 0) {
+                return 0;
+            }
+
+            return Math.min(discount, this.subtotal);
+        },
+
+        get totalDue() {
+            return Math.max(0, this.subtotal - this.normalizedDiscount);
         },
 
         get expiryLabel() {
@@ -33,9 +48,19 @@ document.addEventListener('alpine:init', () => {
         },
 
         syncAmount() {
-            if (this.selectedPlan) {
-                this.amountReceived = this.totalDue.toFixed(2);
+            if (this.$refs.chargeSummary) {
+                this.$refs.chargeSummary.classList.toggle('d-none', ! this.selectedPlan);
             }
+
+            if (! this.selectedPlan) {
+                return;
+            }
+
+            if (Number(this.discountAmount || 0) > this.subtotal) {
+                this.discountAmount = this.subtotal.toFixed(2);
+            }
+
+            this.amountReceived = this.totalDue.toFixed(2);
         },
 
         formatMoney(amount) {

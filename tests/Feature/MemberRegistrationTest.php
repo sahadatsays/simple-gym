@@ -48,7 +48,8 @@ it('shows the registration form', function () {
         ->assertSuccessful()
         ->assertSee('Register Member')
         ->assertSee('Monthly Plan')
-        ->assertSee('CARD001');
+        ->assertSee('CARD001')
+        ->assertSee('Discount');
 });
 
 it('completes the full registration workflow', function () {
@@ -106,6 +107,136 @@ it('completes the full registration workflow', function () {
     expect($card->status)->toBe(RfidCardStatus::Active)
         ->and($card->member_id)->toBe($member->id)
         ->and($member->fresh()->rfid_card)->toBe('CARD999');
+});
+
+it('registers a member against the discounted admission and plan total', function () {
+    $card = RfidCard::factory()->create([
+        'card_number' => 'CARDDISCOUNT',
+        'status' => RfidCardStatus::Unassigned,
+    ]);
+
+    $joinedAt = now()->toDateString();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Discounted Member',
+            'phone' => '01755550001',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => $joinedAt,
+            'payment_method' => 'cash',
+            'discount_amount' => 400,
+            'amount_received' => 1600,
+            'rfid_card_id' => $card->id,
+        ])
+        ->assertRedirect();
+
+    $member = Member::query()->where('phone', '01755550001')->first();
+
+    expect($member)->not->toBeNull()
+        ->and($member->status)->toBe(MemberStatus::Active)
+        ->and($member->membership_expires_at?->toDateString())->toBe(now()->parse($joinedAt)->addDays(30)->toDateString());
+
+    $invoice = Invoice::query()->where('member_id', $member->id)->first();
+
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and((float) $invoice->subtotal)->toBe(2000.0)
+        ->and((float) $invoice->discount_amount)->toBe(400.0)
+        ->and((float) $invoice->total)->toBe(1600.0)
+        ->and($invoice->line_items[0]['amount'])->toEqual(500)
+        ->and($invoice->line_items[1]['amount'])->toEqual(1500);
+
+    $payment = Payment::query()->where('member_id', $member->id)->first();
+
+    expect($payment)->not->toBeNull()
+        ->and($payment->status)->toBe(PaymentStatus::Completed)
+        ->and((float) $payment->amount)->toBe(1600.0)
+        ->and((float) $payment->discount_amount)->toBe(400.0)
+        ->and($card->fresh()->member_id)->toBe($member->id);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.invoices.print', $invoice))
+        ->assertSuccessful()
+        ->assertSee('Discount');
+});
+
+it('activates membership when the admission and plan bill is fully discounted', function () {
+    $joinedAt = now()->toDateString();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Waived Member',
+            'phone' => '01755550002',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => $joinedAt,
+            'payment_method' => 'cash',
+            'discount_amount' => 2000,
+            'amount_received' => 0,
+        ])
+        ->assertRedirect();
+
+    $member = Member::query()->where('phone', '01755550002')->first();
+    $invoice = Invoice::query()->where('member_id', $member->id)->first();
+    $payment = Payment::query()->where('invoice_id', $invoice->id)->first();
+
+    expect($member->status)->toBe(MemberStatus::Active)
+        ->and($member->membership_expires_at?->toDateString())->toBe(now()->parse($joinedAt)->addDays(30)->toDateString())
+        ->and($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and((float) $invoice->discount_amount)->toBe(2000.0)
+        ->and((float) $invoice->total)->toBe(0.0)
+        ->and((float) $invoice->outstandingBalance())->toBe(0.0)
+        ->and((float) $payment->amount)->toBe(0.0)
+        ->and((float) $payment->discount_amount)->toBe(2000.0);
+});
+
+it('rejects a registration discount above the admission and plan subtotal', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Too Much Discount',
+            'phone' => '01755550003',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'discount_amount' => 2500,
+            'amount_received' => 0,
+        ])
+        ->assertSessionHasErrors(['discount_amount']);
+
+    expect(Member::query()->where('phone', '01755550003')->exists())->toBeFalse();
+});
+
+it('rejects a registration payment that ignores the discount', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Gross Payment',
+            'phone' => '01755550004',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'discount_amount' => 400,
+            'amount_received' => 2000,
+        ])
+        ->assertSessionHasErrors(['amount_received']);
+
+    expect(Member::query()->where('phone', '01755550004')->exists())->toBeFalse()
+        ->and(Invoice::query()->count())->toBe(0)
+        ->and(Payment::query()->count())->toBe(0);
+});
+
+it('rejects a registration payment below the discounted total', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Short Payment',
+            'phone' => '01755550005',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'discount_amount' => 400,
+            'amount_received' => 1000,
+        ])
+        ->assertSessionHasErrors(['amount_received']);
+
+    expect(Member::query()->where('phone', '01755550005')->exists())->toBeFalse();
 });
 
 it('shows the receipt after registration', function () {

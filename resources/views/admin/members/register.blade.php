@@ -22,6 +22,7 @@
                     'membership_fee' => (float) $plan->membership_fee,
                 ])->values()->all()),
                 selectedPlanId: @js(old('membership_plan_id')),
+                discountAmount: @js(old('discount_amount', 0)),
                 amountReceived: @js(old('amount_received')),
                 currencySymbol: @js(App\Support\MoneyFormatter::symbol($gymCurrency)),
             })"
@@ -154,7 +155,7 @@
                                 name="membership_plan_id"
                                 id="membership_plan_id"
                                 x-model="selectedPlanId"
-                                @change="syncAmount()"
+                                @change="$nextTick(() => syncAmount())"
                                 @class(['form-select', 'is-invalid' => $errors->has('membership_plan_id')])
                                 required
                             >
@@ -171,7 +172,7 @@
                         </div>
                     </div>
 
-                    <div class="card border-0 bg-light mt-3" x-show="selectedPlan" x-cloak>
+                    <div class="card border-0 bg-light mt-3 d-none" x-ref="chargeSummary">
                         <div class="card-body">
                             <h3 class="h6 fw-semibold mb-3">3. Charge Summary</h3>
                             <template x-if="selectedPlan && selectedPlan.admission_fee > 0">
@@ -184,12 +185,37 @@
                                 <span>Membership Fee</span>
                                 <span x-text="selectedPlan ? formatMoney(selectedPlan.membership_fee) : ''"></span>
                             </div>
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span>Subtotal</span>
+                                <span x-text="formatMoney(subtotal)"></span>
+                            </div>
+                            <div class="mt-3 mb-3">
+                                <label for="discount_amount" class="form-label">Discount</label>
+                                <input
+                                    type="number"
+                                    name="discount_amount"
+                                    id="discount_amount"
+                                    x-model="discountAmount"
+                                    @input="$nextTick(() => syncAmount())"
+                                    step="0.01"
+                                    min="0"
+                                    @class(['form-control', 'is-invalid' => $errors->has('discount_amount')])
+                                >
+                                <div class="form-text">Taken off the admission and membership total. Membership length stays the same.</div>
+                                @error('discount_amount')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2 text-danger" x-show="normalizedDiscount > 0" x-cloak>
+                                <span>Discount</span>
+                                <span x-text="'-' + formatMoney(normalizedDiscount)"></span>
+                            </div>
                             <hr class="my-2">
                             <div class="d-flex justify-content-between fw-semibold">
                                 <span>Total Due</span>
                                 <span x-text="selectedPlan ? formatMoney(totalDue) : ''"></span>
                             </div>
-                            <div class="form-text mt-2 mb-0" x-show="selectedPlan">
+                            <div class="form-text mt-2 mb-0">
                                 Membership expires <span x-text="expiryLabel"></span> after join date.
                             </div>
                         </div>

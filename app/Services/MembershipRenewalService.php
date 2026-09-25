@@ -12,6 +12,7 @@ use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\MembershipRenewal;
 use App\Support\ActivityLogger;
+use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
@@ -48,8 +49,9 @@ class MembershipRenewalService extends BaseService
 
             $previousExpiresAt = $member->membership_expires_at;
             $newExpiresAt = $this->invoiceService->calculateRenewedExpiry($member, $plan);
+            $discountAmount = Money::round((float) ($data['discount_amount'] ?? 0));
 
-            $invoice = $this->invoiceService->createRenewalForMember($member, $plan);
+            $invoice = $this->invoiceService->createRenewalForMember($member, $plan, $discountAmount);
 
             $payment = $this->paymentService->receive(
                 invoice: $invoice,
@@ -57,7 +59,7 @@ class MembershipRenewalService extends BaseService
                 amountPaid: (float) $data['amount_received'],
                 paymentMethod: $data['payment_method'],
                 type: PaymentType::MembershipFee,
-                discountAmount: (float) ($data['discount_amount'] ?? 0),
+                discountAmount: $discountAmount,
                 reference: $data['payment_reference'] ?? null,
             );
 

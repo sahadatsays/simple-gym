@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\PlanStatus;
+use App\Exceptions\PaymentFailedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\IndexRenewalReviewRequest;
 use App\Http\Requests\Admin\StoreMemberRenewalRequest;
@@ -13,6 +14,7 @@ use App\Services\MembershipRenewalService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class MemberRenewalController extends Controller
 {
@@ -68,7 +70,7 @@ class MemberRenewalController extends Controller
 
         try {
             $result = $this->renewalService->renew($member, $request->validated());
-        } catch (\InvalidArgumentException $exception) {
+        } catch (PaymentFailedException|InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['renewal' => $exception->getMessage()]);
         }
 

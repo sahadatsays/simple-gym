@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Contracts\Repositories\MemberRepositoryInterface;
 use App\Enums\PlanStatus;
 use App\Enums\RfidCardStatus;
+use App\Exceptions\PaymentFailedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreMemberRegistrationRequest;
 use App\Models\Invoice;
@@ -15,6 +16,7 @@ use App\Services\MemberRegistrationService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class MemberRegistrationController extends Controller
 {
@@ -51,7 +53,7 @@ class MemberRegistrationController extends Controller
                 $request->validated(),
                 $request->file('photo'),
             );
-        } catch (\InvalidArgumentException $exception) {
+        } catch (PaymentFailedException|InvalidArgumentException $exception) {
             return back()->withInput()->withErrors(['registration' => $exception->getMessage()]);
         }
 

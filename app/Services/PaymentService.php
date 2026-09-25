@@ -69,7 +69,7 @@ class PaymentService extends BaseService
                 throw PaymentFailedException::alreadyPaid();
             }
 
-            $discountAmount = (float) ($data['discount_amount'] ?? 0);
+            $discountAmount = Money::round((float) ($data['discount_amount'] ?? 0));
 
             if ($discountAmount > 0) {
                 $invoice = $this->invoiceService->applyDiscount($invoice, $discountAmount);
@@ -78,7 +78,7 @@ class PaymentService extends BaseService
             $amountPaid = Money::round((float) $data['amount_paid']);
             $outstanding = Money::round($invoice->outstandingBalance());
 
-            if ($amountPaid <= 0) {
+            if (Money::lessThan($amountPaid, 0) || ($amountPaid <= 0 && Money::greaterThan($outstanding, 0))) {
                 throw PaymentFailedException::declined();
             }
 

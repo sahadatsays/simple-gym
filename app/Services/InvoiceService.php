@@ -20,7 +20,7 @@ class InvoiceService extends BaseService
     ) {}
 
     /**
-     * @return array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, total: float}
+     * @return array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, discount_amount: float, total: float}
      */
     public function calculateRegistrationCharges(MembershipPlan $plan, float $discountAmount = 0): array
     {
@@ -42,7 +42,7 @@ class InvoiceService extends BaseService
     }
 
     /**
-     * @return array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, total: float}
+     * @return array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, discount_amount: float, total: float}
      */
     public function calculateRenewalCharges(MembershipPlan $plan, float $discountAmount = 0): array
     {
@@ -58,7 +58,7 @@ class InvoiceService extends BaseService
 
     /**
      * @param  array<int, array{description: string, amount: float}>  $lineItems
-     * @return array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, total: float}
+     * @return array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, discount_amount: float, total: float}
      */
     public function calculatePosCharges(array $lineItems, float $discountAmount = 0): array
     {
@@ -69,14 +69,14 @@ class InvoiceService extends BaseService
     {
         $charges = $this->calculateRegistrationCharges($plan, $discountAmount);
 
-        return $this->createInvoice($member, $plan, InvoiceType::Registration, $charges, $discountAmount);
+        return $this->createInvoice($member, $plan, InvoiceType::Registration, $charges);
     }
 
     public function createRenewalForMember(Member $member, MembershipPlan $plan, float $discountAmount = 0): Invoice
     {
         $charges = $this->calculateRenewalCharges($plan, $discountAmount);
 
-        return $this->createInvoice($member, $plan, InvoiceType::Renewal, $charges, $discountAmount);
+        return $this->createInvoice($member, $plan, InvoiceType::Renewal, $charges);
     }
 
     /**
@@ -92,7 +92,7 @@ class InvoiceService extends BaseService
             'type' => InvoiceType::PosSale,
             'invoice_number' => $this->invoices->nextInvoiceNumber(),
             'subtotal' => $charges['subtotal'],
-            'discount_amount' => $discountAmount,
+            'discount_amount' => $charges['discount_amount'],
             'total' => $charges['total'],
             'status' => InvoiceStatus::Unpaid,
             'line_items' => $charges['line_items'],
@@ -107,17 +107,21 @@ class InvoiceService extends BaseService
             throw new InvalidArgumentException('Cannot apply a discount to a paid invoice.');
         }
 
-        if ($discountAmount < 0) {
+        $discountAmount = Money::round($discountAmount);
+
+        if (Money::lessThan($discountAmount, 0)) {
             throw new InvalidArgumentException('Discount amount cannot be negative.');
         }
 
-        if ($discountAmount > (float) $invoice->subtotal) {
+        $subtotal = Money::round((float) $invoice->subtotal);
+
+        if (Money::greaterThan($discountAmount, $subtotal)) {
             throw new InvalidArgumentException('Discount cannot exceed the invoice subtotal.');
         }
 
         return $this->invoices->update($invoice, [
             'discount_amount' => $discountAmount,
-            'total' => max(0, (float) $invoice->subtotal - $discountAmount),
+            'total' => Money::round(max(0, $subtotal - $discountAmount)),
         ]);
     }
 
@@ -227,14 +231,13 @@ class InvoiceService extends BaseService
     }
 
     /**
-     * @param  array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, total: float}  $charges
+     * @param  array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, discount_amount: float, total: float}  $charges
      */
     private function createInvoice(
         Member $member,
         MembershipPlan $plan,
         InvoiceType $type,
         array $charges,
-        float $discountAmount = 0,
     ): Invoice {
         return $this->invoices->create([
             'member_id' => $member->id,
@@ -242,7 +245,7 @@ class InvoiceService extends BaseService
             'type' => $type,
             'invoice_number' => $this->invoices->nextInvoiceNumber(),
             'subtotal' => $charges['subtotal'],
-            'discount_amount' => $discountAmount,
+            'discount_amount' => $charges['discount_amount'],
             'total' => $charges['total'],
             'status' => InvoiceStatus::Unpaid,
             'line_items' => $charges['line_items'],
@@ -252,7 +255,7 @@ class InvoiceService extends BaseService
 
     /**
      * @param  array<int, array{description: string, amount: float}>  $lineItems
-     * @return array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, total: float}
+     * @return array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, discount_amount: float, total: float}
      */
     private function buildChargeSummary(array $lineItems, float $discountAmount = 0): array
     {
@@ -262,6 +265,7 @@ class InvoiceService extends BaseService
         return [
             'line_items' => $lineItems,
             'subtotal' => $subtotal,
+            'discount_amount' => $discountAmount,
             'total' => Money::round(max(0, $subtotal - $discountAmount)),
         ];
     }

@@ -93,6 +93,7 @@
                         memberIsActive: @js($member->isActive()),
                         currentExpiry: @js($member->membership_expires_at?->format('Y-m-d')),
                         selectedPlanId: @js(old('membership_plan_id', $member->membership_plan_id)),
+                        discountAmount: @js(old('discount_amount', 0)),
                         amountReceived: @js(old('amount_received')),
                     })"
                 >
@@ -108,7 +109,7 @@
                                 name="membership_plan_id"
                                 id="membership_plan_id"
                                 x-model="selectedPlanId"
-                                @change="syncAmount()"
+                                @change="$nextTick(() => syncAmount())"
                                 @class(['form-select', 'is-invalid' => $errors->has('membership_plan_id')])
                                 required
                             >
@@ -125,12 +126,33 @@
                         </div>
                     </div>
 
-                    <div class="card border-0 bg-light mt-3" x-show="selectedPlan" x-cloak>
+                    <div class="card border-0 bg-light mt-3 d-none" x-ref="chargeSummary">
                         <div class="card-body">
                             <h3 class="h6 fw-semibold mb-3">2. Charge Summary</h3>
                             <div class="d-flex justify-content-between small mb-2">
                                 <span>Membership Renewal Fee</span>
                                 <span x-text="selectedPlan ? formatMoney(selectedPlan.membership_fee) : ''"></span>
+                            </div>
+                            <div class="mt-3 mb-3">
+                                <label for="discount_amount" class="form-label">Discount</label>
+                                <input
+                                    type="number"
+                                    name="discount_amount"
+                                    id="discount_amount"
+                                    x-model="discountAmount"
+                                    @input="$nextTick(() => syncAmount())"
+                                    step="0.01"
+                                    min="0"
+                                    @class(['form-control', 'is-invalid' => $errors->has('discount_amount')])
+                                >
+                                <div class="form-text">Taken off the renewal fee. Membership length stays the same.</div>
+                                @error('discount_amount')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2 text-danger" x-show="normalizedDiscount > 0" x-cloak>
+                                <span>Discount</span>
+                                <span x-text="'-' + formatMoney(normalizedDiscount)"></span>
                             </div>
                             <hr class="my-2">
                             <div class="d-flex justify-content-between fw-semibold mb-3">
@@ -206,19 +228,34 @@
                 memberIsActive: config.memberIsActive,
                 currentExpiry: config.currentExpiry,
                 selectedPlanId: config.selectedPlanId ? String(config.selectedPlanId) : '',
+                discountAmount: config.discountAmount ?? 0,
                 amountReceived: config.amountReceived ?? '',
                 currencySymbol: @js(App\Support\MoneyFormatter::symbol($gymCurrency)),
 
                 init() {
-                    this.syncAmount();
+                    this.$nextTick(() => this.syncAmount());
                 },
 
                 get selectedPlan() {
                     return this.plans.find((plan) => String(plan.id) === String(this.selectedPlanId)) ?? null;
                 },
 
+                get subtotal() {
+                    return this.selectedPlan ? Number(this.selectedPlan.membership_fee) : 0;
+                },
+
+                get normalizedDiscount() {
+                    const discount = Number(this.discountAmount || 0);
+
+                    if (discount <= 0) {
+                        return 0;
+                    }
+
+                    return Math.min(discount, this.subtotal);
+                },
+
                 get totalDue() {
-                    return this.selectedPlan ? this.selectedPlan.membership_fee : 0;
+                    return Math.max(0, this.subtotal - this.normalizedDiscount);
                 },
 
                 get expiryExplanation() {
@@ -234,9 +271,19 @@
                 },
 
                 syncAmount() {
-                    if (this.selectedPlan) {
-                        this.amountReceived = Number(this.totalDue).toFixed(2);
+                    if (this.$refs.chargeSummary) {
+                        this.$refs.chargeSummary.classList.toggle('d-none', ! this.selectedPlan);
                     }
+
+                    if (! this.selectedPlan) {
+                        return;
+                    }
+
+                    if (Number(this.discountAmount || 0) > this.subtotal) {
+                        this.discountAmount = this.subtotal.toFixed(2);
+                    }
+
+                    this.amountReceived = Number(this.totalDue).toFixed(2);
                 },
 
                 formatMoney(amount) {

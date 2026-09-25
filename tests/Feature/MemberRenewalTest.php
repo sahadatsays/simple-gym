@@ -198,6 +198,20 @@ it('filters renewal review members by search term', function () {
         ->assertSee('Renew');
 });
 
+it('shows a discount field on the renewal form', function () {
+    $member = Member::factory()->create([
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(5),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.renew.edit', $member))
+        ->assertSuccessful()
+        ->assertSee('Discount')
+        ->assertSee('Membership length stays the same');
+});
+
 it('renews an active member from current expiry date', function () {
     $currentExpiry = now()->addDays(10);
 
@@ -271,6 +285,83 @@ it('renews an expired member from today', function () {
         ->toBe(now()->subDays(15)->toDateString())
         ->and($renewal->new_expires_at->toDateString())
         ->toBe(now()->addDays(30)->toDateString());
+});
+
+it('renews a member against the discounted plan fee', function () {
+    $currentExpiry = now()->addDays(10);
+
+    $member = Member::factory()->create([
+        'phone' => '01720003333',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => $currentExpiry,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.renew.store', $member), [
+            'membership_plan_id' => $this->plan->id,
+            'payment_method' => 'cash',
+            'discount_amount' => 300,
+            'amount_received' => 1200,
+        ])
+        ->assertRedirect();
+
+    $member->refresh();
+    $invoice = Invoice::query()->where('member_id', $member->id)->first();
+    $payment = Payment::query()->where('invoice_id', $invoice->id)->first();
+
+    expect($member->status)->toBe(MemberStatus::Active)
+        ->and($member->membership_expires_at?->toDateString())
+        ->toBe($currentExpiry->copy()->addDays(30)->toDateString())
+        ->and($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and((float) $invoice->subtotal)->toBe(1500.0)
+        ->and((float) $invoice->discount_amount)->toBe(300.0)
+        ->and((float) $invoice->total)->toBe(1200.0)
+        ->and((float) $payment->amount)->toBe(1200.0)
+        ->and((float) $payment->discount_amount)->toBe(300.0)
+        ->and(MembershipRenewal::query()->where('member_id', $member->id)->exists())->toBeTrue();
+});
+
+it('renews a member when the plan fee is fully discounted', function () {
+    $member = Member::factory()->expired()->create([
+        'phone' => '01720004444',
+        'membership_plan_id' => $this->plan->id,
+        'membership_expires_at' => now()->subDays(4),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.renew.store', $member), [
+            'membership_plan_id' => $this->plan->id,
+            'payment_method' => 'cash',
+            'discount_amount' => 1500,
+            'amount_received' => 0,
+        ])
+        ->assertRedirect();
+
+    expect($member->fresh()->status)->toBe(MemberStatus::Active)
+        ->and($member->fresh()->membership_expires_at?->toDateString())->toBe(now()->addDays(30)->toDateString())
+        ->and(Invoice::query()->where('member_id', $member->id)->first()?->status)->toBe(InvoiceStatus::Paid)
+        ->and((float) Payment::query()->where('member_id', $member->id)->value('amount'))->toBe(0.0);
+});
+
+it('rejects a renewal payment that ignores the discount', function () {
+    $member = Member::factory()->create([
+        'phone' => '01720005555',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(5),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.renew.store', $member), [
+            'membership_plan_id' => $this->plan->id,
+            'payment_method' => 'cash',
+            'discount_amount' => 200,
+            'amount_received' => 1500,
+        ])
+        ->assertSessionHasErrors(['amount_received']);
+
+    expect(MembershipRenewal::query()->where('member_id', $member->id)->exists())->toBeFalse();
 });
 
 it('rolls back renewal when payment is insufficient', function () {
