@@ -92,6 +92,12 @@ return [
         'asset-investment-reports' => [
             'asset-investment-reports.view',
         ],
+        'borrowings' => [
+            'borrowings.view',
+            'borrowings.create',
+            'borrowings.edit',
+            'borrowings.delete',
+        ],
         'expenses' => [
             'expenses.view',
             'expenses.create',
@@ -139,6 +145,7 @@ return [
         'asset-maintenances' => 'Asset Maintenance',
         'asset-disposals' => 'Asset Disposal',
         'asset-investment-reports' => 'Asset & Investment Reports',
+        'borrowings' => 'Borrowings',
         'expenses' => 'Expenses',
         'expense-categories' => 'Expense Categories',
         'expense-reports' => 'Expense Reports',
@@ -193,6 +200,10 @@ return [
         'asset-disposals.view' => 'View asset disposals',
         'asset-disposals.create' => 'Create asset disposals',
         'asset-investment-reports.view' => 'View asset & investment reports',
+        'borrowings.view' => 'View borrowings',
+        'borrowings.create' => 'Create borrowings',
+        'borrowings.edit' => 'Edit borrowings',
+        'borrowings.delete' => 'Delete borrowings',
         'expenses.view' => 'View expenses',
         'expenses.create' => 'Create expenses',
         'expenses.edit' => 'Edit expenses',

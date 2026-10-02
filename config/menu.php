@@ -127,6 +127,13 @@ return [
                     'icon' => 'tags',
                 ],
                 [
+                    'key' => 'borrowings',
+                    'route' => 'admin.borrowings.index',
+                    'permission' => 'borrowings.view',
+                    'match' => 'admin.borrowings.*',
+                    'icon' => 'cash-coin',
+                ],
+                [
                     'key' => 'expense_categories',
                     'route' => 'admin.expense-categories.index',
                     'permission' => 'expense-categories.view',
