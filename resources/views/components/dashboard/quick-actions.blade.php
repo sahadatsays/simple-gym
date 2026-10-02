@@ -44,24 +44,17 @@
         ],
     ])->filter(fn (array $action): bool => (bool) $action['visible']);
 
-    $variants = [
-        'primary' => ['bg' => 'bg-primary-subtle', 'text' => 'text-primary'],
-        'success' => ['bg' => 'bg-success-subtle', 'text' => 'text-success'],
-        'danger' => ['bg' => 'bg-danger-subtle', 'text' => 'text-danger'],
-        'warning' => ['bg' => 'bg-warning-subtle', 'text' => 'text-warning-emphasis'],
-        'info' => ['bg' => 'bg-info-subtle', 'text' => 'text-info-emphasis'],
-        'purple' => ['bg' => 'bg-light', 'text' => 'text-dark'],
-    ];
+    $variants = ['primary', 'success', 'danger', 'warning', 'info', 'purple'];
 @endphp
 
 @if ($actions->isNotEmpty())
     <div class="sg-dashboard-quick-actions mb-4">
         <div class="sg-dashboard-quick-actions-grid">
             @foreach ($actions as $action)
-                @php($palette = $variants[$action['variant']] ?? $variants['primary'])
+                @php($variant = in_array($action['variant'], $variants, true) ? $action['variant'] : 'primary')
 
                 <a href="{{ route($action['route']) }}" class="sg-dashboard-quick-action">
-                    <span class="sg-dashboard-quick-action-icon {{ $palette['bg'] }} {{ $palette['text'] }}">
+                    <span class="sg-dashboard-quick-action-icon sg-dashboard-quick-action-icon--{{ $variant }}">
                         <i class="bi bi-{{ $action['icon'] }}" aria-hidden="true"></i>
                     </span>
                     <span class="sg-dashboard-quick-action-label">{{ $action['label'] }}</span>

@@ -74,7 +74,10 @@ it('displays dashboard widgets for authorized users', function () {
         ->assertSee('Recent Payments')
         ->assertSee('Recent Registrations')
         ->assertSee('Low Stock Products')
-        ->assertSee('Upcoming Due Orders');
+        ->assertSee('Upcoming Due Orders')
+        ->assertSee('col-12 col-md-6 col-xl-4', false)
+        ->assertSee('sg-dashboard-stat--primary', false)
+        ->assertDontSee('col-xxl-2', false);
 });
 
 it('displays asset and investment dashboard widgets for authorized users', function () {

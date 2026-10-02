@@ -13,7 +13,7 @@
     <x-dashboard.date-range-filter :filters="$filters" />
 
     <div class="row g-3 g-xl-4 mb-4">
-        <div class="col-6 col-xl-4 col-xxl-2">
+        <div class="col-12 col-md-6 col-xl-4">
             <x-dashboard.stat-card
                 :title="__('dashboard.stats.new_registrations')"
                 :value="$stats['new_registrations']"
@@ -24,7 +24,7 @@
             </x-dashboard.stat-card>
         </div>
 
-        <div class="col-6 col-xl-4 col-xxl-2">
+        <div class="col-12 col-md-6 col-xl-4">
             <x-dashboard.stat-card
                 :title="__('dashboard.stats.active_members')"
                 :value="$stats['active_members']"
@@ -35,7 +35,7 @@
             </x-dashboard.stat-card>
         </div>
 
-        <div class="col-6 col-xl-4 col-xxl-2">
+        <div class="col-12 col-md-6 col-xl-4">
             <x-dashboard.stat-card
                 :title="__('dashboard.stats.expired_in_period')"
                 :value="$stats['expired_members']"
@@ -46,7 +46,7 @@
             </x-dashboard.stat-card>
         </div>
 
-        <div class="col-6 col-xl-4 col-xxl-2">
+        <div class="col-12 col-md-6 col-xl-4">
             <x-dashboard.stat-card
                 :title="__('dashboard.stats.period_revenue')"
                 :value="App\Support\MoneyFormatter::format($stats['period_revenue'], $stats['currency'])"
@@ -56,7 +56,7 @@
             />
         </div>
 
-        <div class="col-6 col-xl-4 col-xxl-2">
+        <div class="col-12 col-md-6 col-xl-4">
             <x-dashboard.stat-card
                 :title="__('dashboard.stats.product_sales')"
                 :value="App\Support\MoneyFormatter::format($stats['product_sales'], $stats['currency'])"
@@ -66,7 +66,7 @@
             />
         </div>
 
-        <div class="col-6 col-xl-4 col-xxl-2">
+        <div class="col-12 col-md-6 col-xl-4">
             <x-dashboard.stat-card
                 :title="__('dashboard.stats.low_stock_items')"
                 :value="$stats['low_stock_products']"
@@ -83,7 +83,7 @@
 
         <div class="row g-3 g-xl-4 mb-4">
             @if ($canViewFinancialRevenue)
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.revenue')"
                         :value="App\Support\MoneyFormatter::format($financialSummary['revenue'], $stats['currency'])"
@@ -97,7 +97,7 @@
             @endif
 
             @if ($canViewFinancialExpenses)
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.operating_expenses')"
                         :value="App\Support\MoneyFormatter::format($financialSummary['expenses'], $stats['currency'])"
@@ -111,7 +111,7 @@
             @endif
 
             @if ($canViewFinancialRevenue)
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.outstanding_due')"
                         :value="App\Support\MoneyFormatter::format($financialSummary['outstanding_due'], $stats['currency'])"
@@ -125,7 +125,7 @@
             @endif
 
             @if ($canViewFinancialRevenue && $canViewFinancialExpenses)
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.net_operating_result')"
                         :value="App\Support\MoneyFormatter::format($financialSummary['net_operating_result'], $stats['currency'])"
@@ -139,7 +139,7 @@
             @endif
 
             @if ($canViewFinancialInvestment)
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.owner_investment')"
                         :value="App\Support\MoneyFormatter::format($financialSummary['owner_investment'], $stats['currency'])"
@@ -159,7 +159,7 @@
         <p class="text-muted small mb-3">{{ __('dashboard.sections.borrowings_note') }}</p>
 
         <div class="row g-3 g-xl-4 mb-4">
-            <div class="col-6 col-md-4 col-xl">
+            <div class="col-12 col-md-6 col-xl-4">
                 <x-dashboard.stat-card
                     :title="__('dashboard.stats.total_borrowed')"
                     :value="App\Support\MoneyFormatter::format($borrowingStats['total_borrowed'], $stats['currency'])"
@@ -171,7 +171,7 @@
                 </x-dashboard.stat-card>
             </div>
 
-            <div class="col-6 col-md-4 col-xl">
+            <div class="col-12 col-md-6 col-xl-4">
                 <x-dashboard.stat-card
                     :title="__('dashboard.stats.total_repaid')"
                     :value="App\Support\MoneyFormatter::format($borrowingStats['total_repaid'], $stats['currency'])"
@@ -183,7 +183,7 @@
                 </x-dashboard.stat-card>
             </div>
 
-            <div class="col-6 col-md-4 col-xl">
+            <div class="col-12 col-md-6 col-xl-4">
                 <x-dashboard.stat-card
                     :title="__('dashboard.stats.total_outstanding')"
                     :value="App\Support\MoneyFormatter::format($borrowingStats['total_outstanding'], $stats['currency'])"
@@ -195,7 +195,7 @@
                 </x-dashboard.stat-card>
             </div>
 
-            <div class="col-6 col-md-4 col-xl">
+            <div class="col-12 col-md-6 col-xl-4">
                 <x-dashboard.stat-card
                     :title="__('dashboard.stats.active_borrowings')"
                     :value="$borrowingStats['active_borrowings']"
@@ -206,7 +206,7 @@
                 </x-dashboard.stat-card>
             </div>
 
-            <div class="col-6 col-md-4 col-xl">
+            <div class="col-12 col-md-6 col-xl-4">
                 <x-dashboard.stat-card
                     :title="__('dashboard.stats.borrowings_due_soon')"
                     :value="$borrowingStats['borrowings_due_soon']"
@@ -224,7 +224,7 @@
 
         <div class="row g-3 g-xl-4 mb-4">
             @can('viewAny', App\Models\Investment::class)
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.total_owner_investment')"
                         :value="App\Support\MoneyFormatter::format($assetInvestmentStats['total_owner_investment'], $stats['currency'])"
@@ -238,7 +238,7 @@
             @endcan
 
             @can('viewAny', App\Models\Asset::class)
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.total_asset_purchase_value')"
                         :value="App\Support\MoneyFormatter::format($assetInvestmentStats['total_asset_purchase_value'], $stats['currency'])"
@@ -250,7 +250,7 @@
                     </x-dashboard.stat-card>
                 </div>
 
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.current_asset_value')"
                         :value="App\Support\MoneyFormatter::format($assetInvestmentStats['current_asset_value'], $stats['currency'])"
@@ -264,7 +264,7 @@
             @endcan
 
             @can('viewAny', App\Models\AssetMaintenance::class)
-                <div class="col-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.total_maintenance_cost')"
                         :value="App\Support\MoneyFormatter::format($assetInvestmentStats['total_maintenance_cost'], $stats['currency'])"
@@ -280,7 +280,7 @@
 
         <div class="row g-3 g-xl-4 mb-4">
             @can('viewAny', App\Models\Asset::class)
-                <div class="col-6 col-xl-4">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.active_assets')"
                         :value="$assetInvestmentStats['active_assets']"
@@ -291,7 +291,7 @@
                     </x-dashboard.stat-card>
                 </div>
 
-                <div class="col-6 col-xl-4">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.assets_under_maintenance')"
                         :value="$assetInvestmentStats['assets_under_maintenance']"
@@ -302,7 +302,7 @@
                     </x-dashboard.stat-card>
                 </div>
 
-                <div class="col-6 col-xl-4">
+                <div class="col-12 col-md-6 col-xl-4">
                     <x-dashboard.stat-card
                         :title="__('dashboard.stats.assets_requiring_maintenance')"
                         :value="$assetInvestmentStats['assets_requiring_maintenance']"
@@ -320,7 +320,7 @@
         <h2 class="h5 fw-bold mb-3">{{ __('dashboard.sections.expenses') }}</h2>
 
         <div class="row g-3 g-xl-4 mb-4">
-            <div class="col-6 col-xl-4">
+            <div class="col-12 col-md-6 col-xl-4">
                 <x-dashboard.stat-card
                     :title="__('dashboard.stats.total_expenses')"
                     :value="App\Support\MoneyFormatter::format($expenseStats['total_expenses'], $stats['currency'])"
@@ -332,7 +332,7 @@
                 </x-dashboard.stat-card>
             </div>
 
-            <div class="col-6 col-xl-4">
+            <div class="col-12 col-md-6 col-xl-4">
                 <x-dashboard.stat-card
                     :title="__('dashboard.stats.expense_this_month')"
                     :value="App\Support\MoneyFormatter::format($expenseStats['expense_this_month'], $stats['currency'])"
@@ -344,7 +344,7 @@
                 </x-dashboard.stat-card>
             </div>
 
-            <div class="col-6 col-xl-4">
+            <div class="col-12 col-md-6 col-xl-4">
                 <x-dashboard.stat-card
                     :title="__('dashboard.stats.expense_today')"
                     :value="App\Support\MoneyFormatter::format($expenseStats['expense_today'], $stats['currency'])"
