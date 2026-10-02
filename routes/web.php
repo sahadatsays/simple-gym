@@ -147,6 +147,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::post('/{device}/reboot', 'reboot')->name('reboot');
             Route::post('/{device}/reset-data', 'resetData')->name('reset-data');
             Route::post('/{device}/clear-users', 'clearUsers')->name('clear-users');
+            Route::post('/{device}/resync-users', 'resyncUsers')->name('resync-users');
             Route::post('/{device}/users', 'storeUser')->name('users.store');
             Route::delete('/{device}/users', 'destroyUser')->name('users.destroy');
         });

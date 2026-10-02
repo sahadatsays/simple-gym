@@ -144,6 +144,54 @@ class MemberDeviceAccessService extends BaseService
         return false;
     }
 
+    /**
+     * Refresh card users on one device.
+     *
+     * Outside the restriction window every eligible card is updated and nobody is removed.
+     * While the window is active, every card in the restricted group is removed from this
+     * device and only members who are still allowed are synced.
+     *
+     * @return array{synced: int, removed: int}
+     */
+    public function resyncDeviceUsers(ZktecoDevice $device): array
+    {
+        if ($device->status !== ZktecoDeviceStatus::Active) {
+            throw new InvalidArgumentException('Only an active device can resync card users.');
+        }
+
+        $synced = 0;
+        $removed = 0;
+
+        Member::query()
+            ->with('activeRfidCard')
+            ->whereHas('activeRfidCard')
+            ->orderBy('id')
+            ->chunkById(100, function (Collection $members) use ($device, &$synced, &$removed): void {
+                foreach ($members as $member) {
+                    if ($this->accessPolicy->isMemberCurrentlyRestricted($member)) {
+                        if ($this->queueRemovalOnDevice($member, $device)) {
+                            $removed++;
+                        }
+
+                        continue;
+                    }
+
+                    if (! $this->accessPolicy->canSyncToDevice($member)) {
+                        continue;
+                    }
+
+                    if ($this->queueUpsertOnDevice($member, $device)) {
+                        $synced++;
+                    }
+                }
+            });
+
+        return [
+            'synced' => $synced,
+            'removed' => $removed,
+        ];
+    }
+
     public function isMemberRemovedFromAllActiveDevices(Member $member): bool
     {
         $activeDevices = ZktecoDevice::query()
@@ -308,6 +356,96 @@ class MemberDeviceAccessService extends BaseService
         });
 
         return $queuedAnyCommand || $this->hasRevokedAccessOnAllDevices($member, $activeDevices);
+    }
+
+    private function queueUpsertOnDevice(Member $member, ZktecoDevice $device): bool
+    {
+        $card = $member->activeRfidCard;
+
+        if ($card === null) {
+            return false;
+        }
+
+        $userData = $this->buildUserPayload($member, $card);
+        $queued = false;
+
+        $this->transaction(function () use ($member, $device, $userData, &$queued): void {
+            MemberZktecoAccessRemoval::query()
+                ->where('member_id', $member->id)
+                ->where('serial_number', $device->serial_number)
+                ->delete();
+
+            if ($this->hasPendingUpsertCommand($device, $userData)) {
+                return;
+            }
+
+            $command = $this->devices->upsertUser($device, $userData);
+            $queued = true;
+
+            Log::info('Queued ZKTeco user sync for member', [
+                'member_id' => $member->id,
+                'pim' => $userData['pim'],
+                'card_number' => $userData['card_number'],
+                'serial_number' => $device->serial_number,
+                'command_id' => $command->id,
+            ]);
+        });
+
+        return $queued;
+    }
+
+    private function queueRemovalOnDevice(Member $member, ZktecoDevice $device): bool
+    {
+        $card = $member->activeRfidCard;
+
+        if ($card === null) {
+            return false;
+        }
+
+        $pim = (string) $card->id;
+
+        if ($this->hasRevokedAccess($member, $device)) {
+            return false;
+        }
+
+        $queued = false;
+
+        $this->transaction(function () use ($member, $device, $pim, &$queued): void {
+            if ($this->hasPendingRemovalCommand($device, $pim)) {
+                MemberZktecoAccessRemoval::query()->firstOrCreate(
+                    [
+                        'member_id' => $member->id,
+                        'serial_number' => $device->serial_number,
+                    ],
+                    [
+                        'zkteco_command_id' => null,
+                        'revoked_at' => now(),
+                    ],
+                );
+
+                return;
+            }
+
+            $command = $this->devices->deleteUser($device, $pim);
+
+            MemberZktecoAccessRemoval::query()->create([
+                'member_id' => $member->id,
+                'serial_number' => $device->serial_number,
+                'zkteco_command_id' => $command->id,
+                'revoked_at' => now(),
+            ]);
+
+            $queued = true;
+
+            Log::info('Queued ZKTeco user removal for member', [
+                'member_id' => $member->id,
+                'pim' => $pim,
+                'serial_number' => $device->serial_number,
+                'command_id' => $command->id,
+            ]);
+        });
+
+        return $queued;
     }
 
     private function queueDeviceAccessRemoval(Member $member, string $pim): bool

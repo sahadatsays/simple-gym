@@ -181,6 +181,26 @@ class ZktecoDeviceController extends Controller
         return redirect()->route('admin.zkteco-devices.show', $device);
     }
 
+    public function resyncUsers(ZktecoDevice $device): RedirectResponse
+    {
+        $this->authorize('manage', $device);
+
+        try {
+            $result = $this->memberDeviceAccess->resyncDeviceUsers($device);
+        } catch (InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
+
+        Flash::success(__('settings.zkteco.users_resynced', [
+            'synced' => $result['synced'],
+            'removed' => $result['removed'],
+        ]));
+
+        return redirect()->route('admin.zkteco-devices.show', $device);
+    }
+
     public function storeUser(StoreZktecoDeviceUserRequest $request, ZktecoDevice $device): RedirectResponse
     {
         try {

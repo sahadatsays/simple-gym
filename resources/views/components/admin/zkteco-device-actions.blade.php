@@ -60,6 +60,15 @@
                     </form>
                 </li>
                 <li>
+                    <form action="{{ route('admin.zkteco-devices.resync-users', $device) }}" method="POST" onsubmit="return confirm(@js(__('settings.zkteco.resync_all_users_confirm')))">
+                        @csrf
+                        <button type="submit" class="dropdown-item">
+                            <i class="bi bi-arrow-repeat me-2" aria-hidden="true"></i>
+                            {{ __('settings.zkteco.resync_all_users') }}
+                        </button>
+                    </form>
+                </li>
+                <li>
                     <form action="{{ route('admin.zkteco-devices.clear-users', $device) }}" method="POST" onsubmit="return confirm(@js(__('settings.zkteco.clear_card_users_confirm')))">
                         @csrf
                         <button type="submit" class="dropdown-item text-danger">

@@ -16,6 +16,19 @@
         @endif
 
         @if ($device->status === App\Enums\ZktecoDeviceStatus::Active)
+            <form
+                action="{{ route('admin.zkteco-devices.resync-users', $device) }}"
+                method="POST"
+                class="d-inline"
+                onsubmit="return confirm(@js(__('settings.zkteco.resync_all_users_confirm')))"
+            >
+                @csrf
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>
+                    {{ __('settings.zkteco.resync_all_users') }}
+                </button>
+            </form>
+
             <div class="dropdown">
                 <button
                     type="button"
