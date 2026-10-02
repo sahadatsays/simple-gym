@@ -7,10 +7,14 @@ document.addEventListener('alpine:init', () => {
         selectedPlanId: config.selectedPlanId ? String(config.selectedPlanId) : '',
         discountAmount: config.discountAmount ?? 0,
         amountReceived: config.amountReceived ?? '',
+        hasDueDateError: Boolean(config.hasDueDateError),
+        hasPaymentMethodError: Boolean(config.hasPaymentMethodError),
         currencySymbol: config.currencySymbol,
 
         init() {
-            this.$nextTick(() => this.syncAmount());
+            const preserveAmount = config.amountReceived !== null && config.amountReceived !== '';
+
+            this.$nextTick(() => this.syncAmount(preserveAmount));
         },
 
         get selectedPlan() {
@@ -59,7 +63,7 @@ document.addEventListener('alpine:init', () => {
             return `${this.selectedPlan.duration_days} days`;
         },
 
-        syncAmount() {
+        syncAmount(preserveAmount = false) {
             if (this.$refs.chargeSummary) {
                 this.$refs.chargeSummary.classList.toggle('d-none', ! this.selectedPlan);
             }
@@ -68,11 +72,13 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            if (Number(this.discountAmount || 0) > this.subtotal) {
+            if (! preserveAmount && Number(this.discountAmount || 0) > this.subtotal) {
                 this.discountAmount = this.subtotal.toFixed(2);
             }
 
-            this.amountReceived = this.totalDue.toFixed(2);
+            if (! preserveAmount) {
+                this.amountReceived = this.totalDue.toFixed(2);
+            }
         },
 
         formatMoney(amount) {

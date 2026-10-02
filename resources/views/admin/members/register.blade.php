@@ -24,10 +24,14 @@
                 selectedPlanId: @js(old('membership_plan_id')),
                 discountAmount: @js(old('discount_amount', 0)),
                 amountReceived: @js(old('amount_received')),
+                hasDueDateError: @js($errors->has('due_at')),
+                hasPaymentMethodError: @js($errors->has('payment_method')),
                 currencySymbol: @js(App\Support\MoneyFormatter::symbol($gymCurrency)),
             })"
         >
             @csrf
+
+            <x-forms.error-summary />
 
             <div class="row g-4">
                 <div class="col-lg-4">
@@ -67,7 +71,7 @@
                             @error('photo')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
-                            <div class="invalid-feedback d-block" x-show="photoError" x-text="photoError" x-cloak></div>
+                            <div class="invalid-feedback" :class="{ 'd-block': photoError }" x-text="photoError" x-cloak></div>
                             <div class="form-text">JPG, PNG or WebP. Optimized automatically on upload.</div>
 
                             <button
@@ -237,27 +241,29 @@
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': balanceDue <= 0 }">
+                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': balanceDue <= 0 && ! hasDueDateError }">
                             <x-forms.date-picker
                                 label="Due date"
                                 name="due_at"
                                 :value="old('due_at')"
                                 min-date="today"
                                 help="Required while a balance remains. The member is still activated."
+                                x-bind:disabled="balanceDue <= 0 && ! hasDueDateError"
                             />
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': ! collectsPayment }">
+                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': ! collectsPayment && ! hasPaymentMethodError }">
                             <x-forms.select
                                 label="Payment method"
                                 name="payment_method"
                                 :options="$enabledPaymentMethods"
                                 :selected="old('payment_method', App\Enums\PaymentMethod::Cash->value)"
-                                required
+                                x-bind:required="collectsPayment"
+                                x-bind:disabled="! collectsPayment && ! hasPaymentMethodError"
                             />
                         </div>
-                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': ! collectsPayment }">
+                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': ! collectsPayment && ! hasPaymentMethodError }">
                             <x-forms.input
                                 label="Reference"
                                 name="payment_reference"

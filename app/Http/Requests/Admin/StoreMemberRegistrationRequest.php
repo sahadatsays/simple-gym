@@ -44,7 +44,7 @@ class StoreMemberRegistrationRequest extends FormRequest
             'payment_reference' => ['nullable', 'string', 'max:100'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'amount_received' => ['required', 'numeric', 'min:0'],
-            'due_at' => ['nullable', 'date', 'after_or_equal:today'],
+            'due_at' => ['nullable', 'date'],
             'rfid_card_id' => ['nullable', 'integer', Rule::exists('rfid_cards', 'id')],
         ];
     }
@@ -56,7 +56,7 @@ class StoreMemberRegistrationRequest extends FormRequest
     {
         return [
             'amount_received.min' => 'Payment amount cannot be negative.',
-            'due_at.after_or_equal' => 'The due date cannot be in the past.',
+            'due_at.date' => 'Choose a valid due date.',
             'membership_plan_id.required' => 'Please select a membership plan.',
         ];
     }
@@ -64,7 +64,7 @@ class StoreMemberRegistrationRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ($validator->errors()->isNotEmpty()) {
+            if ($validator->errors()->hasAny(['membership_plan_id', 'amount_received', 'discount_amount'])) {
                 return;
             }
 
@@ -89,8 +89,12 @@ class StoreMemberRegistrationRequest extends FormRequest
 
             $balance = Money::round(max(0, $invoiceTotal - $amountReceived));
 
-            if (Money::greaterThan($balance, 0) && ! $this->filled('due_at')) {
-                $validator->errors()->add('due_at', 'Choose a due date when the amount received is less than the total.');
+            if (Money::greaterThan($balance, 0)) {
+                if (! $this->filled('due_at')) {
+                    $validator->errors()->add('due_at', 'Choose a due date when the amount received is less than the total.');
+                } elseif ($this->date('due_at')?->lt(now()->startOfDay())) {
+                    $validator->errors()->add('due_at', 'The due date cannot be in the past.');
+                }
             }
 
             if (($amountReceived > 0 || ! Money::greaterThan($invoiceTotal, 0)) && ! $this->filled('payment_method')) {

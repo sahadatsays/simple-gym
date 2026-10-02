@@ -49,7 +49,7 @@
                 @error('photo')
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
-                <div class="invalid-feedback d-block" x-show="photoError" x-text="photoError" x-cloak></div>
+                <div class="invalid-feedback" :class="{ 'd-block': photoError }" x-text="photoError" x-cloak></div>
                 <div class="form-text">{{ __('members.register_page.photo_help_register') }}</div>
 
                 <button

@@ -68,6 +68,7 @@ class PaymentService extends BaseService
             discountAmount: $discountAmount,
             reference: $reference,
             requireFullPayment: false,
+            applyInvoiceDiscount: false,
         );
     }
 
@@ -81,6 +82,7 @@ class PaymentService extends BaseService
         ?string $reference = null,
         ?string $notes = null,
         bool $requireFullPayment = true,
+        bool $applyInvoiceDiscount = true,
     ): Payment {
         return $this->receiveForInvoice($invoice, [
             'member_id' => $member?->id ?? $invoice->member_id,
@@ -91,6 +93,7 @@ class PaymentService extends BaseService
             'reference' => $reference,
             'notes' => $notes,
             'require_full_payment' => $requireFullPayment,
+            'apply_invoice_discount' => $applyInvoiceDiscount,
         ]);
     }
 
@@ -104,6 +107,7 @@ class PaymentService extends BaseService
      *     reference?: string|null,
      *     notes?: string|null,
      *     require_full_payment?: bool,
+     *     apply_invoice_discount?: bool,
      *     line_items?: array<int, array{product_id?: int|null, description: string, amount: float, quantity?: int, unit_price?: float}>
      * }  $data
      */
@@ -117,8 +121,9 @@ class PaymentService extends BaseService
             }
 
             $discountAmount = Money::round((float) ($data['discount_amount'] ?? 0));
+            $applyInvoiceDiscount = $data['apply_invoice_discount'] ?? true;
 
-            if ($discountAmount > 0) {
+            if ($applyInvoiceDiscount && $discountAmount > 0) {
                 $invoice = $this->invoiceService->applyDiscount($invoice, $discountAmount);
             }
 

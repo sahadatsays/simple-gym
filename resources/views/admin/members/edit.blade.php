@@ -21,6 +21,8 @@
             @csrf
             @method('PUT')
 
+            <x-forms.error-summary />
+
             @include('admin.members.partials.form', ['member' => $member])
 
             <div class="sg-form-actions d-flex flex-wrap gap-2 pt-4 mt-4 border-top">

@@ -117,6 +117,34 @@ it('shows member profile page', function () {
         ->assertSee('Total Due');
 });
 
+it('shows profile validation errors beside the fields and at the top of the form', function () {
+    $member = Member::factory()->create([
+        'name' => 'Editable Member',
+        'phone' => '01722220001',
+        'membership_plan_id' => $this->plan->id,
+    ]);
+
+    Member::factory()->create(['phone' => '01722220002']);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.members.edit', $member))
+        ->followingRedirects()
+        ->put(route('admin.members.update', $member), [
+            'name' => '',
+            'phone' => '01722220002',
+            'email' => 'not-an-email',
+        ])
+        ->assertSuccessful()
+        ->assertSee('Please fix the following:')
+        ->assertSee('The name field is required.')
+        ->assertSee('The phone has already been taken.')
+        ->assertSee('The email field must be a valid email address.')
+        ->assertSee('name="phone"', false)
+        ->assertSee('is-invalid', false);
+
+    expect($member->fresh()->name)->toBe('Editable Member');
+});
+
 it('updates a member profile without changing membership', function () {
     $member = Member::factory()->create([
         'name' => 'Old Name',

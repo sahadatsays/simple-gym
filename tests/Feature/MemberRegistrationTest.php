@@ -309,6 +309,46 @@ it('rejects a registration due date in the past', function () {
     expect(Member::query()->where('phone', '01777779999')->exists())->toBeFalse();
 });
 
+it('shows registration errors beside the fields and at the top of the form', function () {
+    Member::factory()->create(['phone' => '01700000099']);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.members.register.create'))
+        ->followingRedirects()
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Stuck Member',
+            'phone' => '01700000099',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'amount_received' => 500,
+        ])
+        ->assertSuccessful()
+        ->assertSee('Please fix the following:')
+        ->assertSee('The phone has already been taken.')
+        ->assertSee('Choose a due date when the amount received is less than the total.')
+        ->assertSee('name="phone"', false)
+        ->assertSee('is-invalid', false)
+        ->assertSee('amountReceived: 500', false);
+});
+
+it('accepts a paid-in-full registration when a leftover due date is in the past', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Paid Member',
+            'phone' => '01755550099',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'amount_received' => 2000,
+            'due_at' => now()->subDay()->toDateString(),
+        ])
+        ->assertRedirect()
+        ->assertSessionDoesntHaveErrors();
+
+    expect(Member::query()->where('phone', '01755550099')->exists())->toBeTrue();
+});
+
 it('activates a member and keeps the unpaid balance when registration is partial', function () {
     $joinedAt = now()->toDateString();
     $dueAt = now()->addDays(7)->toDateString();

@@ -32,7 +32,7 @@
     </select>
 
     @error($name)
-        <div class="invalid-feedback">{{ $message }}</div>
+        <div class="invalid-feedback d-block">{{ $message }}</div>
     @enderror
 
     @if ($help)

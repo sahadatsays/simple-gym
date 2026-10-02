@@ -29,7 +29,20 @@ function initDatePicker(element, overrides = {}) {
         options.minDate = element.dataset.minDate;
     }
 
-    return flatpickr(element, { ...options, ...overrides });
+    const picker = flatpickr(element, { ...options, ...overrides });
+
+    if (picker.altInput) {
+        if (element.classList.contains('is-invalid')) {
+            picker.altInput.classList.add('is-invalid');
+        }
+
+        if (element.required) {
+            element.required = false;
+            picker.altInput.required = true;
+        }
+    }
+
+    return picker;
 }
 
 function initTimePicker(element) {
