@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DashboardFilterRequest;
 use App\Models\Asset;
+use App\Models\Borrowing;
 use App\Models\Expense;
 use App\Models\Investment;
 use App\Services\DashboardAlertService;
@@ -37,6 +38,7 @@ class DashboardController extends Controller
         $canViewAssets = $request->user()->can('viewAny', Asset::class);
         $canViewExpenses = $request->user()->can('viewAny', Expense::class);
         $canViewPayments = $request->user()->can('payments.view');
+        $canViewBorrowings = $request->user()->can('viewAny', Borrowing::class);
 
         return view('admin.dashboard', [
             'stats' => $this->dashboard->stats($range, $currency),
@@ -52,6 +54,12 @@ class DashboardController extends Controller
             'expenseStats' => $canViewExpenses
                 ? $this->dashboard->expenseStats($range)
                 : null,
+            'borrowingStats' => $canViewBorrowings
+                ? $this->dashboard->borrowingStats($range)
+                : null,
+            'recentBorrowings' => $canViewBorrowings
+                ? $this->dashboard->recentBorrowings($range)
+                : Collection::make(),
             'recentRegistrations' => $this->dashboard->recentRegistrations($range),
             'recentPayments' => $this->dashboard->recentPayments($range),
             'recentInvestments' => $canViewInvestments

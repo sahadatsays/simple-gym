@@ -1,12 +1,15 @@
 <?php
 
 use App\Enums\AssetStatus;
+use App\Enums\BorrowingStatus;
 use App\Enums\ExpenseStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetMaintenance;
+use App\Models\Borrowing;
+use App\Models\BorrowingRepayment;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Investment;
@@ -17,6 +20,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\DashboardService;
+use App\Services\FinancialSummaryService;
 use App\Support\DashboardDateRange;
 use Database\Seeders\DashboardSeeder;
 use Database\Seeders\GymSettingSeeder;
@@ -367,6 +371,132 @@ it('filters dashboard metrics by custom date range', function () {
         ]))
         ->assertSuccessful()
         ->assertSee(now()->parse($from)->format('M j, Y'));
+});
+
+it('shows borrowing widgets without counting them as revenue or expenses', function () {
+    $reportDate = now()->subYear()->startOfMonth()->addDays(10);
+    $from = $reportDate->copy()->startOfMonth()->toDateString();
+    $to = $reportDate->copy()->endOfMonth()->toDateString();
+    $expenseCategory = ExpenseCategory::factory()->create();
+
+    Payment::factory()->create([
+        'type' => PaymentType::MembershipFee,
+        'status' => PaymentStatus::Completed,
+        'amount' => 5000,
+        'paid_at' => $reportDate,
+    ]);
+
+    Expense::factory()->create([
+        'expense_category_id' => $expenseCategory->id,
+        'expensed_at' => $reportDate,
+        'amount' => 1000,
+        'status' => ExpenseStatus::Paid,
+    ]);
+
+    $borrowing = Borrowing::factory()->create([
+        'borrowing_no' => 'BOR-DASH-00001',
+        'lender_name' => 'Dashboard Lender',
+        'borrowing_date' => $reportDate,
+        'due_date' => $reportDate->copy()->addDays(5),
+        'amount' => 8000,
+        'status' => BorrowingStatus::PartiallyRepaid,
+    ]);
+
+    BorrowingRepayment::factory()->create([
+        'borrowing_id' => $borrowing->id,
+        'repayment_date' => $reportDate,
+        'amount' => 2500,
+    ]);
+
+    BorrowingRepayment::factory()->create([
+        'borrowing_id' => $borrowing->id,
+        'repayment_date' => $reportDate->copy()->addMonth(),
+        'amount' => 500,
+    ]);
+
+    $olderBorrowing = Borrowing::factory()->create([
+        'borrowing_no' => 'BOR-DASH-OLD',
+        'borrowing_date' => $reportDate->copy()->subMonths(2),
+        'due_date' => $reportDate->copy()->subMonth(),
+        'amount' => 7000,
+        'status' => BorrowingStatus::Active,
+    ]);
+
+    BorrowingRepayment::factory()->create([
+        'borrowing_id' => $olderBorrowing->id,
+        'repayment_date' => $reportDate,
+        'amount' => 1000,
+    ]);
+
+    Borrowing::factory()->cancelled()->create([
+        'borrowing_no' => 'BOR-DASH-CANCELLED',
+        'borrowing_date' => $reportDate,
+        'due_date' => $reportDate,
+        'amount' => 99999,
+    ]);
+
+    Borrowing::factory()->fullyRepaid()->create([
+        'borrowing_no' => 'BOR-DASH-CLOSED',
+        'borrowing_date' => $reportDate,
+        'due_date' => $reportDate,
+        'amount' => 400,
+    ]);
+
+    $range = DashboardDateRange::fromInput([
+        'preset' => 'custom',
+        'from_date' => $from,
+        'to_date' => $to,
+    ]);
+
+    $summary = app(FinancialSummaryService::class)->forRange($range);
+
+    expect($summary['revenue'])->toBe(5000.0)
+        ->and($summary['expenses'])->toBe(1000.0)
+        ->and($summary['net_operating_result'])->toBe(4000.0);
+
+    $borrowingStats = app(DashboardService::class)->borrowingStats($range);
+
+    expect($borrowingStats['total_borrowed'])->toBe(8400.0)
+        ->and($borrowingStats['total_repaid'])->toBe(3500.0)
+        ->and($borrowingStats['total_outstanding'])->toBe(5900.0)
+        ->and($borrowingStats['active_borrowings'])->toBe(2)
+        ->and($borrowingStats['borrowings_due_soon'])->toBe(1);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard', [
+            'preset' => 'custom',
+            'from_date' => $from,
+            'to_date' => $to,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Borrowings')
+        ->assertSee('Total Borrowed')
+        ->assertSee('Total Repaid')
+        ->assertSee('Total Outstanding')
+        ->assertSee('Active Borrowings')
+        ->assertSee('Borrowings Due Soon')
+        ->assertSee('Recent Borrowings')
+        ->assertSee('Borrowed money is not revenue. Repayments are not operating expenses.')
+        ->assertSee('8,400')
+        ->assertSee('3,500')
+        ->assertSee('5,900')
+        ->assertSee('BOR-DASH-00001')
+        ->assertSee('Dashboard Lender')
+        ->assertSee('BOR-DASH-CLOSED')
+        ->assertDontSee('BOR-DASH-OLD')
+        ->assertDontSee('BOR-DASH-CANCELLED')
+        ->assertDontSee('99,999');
+});
+
+it('hides borrowing widgets without module permissions', function () {
+    $user = User::factory()->create(['is_active' => true]);
+    $user->assignRole('trainer');
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertDontSee('Total Borrowed')
+        ->assertDontSee('Recent Borrowings');
 });
 
 it('forbids dashboard access without permission', function () {

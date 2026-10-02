@@ -154,6 +154,71 @@
         </div>
     @endif
 
+    @if ($borrowingStats !== null)
+        <h2 class="h5 fw-bold mb-1">{{ __('dashboard.sections.borrowings') }}</h2>
+        <p class="text-muted small mb-3">{{ __('dashboard.sections.borrowings_note') }}</p>
+
+        <div class="row g-3 g-xl-4 mb-4">
+            <div class="col-6 col-md-4 col-xl">
+                <x-dashboard.stat-card
+                    :title="__('dashboard.stats.total_borrowed')"
+                    :value="App\Support\MoneyFormatter::format($borrowingStats['total_borrowed'], $stats['currency'])"
+                    icon="wallet"
+                    variant="info"
+                    formatted
+                >
+                    <x-slot:footer>{{ __('dashboard.stats.not_included_in_revenue') }}</x-slot:footer>
+                </x-dashboard.stat-card>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl">
+                <x-dashboard.stat-card
+                    :title="__('dashboard.stats.total_repaid')"
+                    :value="App\Support\MoneyFormatter::format($borrowingStats['total_repaid'], $stats['currency'])"
+                    icon="wallet"
+                    variant="success"
+                    formatted
+                >
+                    <x-slot:footer>{{ __('dashboard.stats.not_an_operating_expense') }}</x-slot:footer>
+                </x-dashboard.stat-card>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl">
+                <x-dashboard.stat-card
+                    :title="__('dashboard.stats.total_outstanding')"
+                    :value="App\Support\MoneyFormatter::format($borrowingStats['total_outstanding'], $stats['currency'])"
+                    icon="alert"
+                    variant="warning"
+                    formatted
+                >
+                    <x-slot:footer>{{ __('dashboard.stats.still_unpaid_in_period') }}</x-slot:footer>
+                </x-dashboard.stat-card>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl">
+                <x-dashboard.stat-card
+                    :title="__('dashboard.stats.active_borrowings')"
+                    :value="$borrowingStats['active_borrowings']"
+                    icon="user-check"
+                    variant="primary"
+                >
+                    <x-slot:footer>{{ __('dashboard.stats.currently_open') }}</x-slot:footer>
+                </x-dashboard.stat-card>
+            </div>
+
+            <div class="col-6 col-md-4 col-xl">
+                <x-dashboard.stat-card
+                    :title="__('dashboard.stats.borrowings_due_soon')"
+                    :value="$borrowingStats['borrowings_due_soon']"
+                    icon="alert"
+                    variant="danger"
+                >
+                    <x-slot:footer>{{ __('dashboard.stats.due_in_selected_period') }}</x-slot:footer>
+                </x-dashboard.stat-card>
+            </div>
+        </div>
+    @endif
+
     @if ($assetInvestmentStats !== null)
         <h2 class="h5 fw-bold mb-3">{{ __('dashboard.sections.assets_investments') }}</h2>
 
@@ -379,6 +444,12 @@
         @can('viewAny', App\Models\Expense::class)
             <div class="col-xl-6">
                 <x-dashboard.recent-expenses :expenses="$recentExpenses" :currency="$stats['currency']" />
+            </div>
+        @endcan
+
+        @can('viewAny', App\Models\Borrowing::class)
+            <div class="col-xl-6">
+                <x-dashboard.recent-borrowings :borrowings="$recentBorrowings" :currency="$stats['currency']" />
             </div>
         @endcan
     </div>

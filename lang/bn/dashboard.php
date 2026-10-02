@@ -18,6 +18,8 @@ return [
         'assets_investments' => 'সম্পদ ও বিনিয়োগ',
         'expenses' => 'খরচ',
         'financial_summary' => 'আর্থিক সারাংশ',
+        'borrowings' => 'ধার',
+        'borrowings_note' => 'ধার করা টাকা আয় নয়। পরিশোধ পরিচালন খরচ নয়।',
     ],
 
     'stats' => [
@@ -57,6 +59,15 @@ return [
         'not_included_in_revenue' => 'আয়ের অন্তর্ভুক্ত নয়',
         'outstanding_due' => 'বকেয়া',
         'outstanding_due_footer' => 'এই সময়কালে ইস্যু হওয়া অপরিশোধিত বকেয়া',
+        'total_borrowed' => 'মোট ধার',
+        'total_repaid' => 'মোট পরিশোধ',
+        'total_outstanding' => 'মোট বকেয়া ধার',
+        'active_borrowings' => 'সক্রিয় ধার',
+        'borrowings_due_soon' => 'শীঘ্রই পরিশোধের ধার',
+        'not_an_operating_expense' => 'পরিচালন খরচ নয়',
+        'still_unpaid_in_period' => 'এই সময়কালের ধারের মধ্যে এখনও বাকি',
+        'currently_open' => 'বর্তমানে খোলা',
+        'due_in_selected_period' => 'নির্বাচিত সময়কালে পরিশোধের তারিখ',
     ],
 
     'charts' => [
@@ -123,6 +134,12 @@ return [
         'highest_expense_categories_subtitle' => 'নির্বাচিত সময়কালের শীর্ষ বিভাগ',
         'no_expense_categories_recorded' => 'এই সময়কালে কোনো খরচের বিভাগ রেকর্ড করা হয়নি।',
         'expense_count' => 'খরচ',
+        'recent_borrowings' => 'সাম্প্রতিক ধার',
+        'recent_borrowings_subtitle' => 'নির্বাচিত সময়কালের ধার',
+        'view_all_borrowings' => 'সব ধার দেখুন',
+        'no_borrowings_recorded' => 'এই সময়কালে কোনো ধার রেকর্ড করা হয়নি।',
+        'borrowing_number' => 'ধার নং',
+        'lender' => 'ঋণদাতা',
     ],
 
     'alerts' => [

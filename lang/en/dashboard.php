@@ -18,6 +18,8 @@ return [
         'assets_investments' => 'Assets & Investments',
         'expenses' => 'Expenses',
         'financial_summary' => 'Financial Summary',
+        'borrowings' => 'Borrowings',
+        'borrowings_note' => 'Borrowed money is not revenue. Repayments are not operating expenses.',
     ],
 
     'stats' => [
@@ -57,6 +59,15 @@ return [
         'not_included_in_revenue' => 'Not included in revenue',
         'outstanding_due' => 'Outstanding Due',
         'outstanding_due_footer' => 'Unpaid balances issued in this period',
+        'total_borrowed' => 'Total Borrowed',
+        'total_repaid' => 'Total Repaid',
+        'total_outstanding' => 'Total Outstanding',
+        'active_borrowings' => 'Active Borrowings',
+        'borrowings_due_soon' => 'Borrowings Due Soon',
+        'not_an_operating_expense' => 'Not an operating expense',
+        'still_unpaid_in_period' => 'Still unpaid on borrowings in this period',
+        'currently_open' => 'Currently open',
+        'due_in_selected_period' => 'Due in selected period',
     ],
 
     'charts' => [
@@ -123,6 +134,12 @@ return [
         'highest_expense_categories_subtitle' => 'Top categories in the selected period',
         'no_expense_categories_recorded' => 'No expense categories recorded for this period.',
         'expense_count' => 'Expenses',
+        'recent_borrowings' => 'Recent Borrowings',
+        'recent_borrowings_subtitle' => 'Borrowings in the selected period',
+        'view_all_borrowings' => 'View all borrowings',
+        'no_borrowings_recorded' => 'No borrowings recorded for this period.',
+        'borrowing_number' => 'Borrowing No.',
+        'lender' => 'Lender',
     ],
 
     'alerts' => [

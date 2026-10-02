@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\Enums\AssetStatus;
+use App\Enums\BorrowingStatus;
 use App\Enums\PaymentType;
 use App\Models\Asset;
 use App\Models\AssetMaintenance;
+use App\Models\Borrowing;
+use App\Models\BorrowingRepayment;
 use App\Models\Expense;
 use App\Models\Investment;
 use App\Models\Invoice;
@@ -13,6 +16,7 @@ use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Support\DashboardDateRange;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -287,6 +291,91 @@ class DashboardService
             'total_amount' => (float) $row->total_amount,
             'expense_count' => (int) $row->expense_count,
         ]);
+    }
+
+    /**
+     * Borrowed money and repayments are tracked separately from revenue and expenses.
+     *
+     * @return array{
+     *     total_borrowed: float,
+     *     total_repaid: float,
+     *     total_outstanding: float,
+     *     active_borrowings: int,
+     *     borrowings_due_soon: int
+     * }
+     */
+    public function borrowingStats(DashboardDateRange $range): array
+    {
+        $from = $range->from->toDateString();
+        $to = $range->to->toDateString();
+        $openStatuses = [BorrowingStatus::Active->value, BorrowingStatus::PartiallyRepaid->value];
+
+        $repaidByBorrowing = BorrowingRepayment::query()
+            ->select('borrowing_id')
+            ->selectRaw('SUM(amount) as repaid_amount')
+            ->whereDate('repayment_date', '<=', $to)
+            ->groupBy('borrowing_id');
+
+        $period = Borrowing::query()
+            ->toBase()
+            ->leftJoinSub($repaidByBorrowing, 'repaid', 'repaid.borrowing_id', '=', 'borrowings.id')
+            ->where('borrowings.status', '!=', BorrowingStatus::Cancelled->value)
+            ->whereDate('borrowings.borrowing_date', '>=', $from)
+            ->whereDate('borrowings.borrowing_date', '<=', $to)
+            ->selectRaw('COALESCE(SUM(borrowings.amount), 0) as total_borrowed')
+            ->selectRaw('COALESCE(SUM(borrowings.amount), 0) - COALESCE(SUM(repaid.repaid_amount), 0) as total_outstanding')
+            ->first();
+
+        $totalRepaid = (float) BorrowingRepayment::query()
+            ->toBase()
+            ->join('borrowings', 'borrowings.id', '=', 'borrowing_repayments.borrowing_id')
+            ->where('borrowings.status', '!=', BorrowingStatus::Cancelled->value)
+            ->whereDate('borrowing_repayments.repayment_date', '>=', $from)
+            ->whereDate('borrowing_repayments.repayment_date', '<=', $to)
+            ->sum('borrowing_repayments.amount');
+
+        $counts = Borrowing::query()
+            ->toBase()
+            ->selectRaw(
+                'COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as active_borrowings',
+                $openStatuses,
+            )
+            ->selectRaw(
+                'COUNT(CASE WHEN status IN (?, ?) AND due_date IS NOT NULL AND due_date >= ? AND due_date <= ? THEN 1 END) as borrowings_due_soon',
+                [$openStatuses[0], $openStatuses[1], $from, $to],
+            )
+            ->first();
+
+        return [
+            'total_borrowed' => Money::round((float) ($period->total_borrowed ?? 0)),
+            'total_repaid' => Money::round($totalRepaid),
+            'total_outstanding' => Money::round((float) ($period->total_outstanding ?? 0)),
+            'active_borrowings' => (int) ($counts->active_borrowings ?? 0),
+            'borrowings_due_soon' => (int) ($counts->borrowings_due_soon ?? 0),
+        ];
+    }
+
+    /**
+     * @return Collection<int, Borrowing>
+     */
+    public function recentBorrowings(DashboardDateRange $range, int $limit = 8): Collection
+    {
+        return Borrowing::query()
+            ->where('status', '!=', BorrowingStatus::Cancelled)
+            ->whereDate('borrowing_date', '>=', $range->from->toDateString())
+            ->whereDate('borrowing_date', '<=', $range->to->toDateString())
+            ->latest('borrowing_date')
+            ->latest('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'borrowing_no',
+                'lender_name',
+                'borrowing_date',
+                'amount',
+                'due_date',
+                'status',
+            ]);
     }
 
     /**
