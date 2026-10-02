@@ -6,7 +6,10 @@
     <x-ui.page-header :title="$borrowing->borrowing_no" subtitle="Borrowing details">
         <x-slot:actions>
             @can('update', $borrowing)
-                <a href="{{ route('admin.borrowings.edit', $borrowing) }}" class="btn btn-primary">Edit</a>
+                @if ($borrowing->acceptsRepayment())
+                    <a href="{{ route('admin.borrowings.repayments.create', ['borrowing_id' => $borrowing->id]) }}" class="btn btn-primary">Record Repayment</a>
+                @endif
+                <a href="{{ route('admin.borrowings.edit', $borrowing) }}" class="btn btn-light">Edit</a>
             @endcan
             <a href="{{ route('admin.borrowings.index') }}" class="btn btn-light">Back to Borrowings</a>
         </x-slot:actions>
@@ -35,6 +38,9 @@
 
                         <dt class="col-sm-5">Amount</dt>
                         <dd class="col-sm-7">{{ App\Support\MoneyFormatter::format($borrowing->amount, $gymCurrency) }}</dd>
+
+                        <dt class="col-sm-5">Total repaid</dt>
+                        <dd class="col-sm-7">{{ App\Support\MoneyFormatter::format($borrowing->total_repaid, $gymCurrency) }}</dd>
 
                         <dt class="col-sm-5">Remaining</dt>
                         <dd class="col-sm-7">{{ App\Support\MoneyFormatter::format($borrowing->remaining_amount, $gymCurrency) }}</dd>

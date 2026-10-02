@@ -4,6 +4,7 @@ namespace App\Contracts\Repositories;
 
 use App\Models\Borrowing;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface BorrowingRepositoryInterface extends RepositoryInterface
 {
@@ -19,4 +20,11 @@ interface BorrowingRepositoryInterface extends RepositoryInterface
     public function paginateWithFilters(array $filters, int $perPage): LengthAwarePaginator;
 
     public function nextBorrowingNumber(): string;
+
+    public function nextRepaymentNumber(): string;
+
+    /**
+     * @return Collection<int, Borrowing>
+     */
+    public function repayable(): Collection;
 }

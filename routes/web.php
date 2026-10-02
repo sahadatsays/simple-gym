@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AssetDisposalController;
 use App\Http\Controllers\Admin\AssetMaintenanceController;
 use App\Http\Controllers\Admin\AttendanceLogController;
 use App\Http\Controllers\Admin\BorrowingController;
+use App\Http\Controllers\Admin\BorrowingRepaymentController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseCategoryController;
@@ -112,6 +113,9 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::resource('investment-categories', InvestmentCategoryController::class)->except(['show']);
         Route::resource('expense-categories', ExpenseCategoryController::class)->except(['show']);
         Route::resource('expenses', ExpenseController::class);
+        Route::get('borrowings/repayments/create', [BorrowingRepaymentController::class, 'create'])->name('borrowings.repayments.create');
+        Route::post('borrowings/repayments/confirm', [BorrowingRepaymentController::class, 'confirm'])->name('borrowings.repayments.confirm');
+        Route::post('borrowings/repayments', [BorrowingRepaymentController::class, 'store'])->name('borrowings.repayments.store');
         Route::resource('borrowings', BorrowingController::class);
         Route::resource('investments', InvestmentController::class);
         Route::resource('assets', AssetController::class);

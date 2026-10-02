@@ -10,6 +10,11 @@
                     Add Borrowing
                 </a>
             @endcan
+            @can('borrowings.edit')
+                <a href="{{ route('admin.borrowings.repayments.create') }}" class="btn btn-light">
+                    Record Repayment
+                </a>
+            @endcan
         </x-slot:actions>
     </x-ui.page-header>
 

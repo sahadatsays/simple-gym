@@ -3,8 +3,11 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\BorrowingRepositoryInterface;
+use App\Enums\BorrowingStatus;
 use App\Models\Borrowing;
+use App\Models\BorrowingRepayment;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class BorrowingRepository extends BaseRepository implements BorrowingRepositoryInterface
 {
@@ -26,6 +29,7 @@ class BorrowingRepository extends BaseRepository implements BorrowingRepositoryI
     {
         return $this->newQuery()
             ->with('creator')
+            ->withSum('repayments', 'amount')
             ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
                 $search = $filters['search'];
 
@@ -67,5 +71,40 @@ class BorrowingRepository extends BaseRepository implements BorrowingRepositoryI
             : 1;
 
         return $prefix.str_pad((string) $nextSequence, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function nextRepaymentNumber(): string
+    {
+        $today = now()->format('Ymd');
+        $prefix = "RPY-{$today}-";
+
+        $latest = BorrowingRepayment::query()
+            ->where('repayment_no', 'like', "{$prefix}%")
+            ->orderByDesc('repayment_no')
+            ->value('repayment_no');
+
+        $nextSequence = $latest
+            ? ((int) substr($latest, -5)) + 1
+            : 1;
+
+        return $prefix.str_pad((string) $nextSequence, 5, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * @return Collection<int, Borrowing>
+     */
+    public function repayable(): Collection
+    {
+        return $this->newQuery()
+            ->withSum('repayments', 'amount')
+            ->whereIn('status', [
+                BorrowingStatus::Active->value,
+                BorrowingStatus::PartiallyRepaid->value,
+            ])
+            ->orderByDesc('borrowing_date')
+            ->orderByDesc('id')
+            ->get()
+            ->filter(fn (Borrowing $borrowing): bool => $borrowing->acceptsRepayment())
+            ->values();
     }
 }

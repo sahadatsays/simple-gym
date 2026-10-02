@@ -46,19 +46,45 @@ class Borrowing extends Model
     }
 
     /**
+     * Sum of saved repayments. This is not a stored column.
+     *
+     * @return Attribute<float, never>
+     */
+    protected function totalRepaid(): Attribute
+    {
+        return Attribute::get(fn (): float => $this->repaidAmount());
+    }
+
+    /**
      * Remaining balance is derived from repayment history and is not stored.
      *
      * @return Attribute<float, never>
      */
     protected function remainingAmount(): Attribute
     {
-        return Attribute::get(function (): float {
-            $repaid = $this->relationLoaded('repayments')
-                ? (float) $this->repayments->sum('amount')
-                : (float) $this->repayments()->sum('amount');
+        return Attribute::get(fn (): float => Money::round((float) $this->amount - $this->repaidAmount()));
+    }
 
-            return Money::round((float) $this->amount - $repaid);
-        });
+    public function acceptsRepayment(): bool
+    {
+        if (! in_array($this->status, [BorrowingStatus::Active, BorrowingStatus::PartiallyRepaid], true)) {
+            return false;
+        }
+
+        return Money::greaterThan($this->remaining_amount, 0);
+    }
+
+    private function repaidAmount(): float
+    {
+        if ($this->relationLoaded('repayments')) {
+            $repaid = (float) $this->repayments->sum(fn (BorrowingRepayment $repayment): float => (float) $repayment->amount);
+        } elseif (array_key_exists('repayments_sum_amount', $this->getAttributes())) {
+            $repaid = (float) $this->repayments_sum_amount;
+        } else {
+            $repaid = (float) $this->repayments()->sum('amount');
+        }
+
+        return Money::round($repaid);
     }
 
     /**

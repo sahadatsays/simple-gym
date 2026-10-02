@@ -19,6 +19,11 @@
         @endcan
 
         @can('update', $borrowing)
+            @if ($borrowing->acceptsRepayment())
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.borrowings.repayments.create', ['borrowing_id' => $borrowing->id]) }}">Record repayment</a>
+                </li>
+            @endif
             <li>
                 <a class="dropdown-item" href="{{ route('admin.borrowings.edit', $borrowing) }}">Edit</a>
             </li>

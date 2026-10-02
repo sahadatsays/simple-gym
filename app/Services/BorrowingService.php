@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Repositories\BorrowingRepositoryInterface;
 use App\Enums\BorrowingStatus;
 use App\Models\Borrowing;
+use App\Models\BorrowingRepayment;
 use App\Support\ActivityLogger;
 use App\Support\Money;
 use InvalidArgumentException;
@@ -53,6 +54,60 @@ class BorrowingService extends BaseService
             ]);
 
             return $updatedBorrowing;
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function recordRepayment(Borrowing $borrowing, array $data, ?int $createdBy = null): BorrowingRepayment
+    {
+        return $this->transaction(function () use ($borrowing, $data, $createdBy): BorrowingRepayment {
+            $locked = Borrowing::query()->whereKey($borrowing->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === BorrowingStatus::Cancelled) {
+                throw new InvalidArgumentException('A cancelled borrowing cannot receive a repayment.');
+            }
+
+            if ($locked->status === BorrowingStatus::FullyRepaid) {
+                throw new InvalidArgumentException('A fully repaid borrowing cannot receive another repayment.');
+            }
+
+            $amount = Money::round((float) $data['amount']);
+
+            if (! Money::greaterThan($amount, 0)) {
+                throw new InvalidArgumentException('Repayment amount must be greater than zero.');
+            }
+
+            if (Money::greaterThan($amount, $locked->remaining_amount)) {
+                throw new InvalidArgumentException('Repayment cannot exceed the remaining amount.');
+            }
+
+            $repayment = $locked->repayments()->create([
+                'repayment_no' => $this->borrowings->nextRepaymentNumber(),
+                'repayment_date' => $data['repayment_date'],
+                'amount' => $amount,
+                'payment_method' => $data['payment_method'],
+                'description' => $data['description'] ?? null,
+                'created_by' => $createdBy,
+            ]);
+
+            $locked->unsetRelation('repayments');
+
+            $locked->update([
+                'status' => Money::greaterThan($locked->remaining_amount, 0)
+                    ? BorrowingStatus::PartiallyRepaid
+                    : BorrowingStatus::FullyRepaid,
+            ]);
+
+            $this->activityLogger->log('borrowing.repayment_recorded', $repayment, 'Borrowing repayment recorded', [
+                'repayment_no' => $repayment->repayment_no,
+                'borrowing_no' => $locked->borrowing_no,
+                'amount' => $repayment->amount,
+                'status' => $locked->status->value,
+            ]);
+
+            return $repayment;
         });
     }
 
