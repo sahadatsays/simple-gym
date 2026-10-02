@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\PaymentMethod;
+use App\Models\GymSetting;
 use App\Models\Member;
 use App\Models\RfidCard;
 use App\Support\Money;
@@ -34,13 +35,8 @@ class AssignRfidCardRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $card = $this->route('rfid_card');
-
-            if (! $card instanceof RfidCard) {
-                return;
-            }
-
-            $total = Money::round((float) $card->card_fee + (float) $card->deposit_amount);
+            $settings = GymSetting::query()->first();
+            $total = Money::round((float) ($settings->rfid_card_fee ?? 0) + (float) ($settings->rfid_card_deposit ?? 0));
 
             if (Money::greaterThan($total, 0) && ! $this->filled('payment_method')) {
                 $validator->errors()->add('payment_method', 'Choose a payment method for the card fee and deposit.');

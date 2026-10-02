@@ -30,6 +30,9 @@ class UpdateGymSettingRequest extends FormRequest
             'receipt_footer' => ['nullable', 'string', 'max:1000'],
             'membership_reminder_days' => ['required', 'integer', 'min:1', 'max:365'],
             'default_admission_fee' => ['required', 'numeric', 'min:0', 'max:9999999.99'],
+            'rfid_card_fee' => ['required', 'numeric', 'min:0', 'max:9999999.99'],
+            'rfid_card_deposit' => ['required', 'numeric', 'min:0', 'max:9999999.99'],
+            'rfid_replacement_card_fee' => ['required', 'numeric', 'min:0', 'max:9999999.99'],
             'enabled_payment_methods' => ['required', 'array', 'min:1'],
             'enabled_payment_methods.*' => ['required', 'string', Rule::enum(PaymentMethod::class)],
             'email' => ['nullable', 'email', 'max:255'],
@@ -66,6 +69,9 @@ class UpdateGymSettingRequest extends FormRequest
             'enabled_payment_methods' => 'payment methods',
             'membership_reminder_days' => 'membership reminder days',
             'default_admission_fee' => 'default admission fee',
+            'rfid_card_fee' => 'card fee',
+            'rfid_card_deposit' => 'card deposit',
+            'rfid_replacement_card_fee' => 'replacement card fee',
             'receipt_footer' => 'receipt footer',
         ];
     }

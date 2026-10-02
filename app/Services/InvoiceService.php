@@ -110,7 +110,7 @@ class InvoiceService extends BaseService
     /**
      * @param  array<int, array{description: string, amount: float}>  $lineItems
      */
-    public function createRfidInvoice(Member $member, float $cardFee, float $depositAmount): ?Invoice
+    public function createRfidInvoice(Member $member, float $cardFee, float $depositAmount, float $replacementFee = 0): ?Invoice
     {
         $lineItems = [];
 
@@ -125,6 +125,13 @@ class InvoiceService extends BaseService
             $lineItems[] = [
                 'description' => 'RFID card deposit',
                 'amount' => Money::round($depositAmount),
+            ];
+        }
+
+        if (Money::greaterThan($replacementFee, 0)) {
+            $lineItems[] = [
+                'description' => 'RFID replacement card fee',
+                'amount' => Money::round($replacementFee),
             ];
         }
 

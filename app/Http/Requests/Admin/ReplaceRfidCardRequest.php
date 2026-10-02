@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\PaymentMethod;
+use App\Models\GymSetting;
 use App\Models\Member;
 use App\Models\RfidCard;
 use App\Support\Money;
@@ -25,8 +26,6 @@ class ReplaceRfidCardRequest extends FormRequest
         return [
             'member_id' => ['required', 'integer', Rule::exists('members', 'id')->whereNull('deleted_at')],
             'card_number' => ['required', 'string', 'max:50'],
-            'card_fee' => ['nullable', 'numeric', 'min:0'],
-            'deposit_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'string', Rule::enum(PaymentMethod::class)],
         ];
     }
@@ -38,13 +37,10 @@ class ReplaceRfidCardRequest extends FormRequest
                 return;
             }
 
-            $existing = RfidCard::query()->where('card_number', $this->string('card_number')->toString())->first();
-            $cardFee = $existing !== null ? (float) $existing->card_fee : (float) ($this->input('card_fee') ?? 0);
-            $depositAmount = $existing !== null ? (float) $existing->deposit_amount : (float) ($this->input('deposit_amount') ?? 0);
-            $total = Money::round($cardFee + $depositAmount);
+            $replacementFee = (float) (GymSetting::query()->value('rfid_replacement_card_fee') ?? 0);
 
-            if (Money::greaterThan($total, 0) && ! $this->filled('payment_method')) {
-                $validator->errors()->add('payment_method', 'Choose a payment method for the card fee and deposit.');
+            if (Money::greaterThan($replacementFee, 0) && ! $this->filled('payment_method')) {
+                $validator->errors()->add('payment_method', 'Choose a payment method for the replacement card fee.');
             }
         });
     }

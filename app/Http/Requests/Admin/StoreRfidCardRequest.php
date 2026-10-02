@@ -20,8 +20,6 @@ class StoreRfidCardRequest extends FormRequest
     {
         return [
             'card_number' => ['required', 'string', 'max:50', Rule::unique('rfid_cards', 'card_number')],
-            'card_fee' => ['nullable', 'numeric', 'min:0'],
-            'deposit_amount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

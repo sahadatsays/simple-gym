@@ -81,7 +81,11 @@ class MemberRegistrationService extends BaseService
                     throw new InvalidArgumentException('Selected RFID card is not available for assignment.');
                 }
 
-                $this->rfidCardService->assign($card, $member);
+                $this->rfidCardService->assign(
+                    $card,
+                    $member,
+                    isset($data['payment_method']) ? (string) $data['payment_method'] : null,
+                );
             }
 
             $invoice = $invoice->fresh(['membershipPlan', 'payments']);

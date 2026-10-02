@@ -5,7 +5,9 @@ use App\Enums\MemberStatus;
 use App\Enums\PaymentType;
 use App\Enums\RfidCardStatus;
 use App\Enums\ZktecoDeviceStatus;
+use App\Exceptions\PaymentFailedException;
 use App\Jobs\MemberAccessRevokeJob;
+use App\Models\GymSetting;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\Payment;
@@ -14,6 +16,7 @@ use App\Models\RfidCardAssignment;
 use App\Models\User;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
+use App\Services\PaymentService;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -263,8 +266,6 @@ it('rejects a duplicate card number', function () {
     $this->actingAs($this->admin)
         ->post(route('admin.rfid-cards.store'), [
             'card_number' => 'RFIDDUP001',
-            'card_fee' => 25,
-            'deposit_amount' => 10,
         ])
         ->assertSessionHasErrors('card_number');
 
@@ -272,11 +273,16 @@ it('rejects a duplicate card number', function () {
 });
 
 it('records one assignment and collects the card fee through an invoice', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 100,
+        'rfid_card_deposit' => 50,
+    ]);
+
     $member = Member::factory()->create();
     $card = RfidCard::factory()->create([
         'card_number' => 'RFIDFEE001',
-        'card_fee' => 100,
-        'deposit_amount' => 50,
+        'card_fee' => 0,
+        'deposit_amount' => 0,
         'status' => RfidCardStatus::Available,
     ]);
 
@@ -311,10 +317,13 @@ it('records one assignment and collects the card fee through an invoice', functi
 });
 
 it('requires a payment method when the card has a fee', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 80,
+        'rfid_card_deposit' => 0,
+    ]);
+
     $member = Member::factory()->create();
     $card = RfidCard::factory()->create([
-        'card_fee' => 80,
-        'deposit_amount' => 0,
         'status' => RfidCardStatus::Available,
     ]);
 
@@ -325,6 +334,121 @@ it('requires a payment method when the card has a fee', function () {
         ->assertSessionHasErrors('payment_method');
 
     expect($card->fresh()->status)->toBe(RfidCardStatus::Available)
+        ->and(Invoice::query()->count())->toBe(0);
+});
+
+it('does not assign the card when the card payment fails', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 100,
+        'rfid_card_deposit' => 25,
+    ]);
+
+    $this->mock(PaymentService::class, function ($mock): void {
+        $mock->shouldReceive('settleInvoice')->once()->andThrow(PaymentFailedException::declined());
+    });
+
+    $member = Member::factory()->create();
+    $card = RfidCard::factory()->create([
+        'status' => RfidCardStatus::Available,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.rfid-cards.index'))
+        ->post(route('admin.rfid-cards.assign', $card), [
+            'member_id' => $member->id,
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    expect($card->fresh()->status)->toBe(RfidCardStatus::Available)
+        ->and($card->fresh()->member_id)->toBeNull()
+        ->and($member->fresh()->rfid_card)->toBeNull()
+        ->and(RfidCardAssignment::query()->count())->toBe(0)
+        ->and(Invoice::query()->count())->toBe(0)
+        ->and(Payment::query()->count())->toBe(0);
+});
+
+it('charges the configured replacement fee and keeps the previous assignment', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 100,
+        'rfid_card_deposit' => 40,
+        'rfid_replacement_card_fee' => 60,
+    ]);
+
+    $member = Member::factory()->create();
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDREP001',
+        'status' => RfidCardStatus::Available,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.rfid-cards.assign', $card), [
+            'member_id' => $member->id,
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.rfid-cards.replace'), [
+            'member_id' => $member->id,
+            'card_number' => 'RFIDREP002',
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect();
+
+    $firstAssignment = RfidCardAssignment::query()->where('rfid_card_id', $card->id)->first();
+    $replacement = RfidCard::query()->where('card_number', 'RFIDREP002')->first();
+    $replacementAssignment = RfidCardAssignment::query()->where('rfid_card_id', $replacement?->id)->first();
+    $replacementInvoice = Invoice::query()->where('id', $replacementAssignment?->invoice_id)->first();
+
+    expect($firstAssignment->status)->toBe(RfidCardStatus::Returned)
+        ->and($firstAssignment->return_date)->not->toBeNull()
+        ->and((float) $firstAssignment->card_fee)->toBe(100.0)
+        ->and((float) $firstAssignment->deposit_amount)->toBe(40.0)
+        ->and($replacement->status)->toBe(RfidCardStatus::Assigned)
+        ->and($replacementAssignment->status)->toBe(RfidCardStatus::Assigned)
+        ->and((float) $replacementAssignment->card_fee)->toBe(60.0)
+        ->and((float) $replacementAssignment->deposit_amount)->toBe(0.0)
+        ->and((float) $replacementInvoice->total)->toBe(60.0)
+        ->and($replacementInvoice->line_items[0]['description'])->toBe('RFID replacement card fee')
+        ->and(RfidCardAssignment::query()->count())->toBe(2);
+});
+
+it('leaves the current card assigned when the replacement payment fails', function () {
+    GymSetting::query()->first()->update([
+        'rfid_replacement_card_fee' => 75,
+    ]);
+
+    $member = Member::factory()->create();
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDREPFAIL',
+        'status' => RfidCardStatus::Available,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.rfid-cards.assign', $card), [
+            'member_id' => $member->id,
+        ])
+        ->assertRedirect();
+
+    $this->mock(PaymentService::class, function ($mock): void {
+        $mock->shouldReceive('settleInvoice')->once()->andThrow(PaymentFailedException::declined());
+    });
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.rfid-cards.index'))
+        ->post(route('admin.rfid-cards.replace'), [
+            'member_id' => $member->id,
+            'card_number' => 'RFIDREPFAIL2',
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    expect($card->fresh()->status)->toBe(RfidCardStatus::Assigned)
+        ->and($card->fresh()->member_id)->toBe($member->id)
+        ->and($member->fresh()->rfid_card)->toBe('RFIDREPFAIL')
+        ->and(RfidCard::query()->where('card_number', 'RFIDREPFAIL2')->exists())->toBeFalse()
+        ->and(RfidCardAssignment::query()->count())->toBe(1)
         ->and(Invoice::query()->count())->toBe(0);
 });
 

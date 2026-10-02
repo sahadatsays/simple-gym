@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Contracts\Repositories\RfidCardRepositoryInterface;
+use App\Exceptions\PaymentFailedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignRfidCardRequest;
 use App\Http\Requests\Admin\IndexRfidCardRequest;
@@ -10,6 +11,7 @@ use App\Http\Requests\Admin\ReplaceRfidCardRequest;
 use App\Http\Requests\Admin\StoreRfidCardRequest;
 use App\Models\Member;
 use App\Models\RfidCard;
+use App\Services\GymSettingService;
 use App\Services\RfidCardService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
@@ -21,16 +23,22 @@ class RfidCardController extends Controller
     public function __construct(
         private RfidCardRepositoryInterface $rfidCards,
         private RfidCardService $rfidCardService,
+        private GymSettingService $gymSettings,
     ) {}
 
     public function index(IndexRfidCardRequest $request): View
     {
         $filters = $request->validated();
 
+        $settings = $this->gymSettings->get();
+
         return view('admin.rfid-cards.index', [
             'cards' => $this->rfidCards->paginateWithFilters($filters, config('gym.pagination.per_page')),
             'members' => Member::query()->orderBy('name')->get(['id', 'name', 'member_code']),
             'filters' => $filters,
+            'cardFee' => (float) $settings->rfid_card_fee,
+            'cardDeposit' => (float) $settings->rfid_card_deposit,
+            'replacementFee' => (float) $settings->rfid_replacement_card_fee,
         ]);
     }
 
@@ -40,8 +48,6 @@ class RfidCardController extends Controller
 
         $this->rfidCardService->register(
             $request->validated('card_number'),
-            (float) ($request->validated('card_fee') ?? 0),
-            (float) ($request->validated('deposit_amount') ?? 0),
             $request->user()?->id,
         );
 
@@ -76,7 +82,7 @@ class RfidCardController extends Controller
                 $request->member(),
                 $request->validated('payment_method'),
             );
-        } catch (InvalidArgumentException $exception) {
+        } catch (PaymentFailedException|InvalidArgumentException $exception) {
             Flash::error($exception->getMessage());
 
             return back();
@@ -95,12 +101,10 @@ class RfidCardController extends Controller
             $this->rfidCardService->replace(
                 $request->member(),
                 $request->validated('card_number'),
-                (float) ($request->validated('card_fee') ?? 0),
-                (float) ($request->validated('deposit_amount') ?? 0),
                 $request->validated('payment_method'),
                 $request->user()?->id,
             );
-        } catch (InvalidArgumentException $exception) {
+        } catch (PaymentFailedException|InvalidArgumentException $exception) {
             Flash::error($exception->getMessage());
 
             return back();

@@ -1,16 +1,21 @@
 <?php
 
 use App\Enums\InvoiceStatus;
+use App\Enums\InvoiceType;
 use App\Enums\MemberStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use App\Enums\RfidCardStatus;
+use App\Exceptions\PaymentFailedException;
+use App\Models\GymSetting;
 use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\Payment;
 use App\Models\RfidCard;
 use App\Models\User;
+use App\Services\PaymentService;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -113,6 +118,92 @@ it('completes the full registration workflow', function () {
     expect($card->status)->toBe(RfidCardStatus::Assigned)
         ->and($card->member_id)->toBe($member->id)
         ->and($member->fresh()->rfid_card)->toBe('CARD999');
+});
+
+it('collects configured rfid charges on a separate invoice during registration', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 100,
+        'rfid_card_deposit' => 50,
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => 'CARDCHARGE',
+        'status' => RfidCardStatus::Available,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Card Charge Member',
+            'phone' => '01755557777',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'amount_received' => 2000,
+            'rfid_card_id' => $card->id,
+        ])
+        ->assertRedirect();
+
+    $member = Member::query()->where('phone', '01755557777')->first();
+    $membershipInvoice = Invoice::query()->where('member_id', $member->id)->where('type', InvoiceType::Registration)->first();
+    $rfidInvoice = Invoice::query()->where('member_id', $member->id)->where('type', InvoiceType::RfidCard)->first();
+    $rfidPayment = Payment::query()->where('invoice_id', $rfidInvoice?->id)->first();
+
+    expect($member->status)->toBe(MemberStatus::Active)
+        ->and($card->fresh()->status)->toBe(RfidCardStatus::Assigned)
+        ->and((float) $membershipInvoice->total)->toBe(2000.0)
+        ->and($membershipInvoice->line_items)->toHaveCount(2)
+        ->and((float) $rfidInvoice->total)->toBe(150.0)
+        ->and($rfidPayment->type)->toBe(PaymentType::RfidCard)
+        ->and((float) $rfidPayment->amount)->toBe(150.0);
+});
+
+it('does not register the member when the rfid card payment fails', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 100,
+        'rfid_card_deposit' => 0,
+    ]);
+
+    $card = RfidCard::factory()->create([
+        'card_number' => 'CARDFAIL',
+        'status' => RfidCardStatus::Available,
+    ]);
+
+    $paymentService = $this->app->make(PaymentService::class);
+    $mock = Mockery::mock($paymentService)->makePartial();
+    $mock->shouldReceive('settleInvoice')
+        ->andReturnUsing(function (Invoice $invoice, Member $member, float $amountPaid, PaymentMethod|string|null $paymentMethod, PaymentType $type) use ($paymentService): ?Payment {
+            if ($type === PaymentType::RfidCard) {
+                throw PaymentFailedException::declined();
+            }
+
+            return $paymentService->settleInvoice(
+                invoice: $invoice,
+                member: $member,
+                amountPaid: $amountPaid,
+                paymentMethod: $paymentMethod,
+                type: $type,
+            );
+        });
+    $this->instance(PaymentService::class, $mock);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.members.register.create'))
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Failed Card Member',
+            'phone' => '01755558888',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'amount_received' => 2000,
+            'rfid_card_id' => $card->id,
+        ])
+        ->assertRedirect(route('admin.members.register.create'));
+
+    expect(Member::query()->where('phone', '01755558888')->exists())->toBeFalse()
+        ->and($card->fresh()->status)->toBe(RfidCardStatus::Available)
+        ->and($card->fresh()->member_id)->toBeNull()
+        ->and(Invoice::query()->count())->toBe(0)
+        ->and(Payment::query()->count())->toBe(0);
 });
 
 it('registers a member against the discounted admission and plan total', function () {

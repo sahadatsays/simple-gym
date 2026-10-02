@@ -107,6 +107,33 @@
                         :disabled="! $canUpdate"
                     />
 
+                    <x-forms.money-input
+                        label="Card fee"
+                        name="rfid_card_fee"
+                        :value="$settings->rfid_card_fee"
+                        help="Charged with the deposit when a member is issued a new RFID card."
+                        required
+                        :disabled="! $canUpdate"
+                    />
+
+                    <x-forms.money-input
+                        label="Card deposit"
+                        name="rfid_card_deposit"
+                        :value="$settings->rfid_card_deposit"
+                        help="Collected with the card fee when a member is issued a new RFID card."
+                        required
+                        :disabled="! $canUpdate"
+                    />
+
+                    <x-forms.money-input
+                        label="Replacement card fee"
+                        name="rfid_replacement_card_fee"
+                        :value="$settings->rfid_replacement_card_fee"
+                        help="Charged when a member's card is replaced. Leave at zero to replace without a charge."
+                        required
+                        :disabled="! $canUpdate"
+                    />
+
                     <div class="mb-3">
                         <label class="form-label">
                             Payment methods

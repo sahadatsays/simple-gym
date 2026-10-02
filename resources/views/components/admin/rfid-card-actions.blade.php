@@ -1,4 +1,4 @@
-@props(['card', 'members'])
+@props(['card', 'members', 'cardFee' => 0, 'cardDeposit' => 0, 'replacementFee' => 0, 'gymCurrency' => 'BDT'])
 
 <div class="dropdown d-inline-block">
     <button
@@ -121,7 +121,7 @@
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
                                 Assign <strong>{{ $card->card_number }}</strong> to a member. The member's current card assignment will be closed.
-                                Card fee {{ App\Support\MoneyFormatter::format($card->card_fee, $gymCurrency) }}, deposit {{ App\Support\MoneyFormatter::format($card->deposit_amount, $gymCurrency) }}.
+                                Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}, deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}.
                             </p>
                             <x-forms.searchable-select
                                 label="Member"
@@ -131,12 +131,15 @@
                                 placeholder="Search member..."
                                 required
                             />
-                            <x-forms.select
-                                label="Payment method"
-                                name="payment_method"
-                                :options="App\Enums\PaymentMethod::options()"
-                                selected="cash"
-                            />
+                            @if (($cardFee + $cardDeposit) > 0)
+                                <x-forms.select
+                                    label="Payment method"
+                                    name="payment_method"
+                                    :options="App\Enums\PaymentMethod::options()"
+                                    selected="cash"
+                                    required
+                                />
+                            @endif
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -164,6 +167,7 @@
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
                                 Replace the active card for <strong>{{ $card->member->name }}</strong>. The current assignment will be closed and kept in history.
+                                Replacement fee {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}.
                             </p>
                             <x-forms.input
                                 label="New card number"
@@ -171,6 +175,15 @@
                                 placeholder="Scan or enter new RFID"
                                 required
                             />
+                            @if ($replacementFee > 0)
+                                <x-forms.select
+                                    label="Payment method"
+                                    name="payment_method"
+                                    :options="App\Enums\PaymentMethod::options()"
+                                    selected="cash"
+                                    required
+                                />
+                            @endif
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>

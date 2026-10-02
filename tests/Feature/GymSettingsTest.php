@@ -32,7 +32,10 @@ it('shows gym settings for authorized users', function () {
         ->assertSee('Gym Settings')
         ->assertSee('Receipt footer')
         ->assertSee('Payment methods')
-        ->assertSee('Default admission fee');
+        ->assertSee('Default admission fee')
+        ->assertSee('Card fee')
+        ->assertSee('Card deposit')
+        ->assertSee('Replacement card fee');
 });
 
 it('updates gym settings for authorized users', function () {
@@ -46,6 +49,9 @@ it('updates gym settings for authorized users', function () {
             'receipt_footer' => 'Thanks for training with us!',
             'membership_reminder_days' => 14,
             'default_admission_fee' => 750,
+            'rfid_card_fee' => 120,
+            'rfid_card_deposit' => 30,
+            'rfid_replacement_card_fee' => 80,
             'enabled_payment_methods' => ['cash', 'mobile_banking'],
             'is_open' => true,
         ])
@@ -58,6 +64,9 @@ it('updates gym settings for authorized users', function () {
         ->and($this->settings->receipt_footer)->toBe('Thanks for training with us!')
         ->and($this->settings->membership_reminder_days)->toBe(14)
         ->and((float) $this->settings->default_admission_fee)->toBe(750.0)
+        ->and((float) $this->settings->rfid_card_fee)->toBe(120.0)
+        ->and((float) $this->settings->rfid_card_deposit)->toBe(30.0)
+        ->and((float) $this->settings->rfid_replacement_card_fee)->toBe(80.0)
         ->and($this->settings->enabled_payment_methods)->toBe(['cash', 'mobile_banking']);
 });
 
@@ -71,6 +80,9 @@ it('uploads a gym logo', function () {
             'timezone' => $this->settings->timezone,
             'membership_reminder_days' => 7,
             'default_admission_fee' => 500,
+            'rfid_card_fee' => 0,
+            'rfid_card_deposit' => 0,
+            'rfid_replacement_card_fee' => 0,
             'enabled_payment_methods' => ['cash', 'card'],
             'logo' => $logo,
             'is_open' => true,
@@ -91,6 +103,9 @@ it('requires at least one enabled payment method', function () {
             'timezone' => $this->settings->timezone,
             'membership_reminder_days' => 7,
             'default_admission_fee' => 500,
+            'rfid_card_fee' => 0,
+            'rfid_card_deposit' => 0,
+            'rfid_replacement_card_fee' => 0,
             'enabled_payment_methods' => [],
             'is_open' => true,
         ])
@@ -119,6 +134,9 @@ it('denies settings updates without update permission', function () {
             'timezone' => 'UTC',
             'membership_reminder_days' => 7,
             'default_admission_fee' => 500,
+            'rfid_card_fee' => 0,
+            'rfid_card_deposit' => 0,
+            'rfid_replacement_card_fee' => 0,
             'enabled_payment_methods' => ['cash'],
             'is_open' => true,
         ])

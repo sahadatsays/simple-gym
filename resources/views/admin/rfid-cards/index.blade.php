@@ -3,7 +3,7 @@
 @section('title', 'RFID Cards')
 
 @section('content')
-    <x-ui.page-header title="RFID Cards" subtitle="Register, assign, replace, disable, and enable member access cards">
+    <x-ui.page-header title="RFID Cards" subtitle="Register, assign, replace, disable, and enable member access cards. Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}, deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}, replacement fee {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}.">
         <x-slot:actions>
             @can('create', App\Models\RfidCard::class)
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerCardModal">
@@ -89,7 +89,14 @@
                                     @endif
                                 </td>
                                 <td class="text-end pe-4">
-                                    <x-admin.rfid-card-actions :card="$card" :members="$members" />
+                                    <x-admin.rfid-card-actions
+                                        :card="$card"
+                                        :members="$members"
+                                        :card-fee="$cardFee"
+                                        :card-deposit="$cardDeposit"
+                                        :replacement-fee="$replacementFee"
+                                        :gym-currency="$gymCurrency"
+                                    />
                                 </td>
                             </tr>
                         @empty
@@ -131,8 +138,6 @@
                                 placeholder="Scan or enter RFID"
                                 required
                             />
-                            <x-forms.money-input label="Card fee" name="card_fee" value="0" />
-                            <x-forms.money-input label="Deposit amount" name="deposit_amount" value="0" />
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -169,14 +174,18 @@
                                 placeholder="Scan or enter new RFID"
                                 required
                             />
-                            <x-forms.money-input label="Card fee" name="card_fee" value="0" />
-                            <x-forms.money-input label="Deposit amount" name="deposit_amount" value="0" />
-                            <x-forms.select
-                                label="Payment method"
-                                name="payment_method"
-                                :options="App\Enums\PaymentMethod::options()"
-                                selected="cash"
-                            />
+                            <p class="text-muted small">
+                                Replacement fee {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}. The previous assignment stays in history.
+                            </p>
+                            @if ($replacementFee > 0)
+                                <x-forms.select
+                                    label="Payment method"
+                                    name="payment_method"
+                                    :options="App\Enums\PaymentMethod::options()"
+                                    selected="cash"
+                                    required
+                                />
+                            @endif
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
