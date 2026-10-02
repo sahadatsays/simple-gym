@@ -7,6 +7,7 @@
         'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value',
         'total_expense',
         'revenue', 'expenses', 'net_operating_result', 'owner_investment', 'outstanding_due',
+        'total_borrowed', 'total_repaid', 'total_outstanding',
     ];
 
     $labels = [
@@ -49,6 +50,9 @@
         'net_operating_result' => 'Net Operating Result',
         'owner_investment' => 'Owner Investment',
         'outstanding_due' => 'Outstanding Due',
+        'total_borrowed' => 'Total Borrowed',
+        'total_repaid' => 'Total Repaid',
+        'total_outstanding' => 'Total Outstanding',
     ];
 @endphp
 

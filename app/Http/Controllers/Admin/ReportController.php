@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\AssetMaintenanceType;
 use App\Enums\AssetStatus;
+use App\Enums\BorrowingStatus;
 use App\Enums\ExpenseStatus;
 use App\Enums\MemberStatus;
 use App\Enums\PaymentMethod;
@@ -94,6 +95,7 @@ class ReportController extends Controller
             'productStatuses' => ProductStatus::cases(),
             'assetStatuses' => AssetStatus::cases(),
             'expenseStatuses' => ExpenseStatus::cases(),
+            'borrowingStatuses' => BorrowingStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'maintenanceTypes' => AssetMaintenanceType::cases(),
         ]);
@@ -106,7 +108,8 @@ class ReportController extends Controller
         abort_unless(
             $user?->can('reports.view')
             || $user?->can('asset-investment-reports.view')
-            || $user?->can('expense-reports.view'),
+            || $user?->can('expense-reports.view')
+            || $user?->can('borrowings.view'),
             403
         );
     }
@@ -125,6 +128,12 @@ class ReportController extends Controller
             return;
         }
 
+        if ($type->isBorrowingReport()) {
+            $this->authorizePermission('borrowings.view');
+
+            return;
+        }
+
         $this->authorizePermission('reports.view');
     }
 
@@ -136,6 +145,10 @@ class ReportController extends Controller
 
         if ($type->isExpenseReport()) {
             return $user->can('expense-reports.view');
+        }
+
+        if ($type->isBorrowingReport()) {
+            return $user->can('borrowings.view');
         }
 
         return $user->can('reports.view');

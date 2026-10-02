@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\AssetMaintenanceType;
 use App\Enums\AssetStatus;
+use App\Enums\BorrowingStatus;
 use App\Enums\ExpenseStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ReportType;
@@ -23,6 +24,10 @@ class ReportFilterRequest extends FormRequest
 
         if ($type?->isExpenseReport()) {
             return $this->user()?->can('expense-reports.view') ?? false;
+        }
+
+        if ($type?->isBorrowingReport()) {
+            return $this->user()?->can('borrowings.view') ?? false;
         }
 
         return $this->user()?->can('reports.view') ?? false;
@@ -142,6 +147,12 @@ class ReportFilterRequest extends FormRequest
         if ($type === ReportType::Expenses && filled($this->input('status'))) {
             $this->merge([
                 'status' => ExpenseStatus::tryFrom((string) $this->input('status'))?->value,
+            ]);
+        }
+
+        if ($type === ReportType::Borrowings && filled($this->input('status'))) {
+            $this->merge([
+                'status' => BorrowingStatus::tryFrom((string) $this->input('status'))?->value,
             ]);
         }
 

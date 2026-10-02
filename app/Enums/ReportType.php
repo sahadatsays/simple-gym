@@ -19,6 +19,7 @@ enum ReportType: string
     case AssetMaintenance = 'asset-maintenance';
     case AssetValueSummary = 'asset-value-summary';
     case Expenses = 'expenses';
+    case Borrowings = 'borrowings';
     case FinancialSummary = 'financial-summary';
 
     /**
@@ -53,6 +54,7 @@ enum ReportType: string
             self::AssetMaintenance => 'Maintenance Report',
             self::AssetValueSummary => 'Asset Value Summary',
             self::Expenses => 'Expense Report',
+            self::Borrowings => 'Borrowing Report',
             self::FinancialSummary => 'Financial Summary',
         };
     }
@@ -73,6 +75,7 @@ enum ReportType: string
             self::AssetMaintenance => 'Maintenance history with costs and service schedules.',
             self::AssetValueSummary => 'Purchase value, current asset value, and maintenance spend.',
             self::Expenses => 'Expense transactions with category totals and payment details.',
+            self::Borrowings => 'Borrowed money with repayments, remaining balance, and due dates.',
             self::FinancialSummary => 'Operating revenue, expenses, net result, owner investment, and outstanding due.',
         };
     }
@@ -84,7 +87,7 @@ enum ReportType: string
             self::Membership, self::ExpiredMembers, self::UpcomingExpiry => 'users',
             self::PosSales, self::ProductSales, self::Assets => 'shopping',
             self::Stock, self::AssetMaintenance => 'alert',
-            self::Investments, self::Expenses => 'wallet',
+            self::Investments, self::Expenses, self::Borrowings => 'wallet',
         };
     }
 
@@ -101,5 +104,10 @@ enum ReportType: string
     public function isExpenseReport(): bool
     {
         return $this === self::Expenses;
+    }
+
+    public function isBorrowingReport(): bool
+    {
+        return $this === self::Borrowings;
     }
 }

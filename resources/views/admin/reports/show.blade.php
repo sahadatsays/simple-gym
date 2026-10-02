@@ -22,6 +22,7 @@
         'productStatuses' => $productStatuses,
         'assetStatuses' => $assetStatuses,
         'expenseStatuses' => $expenseStatuses,
+        'borrowingStatuses' => $borrowingStatuses,
         'paymentMethods' => $paymentMethods,
         'maintenanceTypes' => $maintenanceTypes,
     ])

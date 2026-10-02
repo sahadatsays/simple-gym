@@ -11,6 +11,8 @@ use App\Enums\ProductStatus;
 use App\Enums\ReportType;
 use App\Models\Asset;
 use App\Models\AssetMaintenance;
+use App\Models\Borrowing;
+use App\Models\BorrowingRepayment;
 use App\Models\Expense;
 use App\Models\Investment;
 use App\Models\Invoice;
@@ -63,6 +65,7 @@ class ReportService
             ReportType::AssetMaintenance => $this->assetMaintenanceReport($filters, $perPage),
             ReportType::AssetValueSummary => $this->assetValueSummary($filters),
             ReportType::Expenses => $this->expenseReport($filters, $perPage),
+            ReportType::Borrowings => $this->borrowingReport($filters, $perPage),
             ReportType::FinancialSummary => $this->financialSummaryReport($filters),
         };
     }
@@ -411,6 +414,83 @@ class ReportService
             ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
             ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('expensed_at', '>=', $filters['from_date']))
             ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('expensed_at', '<=', $filters['to_date']));
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     */
+    private function borrowingReport(array $filters, ?int $perPage): array
+    {
+        $query = $this->borrowingReportQuery($filters)
+            ->withSum('repayments', 'amount')
+            ->latest('borrowing_date')
+            ->latest('id');
+
+        $repaidByBorrowing = BorrowingRepayment::query()
+            ->select('borrowing_id')
+            ->selectRaw('SUM(amount) as repaid_amount')
+            ->groupBy('borrowing_id');
+
+        $aggregate = $this->borrowingReportQuery($filters)
+            ->toBase()
+            ->leftJoinSub($repaidByBorrowing, 'repaid', 'repaid.borrowing_id', '=', 'borrowings.id')
+            ->selectRaw('COALESCE(SUM(borrowings.amount), 0) as total_borrowed')
+            ->selectRaw('COALESCE(SUM(repaid.repaid_amount), 0) as total_repaid')
+            ->selectRaw('COALESCE(SUM(borrowings.amount), 0) - COALESCE(SUM(repaid.repaid_amount), 0) as total_outstanding')
+            ->first();
+
+        $rows = $this->paginateOrGet($query, $perPage, fn (Borrowing $borrowing): array => [
+            'borrowing_no' => $borrowing->borrowing_no,
+            'lender' => $borrowing->lender_name,
+            'borrowing_date' => $borrowing->borrowing_date->format('M j, Y'),
+            'original_amount' => Money::round((float) $borrowing->amount),
+            'total_repaid' => $borrowing->total_repaid,
+            'remaining_amount' => $borrowing->remaining_amount,
+            'due_date' => $borrowing->due_date?->format('M j, Y') ?? '—',
+            'status' => $borrowing->status->label(),
+        ]);
+
+        return [
+            'summary' => [
+                'total_borrowed' => Money::round((float) ($aggregate->total_borrowed ?? 0)),
+                'total_repaid' => Money::round((float) ($aggregate->total_repaid ?? 0)),
+                'total_outstanding' => Money::round((float) ($aggregate->total_outstanding ?? 0)),
+            ],
+            'rows' => $rows,
+            'columns' => [
+                ['key' => 'borrowing_no', 'label' => 'Borrowing No'],
+                ['key' => 'lender', 'label' => 'Lender'],
+                ['key' => 'borrowing_date', 'label' => 'Borrowing Date'],
+                ['key' => 'original_amount', 'label' => 'Original Amount', 'align' => 'end'],
+                ['key' => 'total_repaid', 'label' => 'Total Repaid', 'align' => 'end'],
+                ['key' => 'remaining_amount', 'label' => 'Remaining Amount', 'align' => 'end'],
+                ['key' => 'due_date', 'label' => 'Due Date'],
+                ['key' => 'status', 'label' => 'Status'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     * @return Builder<Borrowing>
+     */
+    private function borrowingReportQuery(array $filters): Builder
+    {
+        return Borrowing::query()
+            ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
+            ->when(filled($filters['search'] ?? null), fn (Builder $query) => $query->where('lender_name', 'like', '%'.$filters['search'].'%'))
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('borrowing_date', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('borrowing_date', '<=', $filters['to_date']));
     }
 
     /**
