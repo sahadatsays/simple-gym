@@ -55,6 +55,8 @@ return [
         'membership_and_pos_revenue' => 'সদস্যতা পেমেন্ট + POS বিক্রয়',
         'revenue_minus_expenses' => 'আয় minus খরচ',
         'not_included_in_revenue' => 'আয়ের অন্তর্ভুক্ত নয়',
+        'outstanding_due' => 'বকেয়া',
+        'outstanding_due_footer' => 'এই সময়কালে ইস্যু হওয়া অপরিশোধিত বকেয়া',
     ],
 
     'charts' => [
@@ -96,7 +98,7 @@ return [
         'manage_inventory' => 'ইনভেন্টরি পরিচালনা',
         'all_above_minimum' => 'সব পণ্য ন্যূনতম স্টকের উপরে আছে।',
         'upcoming_due_orders' => 'আসন্ন বকেয়া অর্ডার',
-        'upcoming_due_orders_subtitle' => 'শীঘ্রই বা মেয়াদোত্তীর্ণ POS বকেয়া',
+        'upcoming_due_orders_subtitle' => 'শীঘ্রই বা মেয়াদোত্তীর্ণ মেম্বারশিপ ও POS বকেয়া',
         'view_all_orders' => 'সব অর্ডার দেখুন',
         'no_upcoming_due' => 'আগামী :days দিনে কোনো বকেয়া অর্ডার নেই।',
         'no_payments' => 'এই সময়কালে কোনো পেমেন্ট পাওয়া যায়নি।',

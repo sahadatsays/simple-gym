@@ -32,10 +32,11 @@ class StoreMemberRenewalRequest extends FormRequest
                 'integer',
                 Rule::exists('membership_plans', 'id')->where('status', PlanStatus::Active->value),
             ],
-            'payment_method' => ['required', 'string', Rule::enum(PaymentMethod::class)],
+            'payment_method' => ['nullable', 'string', Rule::enum(PaymentMethod::class)],
             'payment_reference' => ['nullable', 'string', 'max:100'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'amount_received' => ['required', 'numeric', 'min:0'],
+            'due_at' => ['nullable', 'date', 'after_or_equal:today'],
         ];
     }
 
@@ -45,7 +46,8 @@ class StoreMemberRenewalRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'amount_received.min' => 'Payment amount must cover the full invoice total.',
+            'amount_received.min' => 'Payment amount cannot be negative.',
+            'due_at.after_or_equal' => 'The due date cannot be in the past.',
             'membership_plan_id.required' => 'Please select a membership plan.',
         ];
     }
@@ -76,8 +78,14 @@ class StoreMemberRenewalRequest extends FormRequest
                 $validator->errors()->add('amount_received', 'Paid amount cannot exceed the invoice total.');
             }
 
-            if (Money::lessThan($amountReceived, $invoiceTotal)) {
-                $validator->errors()->add('amount_received', 'Payment amount must cover the full invoice total.');
+            $balance = Money::round(max(0, $invoiceTotal - $amountReceived));
+
+            if (Money::greaterThan($balance, 0) && ! $this->filled('due_at')) {
+                $validator->errors()->add('due_at', 'Choose a due date when the amount received is less than the total.');
+            }
+
+            if (($amountReceived > 0 || ! Money::greaterThan($invoiceTotal, 0)) && ! $this->filled('payment_method')) {
+                $validator->errors()->add('payment_method', 'Choose a payment method for the amount received.');
             }
         });
     }

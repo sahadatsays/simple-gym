@@ -12,6 +12,7 @@ use App\Models\MembershipPlan;
 use App\Services\GymSettingService;
 use App\Services\MembershipRenewalService;
 use App\Support\Flash;
+use App\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use InvalidArgumentException;
@@ -74,7 +75,16 @@ class MemberRenewalController extends Controller
             return back()->withInput()->withErrors(['renewal' => $exception->getMessage()]);
         }
 
-        Flash::success('Membership renewed successfully. Receipt generated.');
+        $balance = $result->invoice->outstandingBalance();
+
+        if ($balance > 0) {
+            Flash::success(__('members.renewed_with_due', [
+                'amount' => MoneyFormatter::format($balance),
+                'date' => $result->invoice->due_at?->format('M j, Y') ?? '',
+            ]));
+        } else {
+            Flash::success('Membership renewed successfully. Receipt generated.');
+        }
 
         return redirect()->route('admin.invoices.show', $result->invoice);
     }

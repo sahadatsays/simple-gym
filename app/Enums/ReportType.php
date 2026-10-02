@@ -62,7 +62,7 @@ enum ReportType: string
         return match ($this) {
             self::DailyCollection => 'Day-by-day payment collections with type breakdown.',
             self::MonthlyCollection => 'Monthly revenue totals and transaction counts.',
-            self::Membership => 'Member roster with plan, status, and membership dates.',
+            self::Membership => 'Member roster with plan, status, membership dates, and outstanding due.',
             self::ExpiredMembers => 'Members whose membership has expired.',
             self::UpcomingExpiry => 'Active members expiring within a selected window.',
             self::PosSales => 'Point-of-sale transactions and totals.',
@@ -73,7 +73,7 @@ enum ReportType: string
             self::AssetMaintenance => 'Maintenance history with costs and service schedules.',
             self::AssetValueSummary => 'Purchase value, current asset value, and maintenance spend.',
             self::Expenses => 'Expense transactions with category totals and payment details.',
-            self::FinancialSummary => 'Operating revenue, expenses, net result, and owner investment.',
+            self::FinancialSummary => 'Operating revenue, expenses, net result, owner investment, and outstanding due.',
         };
     }
 

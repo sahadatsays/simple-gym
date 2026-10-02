@@ -4,7 +4,7 @@
     $moneyKeys = [
         'admission_fee', 'membership_fee', 'pos_sale', 'total', 'discount', 'amount',
         'unit_price', 'line_total', 'profit', 'purchase_value', 'retail_value',
-        'purchase_price', 'current_value', 'cost',
+        'purchase_price', 'current_value', 'cost', 'due',
     ];
 
     $items = $rows instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator

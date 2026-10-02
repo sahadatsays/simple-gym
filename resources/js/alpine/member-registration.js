@@ -39,6 +39,18 @@ document.addEventListener('alpine:init', () => {
             return Math.max(0, this.subtotal - this.normalizedDiscount);
         },
 
+        get amountReceivedNumber() {
+            return Math.max(0, Number(this.amountReceived || 0));
+        },
+
+        get balanceDue() {
+            return Math.max(0, this.totalDue - this.amountReceivedNumber);
+        },
+
+        get collectsPayment() {
+            return this.amountReceivedNumber > 0 || this.totalDue <= 0;
+        },
+
         get expiryLabel() {
             if (! this.selectedPlan) {
                 return '';

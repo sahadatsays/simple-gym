@@ -174,7 +174,7 @@
 
                     <div class="card border-0 bg-light mt-3 d-none" x-ref="chargeSummary">
                         <div class="card-body">
-                            <h3 class="h6 fw-semibold mb-3">3. Charge Summary</h3>
+                            <h3 class="h6 fw-semibold mb-3">Plan fees</h3>
                             <template x-if="selectedPlan && selectedPlan.admission_fee > 0">
                                 <div class="d-flex justify-content-between small mb-2">
                                     <span>Admission Fee</span>
@@ -185,62 +185,36 @@
                                 <span>Membership Fee</span>
                                 <span x-text="selectedPlan ? formatMoney(selectedPlan.membership_fee) : ''"></span>
                             </div>
-                            <div class="d-flex justify-content-between small mb-2">
+                            <div class="d-flex justify-content-between small">
                                 <span>Subtotal</span>
-                                <span x-text="formatMoney(subtotal)"></span>
-                            </div>
-                            <div class="mt-3 mb-3">
-                                <label for="discount_amount" class="form-label">Discount</label>
-                                <input
-                                    type="number"
-                                    name="discount_amount"
-                                    id="discount_amount"
-                                    x-model="discountAmount"
-                                    @input="$nextTick(() => syncAmount())"
-                                    step="0.01"
-                                    min="0"
-                                    @class(['form-control', 'is-invalid' => $errors->has('discount_amount')])
-                                >
-                                <div class="form-text">Taken off the admission and membership total. Membership length stays the same.</div>
-                                @error('discount_amount')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="d-flex justify-content-between small mb-2 text-danger" x-show="normalizedDiscount > 0" x-cloak>
-                                <span>Discount</span>
-                                <span x-text="'-' + formatMoney(normalizedDiscount)"></span>
-                            </div>
-                            <hr class="my-2">
-                            <div class="d-flex justify-content-between fw-semibold">
-                                <span>Total Due</span>
-                                <span x-text="selectedPlan ? formatMoney(totalDue) : ''"></span>
+                                <span class="fw-semibold" x-text="formatMoney(subtotal)"></span>
                             </div>
                             <div class="form-text mt-2 mb-0">
-                                Membership expires <span x-text="expiryLabel"></span> after join date.
+                                Membership expires <span x-text="expiryLabel"></span> after the join date.
                             </div>
                         </div>
                     </div>
 
                     <hr class="my-4">
 
-                    <h2 class="h6 fw-semibold mb-3">4. Receive Payment</h2>
+                    <h2 class="h6 fw-semibold mb-3">3. Receive Payment</h2>
                     <div class="row">
                         <div class="col-md-4">
-                            <x-forms.select
-                                label="Payment method"
-                                name="payment_method"
-                                :options="$enabledPaymentMethods"
-                                :selected="old('payment_method', App\Enums\PaymentMethod::Cash->value)"
-                                required
-                            />
-                        </div>
-                        <div class="col-md-4">
-                            <x-forms.input
-                                label="Reference"
-                                name="payment_reference"
-                                :value="old('payment_reference')"
-                                placeholder="Optional"
-                            />
+                            <label for="discount_amount" class="form-label">Discount</label>
+                            <input
+                                type="number"
+                                name="discount_amount"
+                                id="discount_amount"
+                                x-model="discountAmount"
+                                @input="$nextTick(() => syncAmount())"
+                                step="0.01"
+                                min="0"
+                                @class(['form-control', 'is-invalid' => $errors->has('discount_amount')])
+                            >
+                            <div class="form-text">Taken off the admission and membership total. Membership length stays the same.</div>
+                            @error('discount_amount')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-4">
                             <label for="amount_received" class="form-label">
@@ -256,15 +230,67 @@
                                 @class(['form-control', 'is-invalid' => $errors->has('amount_received')])
                                 required
                             >
+                            <div class="form-text">
+                                Full total, a smaller amount, or 0 to leave the bill due.
+                            </div>
                             @error('amount_received')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
+                        </div>
+                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': balanceDue <= 0 }">
+                            <x-forms.date-picker
+                                label="Due date"
+                                name="due_at"
+                                :value="old('due_at')"
+                                min-date="today"
+                                help="Required while a balance remains. The member is still activated."
+                            />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': ! collectsPayment }">
+                            <x-forms.select
+                                label="Payment method"
+                                name="payment_method"
+                                :options="$enabledPaymentMethods"
+                                :selected="old('payment_method', App\Enums\PaymentMethod::Cash->value)"
+                                required
+                            />
+                        </div>
+                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': ! collectsPayment }">
+                            <x-forms.input
+                                label="Reference"
+                                name="payment_reference"
+                                :value="old('payment_reference')"
+                                placeholder="Optional"
+                            />
+                        </div>
+                    </div>
+                    <div class="card border-0 bg-light mt-3" x-cloak x-bind:class="{ 'd-none': ! selectedPlanId }">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span>Subtotal</span>
+                                <span x-text="formatMoney(subtotal)"></span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2 text-danger" x-cloak x-bind:class="{ 'd-none': normalizedDiscount <= 0 }">
+                                <span>Discount</span>
+                                <span x-text="'-' + formatMoney(normalizedDiscount)"></span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span>Total</span>
+                                <span x-text="formatMoney(totalDue)"></span>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between fw-semibold" :class="balanceDue > 0 ? 'text-danger' : 'text-success'">
+                                <span>Balance due</span>
+                                <span x-text="formatMoney(balanceDue)"></span>
+                            </div>
                         </div>
                     </div>
 
                     <hr class="my-4">
 
-                    <h2 class="h6 fw-semibold mb-3">5. Assign RFID (optional)</h2>
+                    <h2 class="h6 fw-semibold mb-3">4. Assign RFID (optional)</h2>
                     @if ($unassignedCards->isEmpty())
                         <p class="text-muted small mb-0">
                             No unassigned RFID cards available.

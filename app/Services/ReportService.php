@@ -13,6 +13,7 @@ use App\Models\Asset;
 use App\Models\AssetMaintenance;
 use App\Models\Expense;
 use App\Models\Investment;
+use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Product;
@@ -85,6 +86,7 @@ class ReportService
                 'expenses' => $summary['expenses'],
                 'net_operating_result' => $summary['net_operating_result'],
                 'owner_investment' => $summary['owner_investment'],
+                'outstanding_due' => $summary['outstanding_due'],
             ],
             'rows' => collect(),
             'columns' => [],
@@ -518,21 +520,22 @@ class ReportService
      */
     private function membershipReport(array $filters, ?int $perPage): array
     {
-        $query = Member::query()
+        $query = $this->membershipMembersQuery($filters)
             ->with('membershipPlan')
-            ->when(filled($filters['membership_plan_id'] ?? null), fn (Builder $query) => $query->where('membership_plan_id', $filters['membership_plan_id']))
+            ->withOutstandingDue()
             ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
-            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('joined_at', '>=', $filters['from_date']))
-            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('joined_at', '<=', $filters['to_date']))
             ->orderBy('joined_at', 'desc');
 
         $members = $this->paginateOrGet($query, $perPage, fn (Member $member): array => $this->formatMemberRow($member));
 
-        $allMembers = Member::query()
-            ->when(filled($filters['membership_plan_id'] ?? null), fn (Builder $query) => $query->where('membership_plan_id', $filters['membership_plan_id']))
-            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('joined_at', '>=', $filters['from_date']))
-            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('joined_at', '<=', $filters['to_date']))
-            ->get();
+        $allMembers = $this->membershipMembersQuery($filters)->get();
+
+        $outstandingDue = Invoice::sumOutstanding(function (Builder $invoiceQuery) use ($filters): void {
+            $invoiceQuery->whereIn(
+                'member_id',
+                $this->membershipMembersQuery($filters)->select('members.id'),
+            );
+        });
 
         return [
             'summary' => [
@@ -540,6 +543,7 @@ class ReportService
                 'active_members' => $allMembers->filter(fn (Member $member): bool => $member->isActive())->count(),
                 'expired_members' => $allMembers->filter(fn (Member $member): bool => ! $member->isActive() && $member->status === MemberStatus::Expired)->count(),
                 'pending_members' => $allMembers->where('status', MemberStatus::Pending)->count(),
+                'outstanding_due' => $outstandingDue,
             ],
             'rows' => $members,
             'columns' => [
@@ -548,10 +552,23 @@ class ReportService
                 ['key' => 'phone', 'label' => 'Phone'],
                 ['key' => 'plan', 'label' => 'Plan'],
                 ['key' => 'status', 'label' => 'Status'],
+                ['key' => 'due', 'label' => 'Due', 'align' => 'end'],
                 ['key' => 'joined_at', 'label' => 'Joined'],
                 ['key' => 'expires_at', 'label' => 'Expires'],
             ],
         ];
+    }
+
+    /**
+     * @param  array{from_date: string, to_date: string, membership_plan_id?: int|null, status?: string|null}  $filters
+     * @return Builder<Member>
+     */
+    private function membershipMembersQuery(array $filters): Builder
+    {
+        return Member::query()
+            ->when(filled($filters['membership_plan_id'] ?? null), fn (Builder $query) => $query->where('membership_plan_id', $filters['membership_plan_id']))
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('joined_at', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('joined_at', '<=', $filters['to_date']));
     }
 
     /**
@@ -836,6 +853,7 @@ class ReportService
             'phone' => $member->phone,
             'plan' => $member->membershipPlan?->name ?? '—',
             'status' => $member->status->label(),
+            'due' => Money::round((float) ($member->outstanding_due ?? 0)),
             'joined_at' => $member->joined_at?->format('M j, Y') ?? '—',
             'expires_at' => $member->membership_expires_at?->format('M j, Y') ?? '—',
             'days_expired' => $daysExpired,

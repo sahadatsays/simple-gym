@@ -79,6 +79,7 @@
                             <th class="d-none d-md-table-cell">Phone</th>
                             <th class="d-none d-lg-table-cell">Plan</th>
                             <th class="d-none d-lg-table-cell">Expiry</th>
+                            <th class="text-end">Due</th>
                             <th>Status</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
@@ -96,6 +97,15 @@
                                 </td>
                                 <td class="d-none d-lg-table-cell text-muted">
                                     {{ $member->membership_expires_at?->format('M j, Y') ?? '—' }}
+                                </td>
+                                <td class="text-end">
+                                    @if ((float) $member->outstanding_due > 0)
+                                        <span class="fw-semibold text-danger text-nowrap">
+                                            {{ App\Support\MoneyFormatter::format($member->outstanding_due, $gymCurrency) }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
                                 </td>
                                 <td>
                                     @php
@@ -115,7 +125,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <div class="sg-empty-state">
                                         <h3 class="h6 mb-1">No members found</h3>
                                         <p class="text-muted small mb-0">Try adjusting your search or filters.</p>

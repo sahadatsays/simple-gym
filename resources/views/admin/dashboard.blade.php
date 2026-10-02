@@ -110,6 +110,20 @@
                 </div>
             @endif
 
+            @if ($canViewFinancialRevenue)
+                <div class="col-6 col-xl-3">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.outstanding_due')"
+                        :value="App\Support\MoneyFormatter::format($financialSummary['outstanding_due'], $stats['currency'])"
+                        icon="alert"
+                        variant="danger"
+                        formatted
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.outstanding_due_footer') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+            @endif
+
             @if ($canViewFinancialRevenue && $canViewFinancialExpenses)
                 <div class="col-6 col-xl-3">
                     <x-dashboard.stat-card

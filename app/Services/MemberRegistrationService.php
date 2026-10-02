@@ -55,14 +55,17 @@ class MemberRegistrationService extends BaseService
             $member = $this->members->create($memberAttributes);
 
             $discountAmount = Money::round((float) ($data['discount_amount'] ?? 0));
+            $amountReceived = Money::round((float) $data['amount_received']);
+            $charges = $this->invoiceService->calculateRegistrationCharges($plan, $discountAmount);
+            $dueAt = $this->invoiceService->resolveCollectionDueAt($charges['total'], $amountReceived, $data['due_at'] ?? null);
 
-            $invoice = $this->invoiceService->createForMember($member, $plan, $discountAmount);
+            $invoice = $this->invoiceService->createForMember($member, $plan, $discountAmount, $dueAt);
 
-            $payment = $this->paymentService->receive(
+            $payment = $this->paymentService->settleInvoice(
                 invoice: $invoice,
                 member: $member,
-                amountPaid: (float) $data['amount_received'],
-                paymentMethod: $data['payment_method'],
+                amountPaid: $amountReceived,
+                paymentMethod: $data['payment_method'] ?? null,
                 type: PaymentType::MembershipFee,
                 discountAmount: $discountAmount,
                 reference: $data['payment_reference'] ?? null,
@@ -81,16 +84,19 @@ class MemberRegistrationService extends BaseService
                 $this->rfidCardService->assign($card, $member);
             }
 
-            $this->activityLogger->log('member.registered', $member, 'Member registered with payment', [
+            $invoice = $invoice->fresh(['membershipPlan', 'payments']);
+
+            $this->activityLogger->log('member.registered', $member, 'Member registered', [
                 'member_code' => $member->member_code,
                 'invoice_number' => $invoice->invoice_number,
-                'receipt_number' => $payment->receipt_number,
+                'receipt_number' => $payment?->receipt_number,
+                'balance_due' => $invoice->outstandingBalance(),
             ]);
 
             return new MemberRegistrationResult(
                 member: $member->load(['membershipPlan', 'activeRfidCard']),
-                invoice: $invoice->load('membershipPlan'),
-                payment: $payment->load('invoice'),
+                invoice: $invoice,
+                payment: $payment?->load('invoice'),
             );
         });
     }

@@ -71,6 +71,7 @@
                             <th>Phone</th>
                             <th>Current Plan</th>
                             <th>Expiry</th>
+                            <th class="text-end">Due</th>
                             <th>Reminder</th>
                             <th>Status</th>
                             <th class="text-end pe-4">Action</th>
@@ -92,6 +93,15 @@
                                 <td>{{ $member->membershipPlan?->name ?? '—' }}</td>
                                 <td class="text-muted">
                                     {{ $member->membership_expires_at?->format('M j, Y') ?? '—' }}
+                                </td>
+                                <td class="text-end">
+                                    @if ((float) $member->outstanding_due > 0)
+                                        <span class="fw-semibold text-danger text-nowrap">
+                                            {{ App\Support\MoneyFormatter::format($member->outstanding_due, $gymCurrency) }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
                                 </td>
                                 <td>
                                     @if ($daysUntilExpiry === null)
@@ -133,7 +143,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-5 text-muted">
+                                <td colspan="8" class="text-center py-5 text-muted">
                                     @if (filled($filters['search'] ?? null))
                                         No members found for "{{ $filters['search'] }}" in the renewal review queue.
                                     @else

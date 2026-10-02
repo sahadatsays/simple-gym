@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Enums\AssetStatus;
-use App\Enums\InvoiceStatus;
-use App\Enums\InvoiceType;
 use App\Enums\PaymentType;
 use App\Models\Asset;
 use App\Models\AssetMaintenance;
@@ -97,7 +95,7 @@ class DashboardService
     }
 
     /**
-     * Open POS orders with a due date that is overdue or due within the lookahead window.
+     * Open invoices with a due date that is overdue or due within the lookahead window.
      *
      * @return Collection<int, Invoice>
      */
@@ -108,8 +106,7 @@ class DashboardService
 
         return Invoice::query()
             ->with(['member:id,name,member_code', 'payments'])
-            ->where('type', InvoiceType::PosSale)
-            ->whereIn('status', [InvoiceStatus::Unpaid, InvoiceStatus::Partial])
+            ->open()
             ->whereNotNull('due_at')
             ->where('due_at', '<=', now()->addDays($lookaheadDays)->endOfDay())
             ->orderBy('due_at')
@@ -117,6 +114,7 @@ class DashboardService
             ->get([
                 'id',
                 'member_id',
+                'type',
                 'invoice_number',
                 'status',
                 'total',

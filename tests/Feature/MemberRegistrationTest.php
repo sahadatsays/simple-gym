@@ -49,7 +49,13 @@ it('shows the registration form', function () {
         ->assertSee('Register Member')
         ->assertSee('Monthly Plan')
         ->assertSee('CARD001')
-        ->assertSee('Discount');
+        ->assertSeeInOrder([
+            'Plan fees',
+            'Receive Payment',
+            'discount_amount',
+            'due_at',
+            'Balance due',
+        ]);
 });
 
 it('completes the full registration workflow', function () {
@@ -223,7 +229,7 @@ it('rejects a registration payment that ignores the discount', function () {
         ->and(Payment::query()->count())->toBe(0);
 });
 
-it('rejects a registration payment below the discounted total', function () {
+it('requires a due date when the registration payment is below the discounted total', function () {
     $this->actingAs($this->admin)
         ->post(route('admin.members.register.store'), [
             'name' => 'Short Payment',
@@ -234,7 +240,7 @@ it('rejects a registration payment below the discounted total', function () {
             'discount_amount' => 400,
             'amount_received' => 1000,
         ])
-        ->assertSessionHasErrors(['amount_received']);
+        ->assertSessionHasErrors(['due_at']);
 
     expect(Member::query()->where('phone', '01755550005')->exists())->toBeFalse();
 });
@@ -270,7 +276,7 @@ it('shows the receipt after registration', function () {
         ->assertSee($invoice->invoice_number);
 });
 
-it('rolls back registration when payment is insufficient', function () {
+it('does not register a member when a short payment has no due date', function () {
     $this->actingAs($this->admin)
         ->post(route('admin.members.register.store'), [
             'name' => 'Failed Member',
@@ -280,11 +286,96 @@ it('rolls back registration when payment is insufficient', function () {
             'payment_method' => 'cash',
             'amount_received' => 100,
         ])
-        ->assertSessionHasErrors(['amount_received']);
+        ->assertSessionHasErrors(['due_at']);
 
     expect(Member::query()->where('phone', '01777778888')->exists())->toBeFalse()
         ->and(Invoice::query()->count())->toBe(0)
         ->and(Payment::query()->count())->toBe(0);
+});
+
+it('rejects a registration due date in the past', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Past Due',
+            'phone' => '01777779999',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'amount_received' => 500,
+            'due_at' => now()->subDay()->toDateString(),
+        ])
+        ->assertSessionHasErrors(['due_at']);
+
+    expect(Member::query()->where('phone', '01777779999')->exists())->toBeFalse();
+});
+
+it('activates a member and keeps the unpaid balance when registration is partial', function () {
+    $joinedAt = now()->toDateString();
+    $dueAt = now()->addDays(7)->toDateString();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Partial Member',
+            'phone' => '01755550021',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => $joinedAt,
+            'payment_method' => 'cash',
+            'amount_received' => 500,
+            'due_at' => $dueAt,
+        ])
+        ->assertRedirect();
+
+    $member = Member::query()->where('phone', '01755550021')->first();
+    $invoice = Invoice::query()->where('member_id', $member->id)->first();
+    $payment = Payment::query()->where('invoice_id', $invoice->id)->first();
+
+    expect($member->status)->toBe(MemberStatus::Active)
+        ->and($member->membership_expires_at?->toDateString())->toBe(now()->parse($joinedAt)->addDays(30)->toDateString())
+        ->and($invoice->status)->toBe(InvoiceStatus::Partial)
+        ->and((float) $invoice->outstandingBalance())->toBe(1500.0)
+        ->and($invoice->due_at?->toDateString())->toBe($dueAt)
+        ->and((float) $payment->amount)->toBe(500.0);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.index'))
+        ->assertSuccessful()
+        ->assertSee('Partial Member')
+        ->assertSee('1,500');
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.reports.show', ['report' => 'membership']))
+        ->assertSuccessful()
+        ->assertSee('Outstanding Due')
+        ->assertSee('1,500');
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertSee($invoice->invoice_number);
+});
+
+it('registers a member with the full bill due and does not record a payment', function () {
+    $dueAt = now()->addDays(10)->toDateString();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.register.store'), [
+            'name' => 'Due Member',
+            'phone' => '01755550022',
+            'membership_plan_id' => $this->plan->id,
+            'joined_at' => now()->toDateString(),
+            'amount_received' => 0,
+            'due_at' => $dueAt,
+        ])
+        ->assertRedirect();
+
+    $member = Member::query()->where('phone', '01755550022')->first();
+    $invoice = Invoice::query()->where('member_id', $member->id)->first();
+
+    expect($member->status)->toBe(MemberStatus::Active)
+        ->and($invoice->status)->toBe(InvoiceStatus::Unpaid)
+        ->and((float) $invoice->outstandingBalance())->toBe(2000.0)
+        ->and($invoice->due_at?->toDateString())->toBe($dueAt)
+        ->and(Payment::query()->where('invoice_id', $invoice->id)->exists())->toBeFalse();
 });
 
 it('rejects duplicate phone registration', function () {

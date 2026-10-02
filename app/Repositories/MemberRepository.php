@@ -21,6 +21,7 @@ class MemberRepository extends BaseRepository implements MemberRepositoryInterfa
     {
         return $this->newQuery()
             ->with('membershipPlan')
+            ->withOutstandingDue()
             ->when(filled($filters['search'] ?? null), fn ($query) => $query->search($filters['search']))
             ->when(filled($filters['status'] ?? null), function ($query) use ($filters): void {
                 $query->where('status', $filters['status']);
@@ -46,6 +47,7 @@ class MemberRepository extends BaseRepository implements MemberRepositoryInterfa
 
         return $this->newQuery()
             ->with('membershipPlan')
+            ->withOutstandingDue()
             ->renewalReview($reminderDays)
             ->when(filled($filters['search'] ?? null), fn ($query) => $query->search($filters['search']))
             ->orderBy('membership_expires_at', $direction)

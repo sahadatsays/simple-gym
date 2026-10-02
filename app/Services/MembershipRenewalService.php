@@ -50,14 +50,17 @@ class MembershipRenewalService extends BaseService
             $previousExpiresAt = $member->membership_expires_at;
             $newExpiresAt = $this->invoiceService->calculateRenewedExpiry($member, $plan);
             $discountAmount = Money::round((float) ($data['discount_amount'] ?? 0));
+            $amountReceived = Money::round((float) $data['amount_received']);
+            $charges = $this->invoiceService->calculateRenewalCharges($plan, $discountAmount);
+            $dueAt = $this->invoiceService->resolveCollectionDueAt($charges['total'], $amountReceived, $data['due_at'] ?? null);
 
-            $invoice = $this->invoiceService->createRenewalForMember($member, $plan, $discountAmount);
+            $invoice = $this->invoiceService->createRenewalForMember($member, $plan, $discountAmount, $dueAt);
 
-            $payment = $this->paymentService->receive(
+            $payment = $this->paymentService->settleInvoice(
                 invoice: $invoice,
                 member: $member,
-                amountPaid: (float) $data['amount_received'],
-                paymentMethod: $data['payment_method'],
+                amountPaid: $amountReceived,
+                paymentMethod: $data['payment_method'] ?? null,
                 type: PaymentType::MembershipFee,
                 discountAmount: $discountAmount,
                 reference: $data['payment_reference'] ?? null,
@@ -78,10 +81,13 @@ class MembershipRenewalService extends BaseService
                 'renewed_at' => now(),
             ]);
 
-            $this->activityLogger->log('member.renewed', $member, 'Membership renewed with payment', [
+            $invoice = $invoice->fresh(['membershipPlan', 'payments']);
+
+            $this->activityLogger->log('member.renewed', $member, 'Membership renewed', [
                 'member_code' => $member->member_code,
                 'invoice_number' => $invoice->invoice_number,
-                'receipt_number' => $payment->receipt_number,
+                'receipt_number' => $payment?->receipt_number,
+                'balance_due' => $invoice->outstandingBalance(),
                 'previous_expires_at' => $previousExpiresAt?->toDateString(),
                 'new_expires_at' => $newExpiresAt->toDateString(),
             ]);
@@ -91,8 +97,8 @@ class MembershipRenewalService extends BaseService
 
             return new MemberRenewalResult(
                 member: $member->load('membershipPlan'),
-                invoice: $invoice->load('membershipPlan'),
-                payment: $payment->load('invoice'),
+                invoice: $invoice,
+                payment: $payment?->load('invoice'),
                 renewal: $renewal->load(['membershipPlan', 'invoice']),
             );
         });

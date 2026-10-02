@@ -170,27 +170,6 @@
                     <h2 class="h6 fw-semibold mb-3">4. Receive Payment</h2>
                     <div class="row">
                         <div class="col-md-4">
-                            <x-forms.select
-                                label="Payment method"
-                                name="payment_method"
-                                :options="[
-                                    'cash' => 'Cash',
-                                    'card' => 'Card',
-                                    'mobile_banking' => 'Mobile Banking',
-                                ]"
-                                :selected="old('payment_method', 'cash')"
-                                required
-                            />
-                        </div>
-                        <div class="col-md-4">
-                            <x-forms.input
-                                label="Reference"
-                                name="payment_reference"
-                                :value="old('payment_reference')"
-                                placeholder="Optional"
-                            />
-                        </div>
-                        <div class="col-md-4">
                             <label for="amount_received" class="form-label">
                                 Amount received <span class="text-danger">*</span>
                             </label>
@@ -204,9 +183,49 @@
                                 @class(['form-control', 'is-invalid' => $errors->has('amount_received')])
                                 required
                             >
+                            <div class="form-text">
+                                Enter the full total, a smaller amount for a partial payment, or 0 to leave the whole bill due.
+                            </div>
                             @error('amount_received')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
+                        </div>
+                        <div class="col-md-4" x-show="collectsPayment" x-cloak>
+                            <x-forms.select
+                                label="Payment method"
+                                name="payment_method"
+                                :options="[
+                                    'cash' => 'Cash',
+                                    'card' => 'Card',
+                                    'mobile_banking' => 'Mobile Banking',
+                                ]"
+                                :selected="old('payment_method', 'cash')"
+                                required
+                            />
+                        </div>
+                        <div class="col-md-4" x-show="collectsPayment" x-cloak>
+                            <x-forms.input
+                                label="Reference"
+                                name="payment_reference"
+                                :value="old('payment_reference')"
+                                placeholder="Optional"
+                            />
+                        </div>
+                    </div>
+                    <div class="row" x-show="balanceDue > 0" x-cloak>
+                        <div class="col-md-4">
+                            <x-forms.date-picker
+                                label="Due date"
+                                name="due_at"
+                                :value="old('due_at')"
+                                min-date="today"
+                                help="Required when a balance remains. The membership is still renewed."
+                            />
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <p class="fw-semibold text-danger mb-3">
+                                Balance due <span x-text="formatMoney(balanceDue)"></span>
+                            </p>
                         </div>
                     </div>
 
@@ -256,6 +275,18 @@
 
                 get totalDue() {
                     return Math.max(0, this.subtotal - this.normalizedDiscount);
+                },
+
+                get amountReceivedNumber() {
+                    return Math.max(0, Number(this.amountReceived || 0));
+                },
+
+                get balanceDue() {
+                    return Math.max(0, this.totalDue - this.amountReceivedNumber);
+                },
+
+                get collectsPayment() {
+                    return this.amountReceivedNumber > 0 || this.totalDue <= 0;
                 },
 
                 get expiryExplanation() {

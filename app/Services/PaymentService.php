@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Support\ActivityLogger;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 class PaymentService extends BaseService
 {
@@ -23,6 +24,52 @@ class PaymentService extends BaseService
         private ProductSaleService $productSaleService,
         private ActivityLogger $activityLogger,
     ) {}
+
+    /**
+     * Record a membership payment. A remaining balance stays on the invoice.
+     * A zero-total invoice still records a zero payment so it closes as paid.
+     */
+    public function settleInvoice(
+        Invoice $invoice,
+        Member $member,
+        float $amountPaid,
+        PaymentMethod|string|null $paymentMethod,
+        PaymentType $type,
+        float $discountAmount = 0,
+        ?string $reference = null,
+    ): ?Payment {
+        $amountPaid = Money::round($amountPaid);
+
+        if (Money::lessThan($amountPaid, 0)) {
+            throw new InvalidArgumentException('Paid amount cannot be negative.');
+        }
+
+        $invoice->refresh();
+        $outstanding = Money::round($invoice->outstandingBalance());
+
+        if (Money::greaterThan($amountPaid, $outstanding)) {
+            throw PaymentFailedException::exceedsInvoiceAmount($outstanding, $amountPaid);
+        }
+
+        if ($amountPaid <= 0 && Money::greaterThan($outstanding, 0)) {
+            return null;
+        }
+
+        if ($paymentMethod === null || $paymentMethod === '') {
+            throw new InvalidArgumentException('A payment method is required when recording a payment.');
+        }
+
+        return $this->receive(
+            invoice: $invoice,
+            member: $member,
+            amountPaid: $amountPaid,
+            paymentMethod: $paymentMethod,
+            type: $type,
+            discountAmount: $discountAmount,
+            reference: $reference,
+            requireFullPayment: false,
+        );
+    }
 
     public function receive(
         Invoice $invoice,

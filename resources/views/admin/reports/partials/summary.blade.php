@@ -6,7 +6,7 @@
         'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment',
         'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value',
         'total_expense',
-        'revenue', 'expenses', 'net_operating_result', 'owner_investment',
+        'revenue', 'expenses', 'net_operating_result', 'owner_investment', 'outstanding_due',
     ];
 
     $labels = [
@@ -48,6 +48,7 @@
         'expenses' => 'Expenses',
         'net_operating_result' => 'Net Operating Result',
         'owner_investment' => 'Owner Investment',
+        'outstanding_due' => 'Outstanding Due',
     ];
 @endphp
 
@@ -60,7 +61,7 @@
                     ? App\Support\MoneyFormatter::format($value, $gymCurrency)
                     : $value"
                 :formatted="in_array($key, $moneyKeys, true)"
-                variant="{{ in_array($key, ['expired_members', 'expired_count', 'out_of_stock_products', 'low_stock_products'], true) ? 'danger' : 'primary' }}"
+                variant="{{ in_array($key, ['expired_members', 'expired_count', 'out_of_stock_products', 'low_stock_products', 'outstanding_due'], true) ? 'danger' : 'primary' }}"
             />
         </div>
     @endforeach

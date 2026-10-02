@@ -19,7 +19,7 @@
                     @php($isOverdue = $order->due_at?->lt(now()->startOfDay()))
                     <tr>
                         <td>
-                            <a href="{{ route('admin.orders.show', $order) }}" class="fw-semibold text-decoration-none">
+                            <a href="{{ $order->isPosSale() ? route('admin.orders.show', $order) : route('admin.invoices.show', $order) }}" class="fw-semibold text-decoration-none">
                                 {{ $order->invoice_number }}
                             </a>
                             <div class="small text-muted d-sm-none">

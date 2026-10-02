@@ -164,6 +164,21 @@ class Member extends Model
      * @param  Builder<Member>  $query
      * @return Builder<Member>
      */
+    public function scopeWithOutstandingDue(Builder $query): Builder
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->getModel()->getTable().'.*');
+        }
+
+        return $query->addSelect([
+            'outstanding_due' => Invoice::correlatedOutstandingSubquery(),
+        ]);
+    }
+
+    /**
+     * @param  Builder<Member>  $query
+     * @return Builder<Member>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', MemberStatus::Active)

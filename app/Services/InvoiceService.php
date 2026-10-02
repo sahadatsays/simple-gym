@@ -65,18 +65,46 @@ class InvoiceService extends BaseService
         return $this->buildChargeSummary($lineItems, $discountAmount);
     }
 
-    public function createForMember(Member $member, MembershipPlan $plan, float $discountAmount = 0): Invoice
+    public function resolveCollectionDueAt(float $invoiceTotal, float $amountReceived, mixed $dueAt): ?Carbon
+    {
+        $invoiceTotal = Money::round($invoiceTotal);
+        $amountReceived = Money::round($amountReceived);
+
+        if (Money::greaterThan($amountReceived, $invoiceTotal)) {
+            throw new InvalidArgumentException('Paid amount cannot exceed the invoice total.');
+        }
+
+        $balance = Money::round(max(0, $invoiceTotal - $amountReceived));
+
+        if (! Money::greaterThan($balance, 0)) {
+            return null;
+        }
+
+        if (! is_string($dueAt) || trim($dueAt) === '') {
+            throw new InvalidArgumentException('A due date is required when a balance remains.');
+        }
+
+        $parsedDueAt = Carbon::parse($dueAt)->endOfDay();
+
+        if ($parsedDueAt->lt(now()->startOfDay())) {
+            throw new InvalidArgumentException('The due date cannot be in the past.');
+        }
+
+        return $parsedDueAt;
+    }
+
+    public function createForMember(Member $member, MembershipPlan $plan, float $discountAmount = 0, ?Carbon $dueAt = null): Invoice
     {
         $charges = $this->calculateRegistrationCharges($plan, $discountAmount);
 
-        return $this->createInvoice($member, $plan, InvoiceType::Registration, $charges);
+        return $this->createInvoice($member, $plan, InvoiceType::Registration, $charges, $dueAt);
     }
 
-    public function createRenewalForMember(Member $member, MembershipPlan $plan, float $discountAmount = 0): Invoice
+    public function createRenewalForMember(Member $member, MembershipPlan $plan, float $discountAmount = 0, ?Carbon $dueAt = null): Invoice
     {
         $charges = $this->calculateRenewalCharges($plan, $discountAmount);
 
-        return $this->createInvoice($member, $plan, InvoiceType::Renewal, $charges);
+        return $this->createInvoice($member, $plan, InvoiceType::Renewal, $charges, $dueAt);
     }
 
     /**
@@ -238,6 +266,7 @@ class InvoiceService extends BaseService
         MembershipPlan $plan,
         InvoiceType $type,
         array $charges,
+        ?Carbon $dueAt = null,
     ): Invoice {
         return $this->invoices->create([
             'member_id' => $member->id,
@@ -250,6 +279,7 @@ class InvoiceService extends BaseService
             'status' => InvoiceStatus::Unpaid,
             'line_items' => $charges['line_items'],
             'issued_at' => now(),
+            'due_at' => $dueAt,
         ]);
     }
 

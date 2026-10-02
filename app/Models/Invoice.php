@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
+use App\Enums\PaymentStatus;
 use App\Support\Money;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -154,5 +156,52 @@ class Invoice extends Model
     public function amountDue(): float
     {
         return $this->outstandingBalance();
+    }
+
+    /**
+     * @param  Builder<Invoice>  $query
+     * @return Builder<Invoice>
+     */
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->whereIn('status', [InvoiceStatus::Unpaid, InvoiceStatus::Partial]);
+    }
+
+    /**
+     * Outstanding balance for one member, correlated to members.id.
+     *
+     * @return Builder<Invoice>
+     */
+    public static function correlatedOutstandingSubquery(): Builder
+    {
+        return static::query()
+            ->selectRaw(
+                'COALESCE(SUM('.static::outstandingBalanceSql().'), 0)',
+                [PaymentStatus::Completed->value],
+            )
+            ->whereColumn('invoices.member_id', 'members.id')
+            ->open();
+    }
+
+    /**
+     * @param  callable(Builder<Invoice>): void  $constraint
+     */
+    public static function sumOutstanding(callable $constraint): float
+    {
+        $query = static::query()
+            ->selectRaw(
+                'COALESCE(SUM('.static::outstandingBalanceSql().'), 0) as outstanding_due',
+                [PaymentStatus::Completed->value],
+            )
+            ->open();
+
+        $constraint($query);
+
+        return Money::round((float) ($query->first()?->outstanding_due ?? 0));
+    }
+
+    private static function outstandingBalanceSql(): string
+    {
+        return 'invoices.total - COALESCE((SELECT SUM(payments.amount) FROM payments WHERE payments.invoice_id = invoices.id AND payments.status = ?), 0)';
     }
 }

@@ -55,6 +55,8 @@ return [
         'membership_and_pos_revenue' => 'Membership payments + POS sales',
         'revenue_minus_expenses' => 'Revenue minus expenses',
         'not_included_in_revenue' => 'Not included in revenue',
+        'outstanding_due' => 'Outstanding Due',
+        'outstanding_due_footer' => 'Unpaid balances issued in this period',
     ],
 
     'charts' => [
@@ -96,7 +98,7 @@ return [
         'manage_inventory' => 'Manage inventory',
         'all_above_minimum' => 'All products are above minimum stock levels.',
         'upcoming_due_orders' => 'Upcoming Due Orders',
-        'upcoming_due_orders_subtitle' => 'Open POS balances due soon or overdue',
+        'upcoming_due_orders_subtitle' => 'Membership and POS balances due soon or overdue',
         'view_all_orders' => 'View all orders',
         'no_upcoming_due' => 'No upcoming due orders in the next :days days.',
         'no_payments' => 'No payments found for this period.',

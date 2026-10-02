@@ -14,6 +14,7 @@ use App\Models\MembershipPlan;
 use App\Models\RfidCard;
 use App\Services\MemberRegistrationService;
 use App\Support\Flash;
+use App\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use InvalidArgumentException;
@@ -57,7 +58,16 @@ class MemberRegistrationController extends Controller
             return back()->withInput()->withErrors(['registration' => $exception->getMessage()]);
         }
 
-        Flash::success('Member registered successfully. Membership activated and receipt generated.');
+        $balance = $result->invoice->outstandingBalance();
+
+        if ($balance > 0) {
+            Flash::success(__('members.registered_with_due', [
+                'amount' => MoneyFormatter::format($balance),
+                'date' => $result->invoice->due_at?->format('M j, Y') ?? '',
+            ]));
+        } else {
+            Flash::success('Member registered successfully. Membership activated and receipt generated.');
+        }
 
         return redirect()->route('admin.invoices.show', $result->invoice);
     }

@@ -12,7 +12,7 @@ class MemberRenewalResult
     public function __construct(
         public Member $member,
         public Invoice $invoice,
-        public Payment $payment,
+        public ?Payment $payment,
         public MembershipRenewal $renewal,
     ) {}
 }

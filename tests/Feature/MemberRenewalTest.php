@@ -364,7 +364,7 @@ it('rejects a renewal payment that ignores the discount', function () {
     expect(MembershipRenewal::query()->where('member_id', $member->id)->exists())->toBeFalse();
 });
 
-it('rolls back renewal when payment is insufficient', function () {
+it('does not renew a membership when a short payment has no due date', function () {
     $member = Member::factory()->create([
         'phone' => '01740004444',
         'membership_plan_id' => $this->plan->id,
@@ -380,11 +380,65 @@ it('rolls back renewal when payment is insufficient', function () {
             'payment_method' => 'cash',
             'amount_received' => 100,
         ])
-        ->assertSessionHasErrors(['amount_received']);
+        ->assertSessionHasErrors(['due_at']);
 
     expect($member->fresh()->membership_expires_at?->toDateString())->toBe($originalExpiry)
         ->and(Invoice::query()->where('type', InvoiceType::Renewal)->count())->toBe(0)
         ->and(MembershipRenewal::query()->count())->toBe(0);
+});
+
+it('renews a membership and keeps the unpaid balance', function () {
+    $member = Member::factory()->create([
+        'phone' => '01740005555',
+        'membership_plan_id' => $this->plan->id,
+        'status' => MemberStatus::Active,
+        'membership_expires_at' => now()->addDays(5),
+    ]);
+
+    $dueAt = now()->addDays(14)->toDateString();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.renew.store', $member), [
+            'membership_plan_id' => $this->plan->id,
+            'payment_method' => 'cash',
+            'amount_received' => 500,
+            'due_at' => $dueAt,
+        ])
+        ->assertRedirect();
+
+    $invoice = Invoice::query()->where('member_id', $member->id)->where('type', InvoiceType::Renewal)->first();
+
+    expect($member->fresh()->status)->toBe(MemberStatus::Active)
+        ->and($member->fresh()->membership_expires_at?->toDateString())->toBe(now()->addDays(5)->addDays(30)->toDateString())
+        ->and($invoice->status)->toBe(InvoiceStatus::Partial)
+        ->and((float) $invoice->outstandingBalance())->toBe(1000.0)
+        ->and($invoice->due_at?->toDateString())->toBe($dueAt)
+        ->and((float) Payment::query()->where('invoice_id', $invoice->id)->value('amount'))->toBe(500.0);
+});
+
+it('renews a membership when the whole fee is left due', function () {
+    $member = Member::factory()->expired()->create([
+        'phone' => '01740006666',
+        'membership_plan_id' => $this->plan->id,
+        'membership_expires_at' => now()->subDays(2),
+    ]);
+
+    $dueAt = now()->addWeek()->toDateString();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.members.renew.store', $member), [
+            'membership_plan_id' => $this->plan->id,
+            'amount_received' => 0,
+            'due_at' => $dueAt,
+        ])
+        ->assertRedirect();
+
+    $invoice = Invoice::query()->where('member_id', $member->id)->first();
+
+    expect($member->fresh()->status)->toBe(MemberStatus::Active)
+        ->and($invoice->status)->toBe(InvoiceStatus::Unpaid)
+        ->and((float) $invoice->outstandingBalance())->toBe(1500.0)
+        ->and(Payment::query()->where('invoice_id', $invoice->id)->exists())->toBeFalse();
 });
 
 it('shows renewal receipt', function () {
@@ -495,7 +549,7 @@ it('reactivates a disabled card and syncs the member to the device after renewal
         ->and($card->fresh()->status)->toBe(RfidCardStatus::Active)
         ->and(ZktecoCommand::query()->count())->toBe(1)
         ->and(ZktecoCommand::query()->value('command'))
-        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Renewed Member\tCardNo=1233447\tPri=0\tGrp=1");
+        ->toBe("DATA UPDATE user Pin={$card->id}\tName=Renewed Member\tCardNo=1233447\tPri=0\tTimezone=1\tGrp=1");
 });
 
 it('syncs an already active card to the device when a member renews early', function () {

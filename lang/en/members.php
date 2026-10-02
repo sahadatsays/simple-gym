@@ -4,6 +4,8 @@ return [
     'title' => 'Members',
     'subtitle' => 'Manage gym members and memberships',
     'register' => 'Register Member',
+    'registered_with_due' => 'Member registered and membership activated. :amount is due on :date.',
+    'renewed_with_due' => 'Membership renewed. :amount is due on :date.',
     'renew_membership' => 'Renew Membership',
     'edit' => 'Edit Member',
     'edit_subtitle' => 'Update member profile and membership details',

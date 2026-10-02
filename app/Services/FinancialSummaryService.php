@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use App\Models\Expense;
 use App\Models\Investment;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\DashboardDateRange;
 use App\Support\Money;
@@ -19,7 +20,8 @@ class FinancialSummaryService
      *     revenue: float,
      *     expenses: float,
      *     net_operating_result: float,
-     *     owner_investment: float
+     *     owner_investment: float,
+     *     outstanding_due: float
      * }
      */
     public function forRange(DashboardDateRange $range): array
@@ -53,6 +55,11 @@ class FinancialSummaryService
             ->whereDate('invested_at', '<=', $range->to->toDateString())
             ->sum('amount');
 
+        $outstandingDue = Invoice::sumOutstanding(function ($query) use ($range): void {
+            $query->where('issued_at', '>=', $range->from)
+                ->where('issued_at', '<=', $range->to);
+        });
+
         return [
             'membership_payments' => Money::round($membershipPayments),
             'pos_sales' => Money::round($posSales),
@@ -60,6 +67,7 @@ class FinancialSummaryService
             'expenses' => Money::round($expenses),
             'net_operating_result' => Money::round($revenue - $expenses),
             'owner_investment' => Money::round($ownerInvestment),
+            'outstanding_due' => $outstandingDue,
         ];
     }
 }

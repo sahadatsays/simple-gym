@@ -76,7 +76,7 @@
         $moneyKeys = [
             'admission_fee', 'membership_fee', 'pos_sale', 'total', 'discount', 'amount',
             'unit_price', 'line_total', 'profit', 'purchase_value', 'retail_value',
-            'purchase_price', 'current_value', 'cost',
+            'purchase_price', 'current_value', 'cost', 'due',
         ];
 
         $items = $payload['rows'] instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator
@@ -102,7 +102,7 @@
             <div class="summary-card">
                 <span>{{ str($key)->headline() }}</span>
                 <strong>
-                    @if (in_array($key, ['total', 'admission_fee', 'membership_fee', 'pos_sale', 'total_sales', 'total_discount', 'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment', 'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value', 'total_expense', 'revenue', 'expenses', 'net_operating_result', 'owner_investment'], true) && is_numeric($value))
+                    @if (in_array($key, ['total', 'admission_fee', 'membership_fee', 'pos_sale', 'total_sales', 'total_discount', 'total_revenue', 'gross_profit', 'total_retail_value', 'total_investment', 'total_purchase_value', 'total_current_value', 'total_maintenance_cost', 'current_asset_value', 'total_expense', 'revenue', 'expenses', 'net_operating_result', 'owner_investment', 'outstanding_due'], true) && is_numeric($value))
                         {{ App\Support\MoneyFormatter::format($value, $gymCurrency) }}
                     @else
                         {{ $value }}

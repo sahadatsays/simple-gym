@@ -4,6 +4,8 @@ return [
     'title' => 'Members',
     'subtitle' => 'Manage gym members and memberships',
     'register' => 'Register Member',
+    'registered_with_due' => 'সদস্য নিবন্ধিত এবং মেম্বারশিপ চালু হয়েছে। :date তারিখে :amount বকেয়া।',
+    'renewed_with_due' => 'মেম্বারশিপ নবায়ন হয়েছে। :date তারিখে :amount বকেয়া।',
     'renew_membership' => 'Renew Membership',
     'edit' => 'Edit Member',
     'edit_subtitle' => 'Update member profile and membership details',

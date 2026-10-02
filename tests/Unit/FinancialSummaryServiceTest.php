@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ExpenseStatus;
+use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
@@ -10,6 +11,8 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Investment;
 use App\Models\InvestmentCategory;
+use App\Models\Invoice;
+use App\Models\Member;
 use App\Models\Payment;
 use App\Services\FinancialSummaryService;
 use App\Support\DashboardDateRange;
@@ -83,7 +86,8 @@ it('calculates operating revenue expenses net result and owner investment for a 
         ->and($summary['revenue'])->toBe(8500.0)
         ->and($summary['expenses'])->toBe(3000.0)
         ->and($summary['net_operating_result'])->toBe(5500.0)
-        ->and($summary['owner_investment'])->toBe(20000.0);
+        ->and($summary['owner_investment'])->toBe(20000.0)
+        ->and($summary['outstanding_due'])->toBe(0.0);
 });
 
 it('excludes records outside the selected range', function () {
@@ -107,5 +111,43 @@ it('excludes records outside the selected range', function () {
 
     expect($summary['revenue'])->toBe(0.0)
         ->and($summary['expenses'])->toBe(0.0)
-        ->and($summary['net_operating_result'])->toBe(0.0);
+        ->and($summary['net_operating_result'])->toBe(0.0)
+        ->and($summary['outstanding_due'])->toBe(0.0);
+});
+
+it('includes the unpaid balance of invoices issued in the range', function () {
+    $member = Member::factory()->create();
+
+    Invoice::factory()->create([
+        'member_id' => $member->id,
+        'total' => 1800,
+        'subtotal' => 1800,
+        'status' => InvoiceStatus::Unpaid,
+        'issued_at' => now(),
+    ]);
+
+    Payment::factory()->create([
+        'member_id' => $member->id,
+        'invoice_id' => Invoice::factory()->create([
+            'member_id' => $member->id,
+            'total' => 1000,
+            'subtotal' => 1000,
+            'status' => InvoiceStatus::Partial,
+            'issued_at' => now(),
+        ])->id,
+        'status' => PaymentStatus::Completed,
+        'amount' => 400,
+        'paid_at' => now(),
+    ]);
+
+    Invoice::factory()->paid()->create([
+        'member_id' => $member->id,
+        'total' => 5000,
+        'subtotal' => 5000,
+        'issued_at' => now(),
+    ]);
+
+    $summary = app(FinancialSummaryService::class)->forRange(DashboardDateRange::default());
+
+    expect($summary['outstanding_due'])->toBe(2400.0);
 });
