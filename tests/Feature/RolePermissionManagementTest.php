@@ -237,6 +237,7 @@ it('uses only configured default permissions across authorization checks', funct
         'members.view', 'members.create', 'members.edit', 'members.delete',
         'membership-plans.view', 'membership-plans.create', 'membership-plans.edit', 'membership-plans.delete',
         'rfid-cards.view', 'rfid-cards.manage',
+        'lockers.view', 'lockers.create', 'lockers.edit', 'lockers.delete',
         'payments.view', 'payments.create',
         'products.view', 'products.manage',
         'reports.view',

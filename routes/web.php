@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\GymSettingController;
 use App\Http\Controllers\Admin\InvestmentCategoryController;
 use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\LockerController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\MemberRegistrationController;
 use App\Http\Controllers\Admin\MemberRenewalController;
@@ -102,6 +103,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('members/{member}/renew', [MemberRenewalController::class, 'store'])->name('members.renew.store');
         Route::get('members/{member}/receipt/{invoice}', [MemberRegistrationController::class, 'receipt'])->name('members.receipt');
         Route::resource('members', MemberController::class);
+        Route::resource('lockers', LockerController::class);
         Route::get('payments/create', [PaymentController::class, 'create'])->name('payments.create');
         Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
         Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');

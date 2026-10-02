@@ -92,6 +92,13 @@ return [
                     'match' => 'admin.rfid-cards.*',
                     'icon' => 'credit-card-2-front',
                 ],
+                [
+                    'key' => 'lockers',
+                    'route' => 'admin.lockers.index',
+                    'permission' => 'lockers.view',
+                    'match' => 'admin.lockers.*',
+                    'icon' => 'lock',
+                ],
             ],
         ],
         [

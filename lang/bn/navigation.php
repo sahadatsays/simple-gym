@@ -22,6 +22,7 @@ return [
         'registration' => 'নিবন্ধন',
         'renew' => 'নবায়ন',
         'rfid' => 'আরএফআইডি',
+        'lockers' => 'লকার',
         'payments' => 'পেমেন্ট',
         'invoices' => 'ইনভয়েস',
         'investments' => 'বিনিয়োগ',
