@@ -37,6 +37,7 @@
         'total_retail_value' => 'Retail Value',
         'total_investment' => 'Total Investment',
         'investment_count' => 'Investments',
+        'category_count' => 'Categories',
         'asset_count' => 'Assets',
         'total_purchase_value' => 'Total Purchase Value',
         'total_current_value' => 'Current Asset Value',

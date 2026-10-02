@@ -154,6 +154,13 @@ return [
             'icon' => 'building',
             'items' => [
                 [
+                    'key' => 'asset_categories',
+                    'route' => 'admin.asset-categories.index',
+                    'permission' => 'asset-categories.view',
+                    'match' => 'admin.asset-categories.*',
+                    'icon' => 'tags',
+                ],
+                [
                     'key' => 'assets',
                     'route' => 'admin.assets.index',
                     'permission' => 'assets.view',

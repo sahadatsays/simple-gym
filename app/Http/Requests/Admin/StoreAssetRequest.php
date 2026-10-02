@@ -23,7 +23,7 @@ class StoreAssetRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'asset_category_id' => ['required', 'integer', 'exists:asset_categories,id'],
+            'asset_category_id' => ['required', 'integer', Rule::exists('asset_categories', 'id')->where('is_active', true)],
             'purchased_at' => ['required', 'date'],
             'purchase_price' => ['required', 'numeric', 'gt:0', 'max:9999999.99'],
             'current_value' => ['nullable', 'numeric', 'min:0', 'max:9999999.99', 'lte:purchase_price'],

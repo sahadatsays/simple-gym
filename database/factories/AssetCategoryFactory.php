@@ -22,6 +22,7 @@ class AssetCategoryFactory extends Factory
             'description' => fake()->optional()->sentence(),
             'is_active' => true,
             'sort_order' => fake()->numberBetween(0, 20),
+            'created_by' => null,
         ];
     }
 

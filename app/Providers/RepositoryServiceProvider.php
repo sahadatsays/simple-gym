@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
+use App\Contracts\Repositories\AssetCategoryRepositoryInterface;
 use App\Contracts\Repositories\AssetDisposalRepositoryInterface;
 use App\Contracts\Repositories\AssetMaintenanceRepositoryInterface;
 use App\Contracts\Repositories\AssetRepositoryInterface;
@@ -20,6 +21,7 @@ use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Contracts\Repositories\RfidCardRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Repositories\ActivityLogRepository;
+use App\Repositories\AssetCategoryRepository;
 use App\Repositories\AssetDisposalRepository;
 use App\Repositories\AssetMaintenanceRepository;
 use App\Repositories\AssetRepository;
@@ -54,6 +56,7 @@ class RepositoryServiceProvider extends ServiceProvider
         ExpenseCategoryRepositoryInterface::class => ExpenseCategoryRepository::class,
         ExpenseRepositoryInterface::class => ExpenseRepository::class,
         BorrowingRepositoryInterface::class => BorrowingRepository::class,
+        AssetCategoryRepositoryInterface::class => AssetCategoryRepository::class,
         AssetRepositoryInterface::class => AssetRepository::class,
         AssetMaintenanceRepositoryInterface::class => AssetMaintenanceRepository::class,
         AssetDisposalRepositoryInterface::class => AssetDisposalRepository::class,

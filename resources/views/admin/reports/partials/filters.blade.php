@@ -27,7 +27,7 @@
             </x-admin.filter-field>
         @endunless
 
-        @if (in_array($type->value, ['investments', 'assets', 'asset-maintenance', 'asset-value-summary'], true))
+        @if (in_array($type->value, ['investments', 'assets', 'asset-categories', 'asset-maintenance', 'asset-value-summary'], true))
             <x-admin.filter-field label="Search" for="search">
                 <input
                     type="search"
@@ -53,7 +53,7 @@
             </x-admin.filter-field>
         @endif
 
-        @if (in_array($type->value, ['assets', 'asset-maintenance', 'asset-value-summary'], true))
+        @if (in_array($type->value, ['assets', 'asset-categories', 'asset-maintenance', 'asset-value-summary'], true))
             <x-admin.filter-field label="Category" for="asset_category_id">
                 <select name="asset_category_id" id="asset_category_id" class="form-select">
                     <option value="">All categories</option>
@@ -94,6 +94,27 @@
 
         @if (in_array($type->value, ['assets', 'asset-value-summary'], true))
             <x-admin.filter-field label="Status" for="status">
+                <select name="status" id="status" class="form-select">
+                    <option value="">All statuses</option>
+                    @foreach ($assetStatuses as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
+                            {{ $status->label() }}
+                        </option>
+                    @endforeach
+                </select>
+            </x-admin.filter-field>
+        @endif
+
+        @if ($type->value === 'asset-categories')
+            <x-admin.filter-field label="Category status" for="category_status">
+                <select name="category_status" id="category_status" class="form-select">
+                    <option value="">All categories</option>
+                    <option value="active" @selected(($filters['category_status'] ?? '') === 'active')>Active</option>
+                    <option value="inactive" @selected(($filters['category_status'] ?? '') === 'inactive')>Inactive</option>
+                </select>
+            </x-admin.filter-field>
+
+            <x-admin.filter-field label="Asset status" for="status">
                 <select name="status" id="status" class="form-select">
                     <option value="">All statuses</option>
                     @foreach ($assetStatuses as $status)

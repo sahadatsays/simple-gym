@@ -11,6 +11,7 @@
         'asset_category_id' => $filters['asset_category_id'] ?? null,
         'maintenance_type' => $filters['maintenance_type'] ?? null,
         'search' => $filters['search'] ?? null,
+        'category_status' => $filters['category_status'] ?? null,
         'days' => $filters['days'] ?? null,
     ], fn ($value) => filled($value));
 @endphp

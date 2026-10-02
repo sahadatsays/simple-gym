@@ -31,6 +31,7 @@ it('shows asset and investment reports on the reports hub', function () {
         ->assertSuccessful()
         ->assertSee('Investment Report')
         ->assertSee('Asset Report')
+        ->assertSee('Asset Category Report')
         ->assertSee('Maintenance Report')
         ->assertSee('Asset Value Summary');
 });

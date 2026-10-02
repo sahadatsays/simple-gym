@@ -50,6 +50,7 @@ class ReportFilterRequest extends FormRequest
             'payment_method' => ['nullable', 'string', Rule::enum(PaymentMethod::class)],
             'maintenance_type' => ['nullable', 'string', Rule::enum(AssetMaintenanceType::class)],
             'search' => ['nullable', 'string', 'max:255'],
+            'category_status' => ['nullable', 'string', Rule::in(['active', 'inactive'])],
             'days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'export' => ['nullable', 'string', Rule::in(['pdf', 'excel', 'print'])],
         ];
@@ -68,6 +69,7 @@ class ReportFilterRequest extends FormRequest
      *     payment_method: ?string,
      *     maintenance_type: ?string,
      *     search: ?string,
+     *     category_status: ?string,
      *     days: int
      * }
      */
@@ -100,6 +102,7 @@ class ReportFilterRequest extends FormRequest
             'payment_method' => $validated['payment_method'] ?? null,
             'maintenance_type' => $validated['maintenance_type'] ?? null,
             'search' => filled($validated['search'] ?? null) ? trim((string) $validated['search']) : null,
+            'category_status' => $validated['category_status'] ?? null,
             'days' => (int) ($validated['days'] ?? 30),
         ];
     }
@@ -123,7 +126,7 @@ class ReportFilterRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        foreach (['status', 'search', 'maintenance_type', 'payment_method'] as $field) {
+        foreach (['status', 'search', 'maintenance_type', 'payment_method', 'category_status'] as $field) {
             if ($this->filled($field) && $this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -138,7 +141,7 @@ class ReportFilterRequest extends FormRequest
         $report = $this->route('report');
         $type = is_string($report) ? ReportType::tryFrom($report) : null;
 
-        if ($type === ReportType::Assets && filled($this->input('status'))) {
+        if (in_array($type, [ReportType::Assets, ReportType::AssetCategories], true) && filled($this->input('status'))) {
             $this->merge([
                 'status' => AssetStatus::tryFrom((string) $this->input('status'))?->value,
             ]);

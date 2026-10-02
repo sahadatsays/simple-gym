@@ -29,6 +29,7 @@ return [
         'expense_categories' => 'Expense Categories',
         'expenses' => 'Expenses',
         'borrowings' => 'Borrowings',
+        'asset_categories' => 'Asset Categories',
         'assets' => 'Assets',
         'asset_maintenances' => 'Maintenance',
         'asset_disposals' => 'Disposals',

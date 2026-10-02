@@ -10,6 +10,7 @@ use App\Enums\PaymentType;
 use App\Enums\ProductStatus;
 use App\Enums\ReportType;
 use App\Models\Asset;
+use App\Models\AssetCategory;
 use App\Models\AssetMaintenance;
 use App\Models\Borrowing;
 use App\Models\BorrowingRepayment;
@@ -62,6 +63,7 @@ class ReportService
             ReportType::Stock => $this->stockReport($filters, $perPage),
             ReportType::Investments => $this->investmentReport($filters, $perPage),
             ReportType::Assets => $this->assetReport($filters, $perPage),
+            ReportType::AssetCategories => $this->assetCategoryReport($filters, $perPage),
             ReportType::AssetMaintenance => $this->assetMaintenanceReport($filters, $perPage),
             ReportType::AssetValueSummary => $this->assetValueSummary($filters),
             ReportType::Expenses => $this->expenseReport($filters, $perPage),
@@ -270,6 +272,69 @@ class ReportService
                 ['key' => 'cost', 'label' => 'Cost', 'align' => 'end'],
                 ['key' => 'service_provider', 'label' => 'Service Provider'],
                 ['key' => 'next_maintenance_date', 'label' => 'Next Maintenance Date'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     asset_category_id?: int|null,
+     *     status?: string|null,
+     *     category_status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     */
+    private function assetCategoryReport(array $filters, ?int $perPage): array
+    {
+        $assetConstraint = function (Builder $query) use ($filters): void {
+            $query
+                ->when(filled($filters['status'] ?? null), fn (Builder $nested) => $nested->where('status', $filters['status']))
+                ->when(filled($filters['from_date']), fn (Builder $nested) => $nested->whereDate('purchased_at', '>=', $filters['from_date']))
+                ->when(filled($filters['to_date']), fn (Builder $nested) => $nested->whereDate('purchased_at', '<=', $filters['to_date']));
+        };
+
+        $query = AssetCategory::query()
+            ->when(filled($filters['search'] ?? null), function (Builder $nested) use ($filters): void {
+                $search = $filters['search'];
+
+                $nested->where(function (Builder $nameQuery) use ($search): void {
+                    $nameQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->when(filled($filters['asset_category_id'] ?? null), fn (Builder $nested) => $nested->whereKey($filters['asset_category_id']))
+            ->when(filled($filters['category_status'] ?? null), fn (Builder $nested) => $nested->where('is_active', $filters['category_status'] === 'active'))
+            ->withCount(['assets as asset_count' => $assetConstraint])
+            ->withSum(['assets as purchase_value' => $assetConstraint], 'purchase_price')
+            ->withSum(['assets as current_value' => $assetConstraint], 'current_value')
+            ->ordered();
+
+        $totals = (clone $query)->get();
+
+        $rows = $this->paginateOrGet($query, $perPage, fn (AssetCategory $category): array => [
+            'category' => $category->name,
+            'status' => $category->is_active ? 'Active' : 'Inactive',
+            'asset_count' => (int) $category->asset_count,
+            'purchase_value' => Money::round((float) ($category->purchase_value ?? 0)),
+            'current_value' => Money::round((float) ($category->current_value ?? 0)),
+        ]);
+
+        return [
+            'summary' => [
+                'category_count' => $totals->count(),
+                'asset_count' => (int) $totals->sum('asset_count'),
+                'total_purchase_value' => Money::round((float) $totals->sum(fn (AssetCategory $category): float => (float) ($category->purchase_value ?? 0))),
+                'total_current_value' => Money::round((float) $totals->sum(fn (AssetCategory $category): float => (float) ($category->current_value ?? 0))),
+            ],
+            'rows' => $rows,
+            'columns' => [
+                ['key' => 'category', 'label' => 'Category'],
+                ['key' => 'status', 'label' => 'Status'],
+                ['key' => 'asset_count', 'label' => 'Assets', 'align' => 'end'],
+                ['key' => 'purchase_value', 'label' => 'Purchase Value', 'align' => 'end'],
+                ['key' => 'current_value', 'label' => 'Current Value', 'align' => 'end'],
             ],
         ];
     }

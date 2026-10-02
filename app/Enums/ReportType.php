@@ -16,6 +16,7 @@ enum ReportType: string
     case Stock = 'stock';
     case Investments = 'investments';
     case Assets = 'assets';
+    case AssetCategories = 'asset-categories';
     case AssetMaintenance = 'asset-maintenance';
     case AssetValueSummary = 'asset-value-summary';
     case Expenses = 'expenses';
@@ -51,6 +52,7 @@ enum ReportType: string
             self::Stock => 'Stock Report',
             self::Investments => 'Investment Report',
             self::Assets => 'Asset Report',
+            self::AssetCategories => 'Asset Category Report',
             self::AssetMaintenance => 'Maintenance Report',
             self::AssetValueSummary => 'Asset Value Summary',
             self::Expenses => 'Expense Report',
@@ -72,6 +74,7 @@ enum ReportType: string
             self::Stock => 'Current inventory levels and stock value.',
             self::Investments => 'Owner investments with category, amount, and payment details.',
             self::Assets => 'Asset register with purchase, value, condition, and status.',
+            self::AssetCategories => 'Asset counts and values grouped by category.',
             self::AssetMaintenance => 'Maintenance history with costs and service schedules.',
             self::AssetValueSummary => 'Purchase value, current asset value, and maintenance spend.',
             self::Expenses => 'Expense transactions with category totals and payment details.',
@@ -85,7 +88,7 @@ enum ReportType: string
         return match ($this) {
             self::DailyCollection, self::MonthlyCollection, self::AssetValueSummary, self::FinancialSummary => 'chart',
             self::Membership, self::ExpiredMembers, self::UpcomingExpiry => 'users',
-            self::PosSales, self::ProductSales, self::Assets => 'shopping',
+            self::PosSales, self::ProductSales, self::Assets, self::AssetCategories => 'shopping',
             self::Stock, self::AssetMaintenance => 'alert',
             self::Investments, self::Expenses, self::Borrowings => 'wallet',
         };
@@ -96,6 +99,7 @@ enum ReportType: string
         return in_array($this, [
             self::Investments,
             self::Assets,
+            self::AssetCategories,
             self::AssetMaintenance,
             self::AssetValueSummary,
         ], true);

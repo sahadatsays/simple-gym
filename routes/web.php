@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AssetCategoryController;
 use App\Http\Controllers\Admin\AssetController;
 use App\Http\Controllers\Admin\AssetDisposalController;
 use App\Http\Controllers\Admin\AssetMaintenanceController;
@@ -119,6 +120,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('borrowings/repayments', [BorrowingRepaymentController::class, 'store'])->name('borrowings.repayments.store');
         Route::resource('borrowings', BorrowingController::class);
         Route::resource('investments', InvestmentController::class);
+        Route::post('asset-categories/{asset_category}/assign', [AssetCategoryController::class, 'assign'])->name('asset-categories.assign');
+        Route::resource('asset-categories', AssetCategoryController::class);
         Route::resource('assets', AssetController::class);
         Route::resource('asset-maintenances', AssetMaintenanceController::class);
         Route::post('asset-disposals/confirm', [AssetDisposalController::class, 'confirm'])->name('asset-disposals.confirm');
