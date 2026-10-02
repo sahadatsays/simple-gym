@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Contracts\Repositories\BorrowingRepositoryInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\IndexBorrowingRepaymentRequest;
 use App\Http\Requests\Admin\StoreBorrowingRepaymentRequest;
 use App\Models\Borrowing;
 use App\Services\BorrowingService;
@@ -19,6 +20,16 @@ class BorrowingRepaymentController extends Controller
         private BorrowingRepositoryInterface $borrowings,
         private BorrowingService $borrowingService,
     ) {}
+
+    public function index(IndexBorrowingRepaymentRequest $request): View
+    {
+        $filters = $request->validated();
+
+        return view('admin.borrowings.repayments.index', [
+            'repayments' => $this->borrowings->paginateRepayments($filters, config('gym.pagination.per_page')),
+            'filters' => $filters,
+        ]);
+    }
 
     public function create(): View
     {

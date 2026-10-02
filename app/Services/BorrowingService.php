@@ -45,9 +45,22 @@ class BorrowingService extends BaseService
     public function update(Borrowing $borrowing, array $data): Borrowing
     {
         return $this->transaction(function () use ($borrowing, $data): Borrowing {
-            $this->assertAmountCoversRepayments($borrowing, (float) $data['amount']);
+            $locked = Borrowing::query()->whereKey($borrowing->id)->lockForUpdate()->firstOrFail();
+            $amount = Money::round((float) $data['amount']);
+            $repaid = $this->repaidTotal($locked);
 
-            $updatedBorrowing = $this->borrowings->update($borrowing, $data);
+            $this->assertAmountCoversRepayments($repaid, $amount);
+
+            $requestedStatus = $data['status'] instanceof BorrowingStatus
+                ? $data['status']
+                : BorrowingStatus::from($data['status']);
+
+            $data['amount'] = $amount;
+            $data['status'] = $requestedStatus === BorrowingStatus::Cancelled
+                ? BorrowingStatus::Cancelled
+                : $this->statusForBalance($amount, $repaid);
+
+            $updatedBorrowing = $this->borrowings->update($locked, $data);
 
             $this->activityLogger->log('borrowing.updated', $updatedBorrowing, 'Borrowing updated', [
                 'borrowing_no' => $updatedBorrowing->borrowing_no,
@@ -74,12 +87,14 @@ class BorrowingService extends BaseService
             }
 
             $amount = Money::round((float) $data['amount']);
+            $repaid = $this->repaidTotal($locked);
+            $remaining = Money::round((float) $locked->amount - $repaid);
 
             if (! Money::greaterThan($amount, 0)) {
                 throw new InvalidArgumentException('Repayment amount must be greater than zero.');
             }
 
-            if (Money::greaterThan($amount, $locked->remaining_amount)) {
+            if (Money::greaterThan($amount, $remaining)) {
                 throw new InvalidArgumentException('Repayment cannot exceed the remaining amount.');
             }
 
@@ -92,12 +107,8 @@ class BorrowingService extends BaseService
                 'created_by' => $createdBy,
             ]);
 
-            $locked->unsetRelation('repayments');
-
             $locked->update([
-                'status' => Money::greaterThan($locked->remaining_amount, 0)
-                    ? BorrowingStatus::PartiallyRepaid
-                    : BorrowingStatus::FullyRepaid,
+                'status' => $this->statusForBalance((float) $locked->amount, Money::round($repaid + $amount)),
             ]);
 
             $this->activityLogger->log('borrowing.repayment_recorded', $repayment, 'Borrowing repayment recorded', [
@@ -113,25 +124,43 @@ class BorrowingService extends BaseService
 
     public function delete(Borrowing $borrowing): void
     {
-        if ($borrowing->repayments()->exists()) {
-            throw new InvalidArgumentException('This borrowing has repayment history and cannot be deleted.');
-        }
-
         $this->transaction(function () use ($borrowing): void {
-            $this->activityLogger->log('borrowing.deleted', $borrowing, 'Borrowing deleted', [
-                'borrowing_no' => $borrowing->borrowing_no,
+            $locked = Borrowing::query()->whereKey($borrowing->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->repayments()->exists()) {
+                throw new InvalidArgumentException('This borrowing has repayment history and cannot be deleted.');
+            }
+
+            $this->activityLogger->log('borrowing.deleted', $locked, 'Borrowing deleted', [
+                'borrowing_no' => $locked->borrowing_no,
             ]);
 
-            $this->borrowings->delete($borrowing);
+            $this->borrowings->delete($locked);
         });
     }
 
-    private function assertAmountCoversRepayments(Borrowing $borrowing, float $amount): void
+    private function repaidTotal(Borrowing $borrowing): float
     {
-        $repaid = (float) $borrowing->repayments()->sum('amount');
+        return Money::round((float) $borrowing->repayments()->lockForUpdate()->sum('amount'));
+    }
 
+    private function assertAmountCoversRepayments(float $repaid, float $amount): void
+    {
         if (Money::greaterThan($repaid, $amount)) {
             throw new InvalidArgumentException('Amount cannot be less than the amount already returned.');
         }
+    }
+
+    private function statusForBalance(float $amount, float $repaid): BorrowingStatus
+    {
+        if (! Money::greaterThan(Money::round($amount - $repaid), 0)) {
+            return BorrowingStatus::FullyRepaid;
+        }
+
+        if (Money::greaterThan($repaid, 0)) {
+            return BorrowingStatus::PartiallyRepaid;
+        }
+
+        return BorrowingStatus::Active;
     }
 }

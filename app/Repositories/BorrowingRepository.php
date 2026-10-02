@@ -56,6 +56,42 @@ class BorrowingRepository extends BaseRepository implements BorrowingRepositoryI
             ->withQueryString();
     }
 
+    /**
+     * @param  array{
+     *     search?: string|null,
+     *     from_date?: string|null,
+     *     to_date?: string|null
+     * }  $filters
+     * @return LengthAwarePaginator<BorrowingRepayment>
+     */
+    public function paginateRepayments(array $filters, int $perPage): LengthAwarePaginator
+    {
+        return BorrowingRepayment::query()
+            ->with(['borrowing', 'creator'])
+            ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->where(function ($nested) use ($search): void {
+                    $nested->where('repayment_no', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('borrowing', function ($borrowing) use ($search): void {
+                            $borrowing->where('borrowing_no', 'like', "%{$search}%")
+                                ->orWhere('lender_name', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when(filled($filters['from_date'] ?? null), function ($query) use ($filters): void {
+                $query->whereDate('repayment_date', '>=', $filters['from_date']);
+            })
+            ->when(filled($filters['to_date'] ?? null), function ($query) use ($filters): void {
+                $query->whereDate('repayment_date', '<=', $filters['to_date']);
+            })
+            ->latest('repayment_date')
+            ->latest('id')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
     public function nextBorrowingNumber(): string
     {
         $today = now()->format('Ymd');

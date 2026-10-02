@@ -18,6 +18,8 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    @include('admin.borrowings.partials.section-nav')
+
     <x-admin.filter-bar class="mb-4">
         <form action="{{ route('admin.borrowings.index') }}" method="GET" class="sg-filter-grid">
             <x-admin.filter-field label="Search" for="search">

@@ -113,6 +113,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::resource('investment-categories', InvestmentCategoryController::class)->except(['show']);
         Route::resource('expense-categories', ExpenseCategoryController::class)->except(['show']);
         Route::resource('expenses', ExpenseController::class);
+        Route::get('borrowings/repayments', [BorrowingRepaymentController::class, 'index'])->name('borrowings.repayments.index');
         Route::get('borrowings/repayments/create', [BorrowingRepaymentController::class, 'create'])->name('borrowings.repayments.create');
         Route::post('borrowings/repayments/confirm', [BorrowingRepaymentController::class, 'confirm'])->name('borrowings.repayments.confirm');
         Route::post('borrowings/repayments', [BorrowingRepaymentController::class, 'store'])->name('borrowings.repayments.store');

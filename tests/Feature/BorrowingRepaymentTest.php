@@ -203,6 +203,53 @@ it('rejects a repayment amount that is not greater than zero', function () {
         ->assertSessionHasErrors('amount');
 });
 
+it('lists repayments from the borrowings section', function () {
+    $borrowing = Borrowing::factory()->create([
+        'borrowing_no' => 'BOR-REPAY-001',
+        'lender_name' => 'Karim Traders',
+    ]);
+
+    BorrowingRepayment::factory()->create([
+        'borrowing_id' => $borrowing->id,
+        'repayment_no' => 'RPY-REPAY-001',
+        'repayment_date' => now()->toDateString(),
+        'amount' => 450,
+        'created_by' => $this->admin->id,
+    ]);
+
+    BorrowingRepayment::factory()->create([
+        'repayment_no' => 'RPY-REPAY-OLD',
+        'repayment_date' => now()->subMonths(2)->toDateString(),
+        'amount' => 9000,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.borrowings.repayments.index', [
+            'from_date' => now()->startOfMonth()->toDateString(),
+            'to_date' => now()->toDateString(),
+            'search' => 'Karim',
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Repayments')
+        ->assertSee('Borrowings')
+        ->assertSee('RPY-REPAY-001')
+        ->assertSee('BOR-REPAY-001')
+        ->assertSee('Karim Traders')
+        ->assertSee('450')
+        ->assertSee($this->admin->name)
+        ->assertDontSee('RPY-REPAY-OLD')
+        ->assertDontSee('9,000');
+});
+
+it('forbids the repayments list without permission', function () {
+    $user = User::factory()->create(['is_active' => true]);
+    $user->assignRole('trainer');
+
+    $this->actingAs($user)
+        ->get(route('admin.borrowings.repayments.index'))
+        ->assertForbidden();
+});
+
 it('forbids recording a repayment without permission', function () {
     $user = User::factory()->create(['is_active' => true]);
     $user->assignRole('trainer');

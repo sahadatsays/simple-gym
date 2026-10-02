@@ -5,6 +5,7 @@
     'selected' => null,
     'required' => false,
     'placeholder' => 'Select an option',
+    'help' => null,
 ])
 
 <div class="mb-3">
@@ -33,4 +34,8 @@
     @error($name)
         <div class="invalid-feedback">{{ $message }}</div>
     @enderror
+
+    @if ($help)
+        <div class="form-text">{{ $help }}</div>
+    @endif
 </div>

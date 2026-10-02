@@ -62,6 +62,7 @@
                 name="status"
                 :options="App\Enums\BorrowingStatus::options()"
                 :selected="old('status', $borrowing->status->value)"
+                help="Status follows repayment history. Choose Cancelled to stop further repayments."
                 required
             />
         @else

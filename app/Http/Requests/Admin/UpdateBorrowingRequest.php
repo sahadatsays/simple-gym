@@ -59,9 +59,7 @@ class UpdateBorrowingRequest extends FormRequest
                     return;
                 }
 
-                $repaid = (float) $borrowing->repayments()->sum('amount');
-
-                if (Money::greaterThan($repaid, (float) $this->input('amount'))) {
+                if (Money::greaterThan($borrowing->total_repaid, (float) $this->input('amount'))) {
                     $validator->errors()->add(
                         'amount',
                         'Amount cannot be less than the amount already returned.',
