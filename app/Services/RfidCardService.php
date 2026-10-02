@@ -4,12 +4,16 @@ namespace App\Services;
 
 use App\Contracts\Repositories\MemberRepositoryInterface;
 use App\Contracts\Repositories\RfidCardRepositoryInterface;
+use App\Enums\PaymentType;
 use App\Enums\RfidCardStatus;
 use App\Jobs\MemberAccessJob;
 use App\Jobs\MemberAccessRevokeJob;
+use App\Models\Invoice;
 use App\Models\Member;
 use App\Models\RfidCard;
+use App\Models\RfidCardAssignment;
 use App\Support\ActivityLogger;
+use App\Support\Money;
 use InvalidArgumentException;
 
 class RfidCardService extends BaseService
@@ -17,15 +21,20 @@ class RfidCardService extends BaseService
     public function __construct(
         private RfidCardRepositoryInterface $rfidCards,
         private MemberRepositoryInterface $members,
+        private InvoiceService $invoiceService,
+        private PaymentService $paymentService,
         private ActivityLogger $activityLogger,
     ) {}
 
-    public function register(string $cardNumber): RfidCard
+    public function register(string $cardNumber, float $cardFee, float $depositAmount, ?int $createdBy): RfidCard
     {
-        return $this->transaction(function () use ($cardNumber): RfidCard {
+        return $this->transaction(function () use ($cardNumber, $cardFee, $depositAmount, $createdBy): RfidCard {
             $card = $this->rfidCards->create([
                 'card_number' => $cardNumber,
-                'status' => RfidCardStatus::Unassigned,
+                'card_fee' => Money::round($cardFee),
+                'deposit_amount' => Money::round($depositAmount),
+                'status' => RfidCardStatus::Available,
+                'created_by' => $createdBy,
             ]);
 
             $this->activityLogger->log('rfid_card.registered', $card, 'RFID card registered', [
@@ -36,80 +45,116 @@ class RfidCardService extends BaseService
         });
     }
 
-    public function assign(RfidCard $card, Member $member): RfidCard
+    public function assign(RfidCard $card, Member $member, ?string $paymentMethod = null): RfidCard
     {
-        if (! $card->isAssignable()) {
-            throw new InvalidArgumentException('Only unassigned cards can be assigned to a member.');
-        }
+        return $this->transaction(function () use ($card, $member, $paymentMethod): RfidCard {
+            $card = $this->lockCard($card);
 
-        return $this->transaction(function () use ($card, $member): RfidCard {
-            $this->rfidCards->disableActiveCardsForMember($member);
+            $this->assertCardCanBeAssigned($card);
 
-            $assignedCard = $this->rfidCards->update($card, [
-                'status' => RfidCardStatus::Active,
-                'member_id' => $member->id,
-                'assigned_at' => now(),
-            ]);
+            $this->closeAssignedCardsForMember($member);
 
-            $this->syncMemberRfidCard($member, $assignedCard->card_number);
-
-            $this->activityLogger->log('rfid_card.assigned', $assignedCard, 'RFID card assigned to member', [
-                'member_code' => $member->member_code,
-            ]);
-
-            $this->queueDeviceAccessSync($member);
-
-            return $assignedCard->load('member');
+            return $this->issueCard($card, $member, $paymentMethod, 'rfid_card.assigned', 'RFID card assigned to member');
         });
     }
 
-    public function replace(Member $member, string $cardNumber): RfidCard
+    public function replace(Member $member, string $cardNumber, float $cardFee = 0, float $depositAmount = 0, ?string $paymentMethod = null, ?int $createdBy = null): RfidCard
     {
-        return $this->transaction(function () use ($member, $cardNumber): RfidCard {
-            $this->rfidCards->disableActiveCardsForMember($member);
-
+        return $this->transaction(function () use ($member, $cardNumber, $cardFee, $depositAmount, $paymentMethod, $createdBy): RfidCard {
             $card = $this->rfidCards->findByCardNumber($cardNumber);
 
             if ($card === null) {
                 $card = $this->rfidCards->create([
                     'card_number' => $cardNumber,
-                    'status' => RfidCardStatus::Unassigned,
+                    'card_fee' => Money::round($cardFee),
+                    'deposit_amount' => Money::round($depositAmount),
+                    'status' => RfidCardStatus::Available,
+                    'created_by' => $createdBy,
                 ]);
             }
 
-            if (! $card->isAssignable()) {
-                throw new InvalidArgumentException('This card cannot be assigned because it is not unassigned.');
+            $card = $this->lockCard($card);
+
+            if ($card->member_id === $member->id && $card->isActive()) {
+                throw new InvalidArgumentException('This card is already assigned to the member.');
             }
 
-            $assignedCard = $this->rfidCards->update($card, [
-                'status' => RfidCardStatus::Active,
-                'member_id' => $member->id,
-                'assigned_at' => now(),
+            $this->assertCardCanBeAssigned($card);
+
+            $this->closeAssignedCardsForMember($member);
+
+            return $this->issueCard($card, $member, $paymentMethod, 'rfid_card.replaced', 'Member RFID card replaced');
+        });
+    }
+
+    public function returnCard(RfidCard $card): RfidCard
+    {
+        return $this->transaction(function () use ($card): RfidCard {
+            $card = $this->lockCard($card);
+
+            if (! $card->isActive()) {
+                throw new InvalidArgumentException('Only an assigned card can be returned.');
+            }
+
+            $member = $card->member;
+            $returnedCard = $this->closeAssignment($card, RfidCardStatus::Returned);
+
+            if ($member !== null) {
+                $this->syncMemberRfidCard($member, null);
+                $this->queueDeviceAccessRevoke($member, $returnedCard);
+            }
+
+            $this->activityLogger->log('rfid_card.returned', $returnedCard, 'RFID card returned', [
+                'card_number' => $returnedCard->card_number,
             ]);
 
-            $this->syncMemberRfidCard($member, $assignedCard->card_number);
+            return $returnedCard->load('member');
+        });
+    }
 
-            $this->activityLogger->log('rfid_card.replaced', $assignedCard, 'Member RFID card replaced', [
-                'member_code' => $member->member_code,
+    public function markLost(RfidCard $card): RfidCard
+    {
+        return $this->transaction(function () use ($card): RfidCard {
+            $card = $this->lockCard($card);
+
+            if ($card->status === RfidCardStatus::Lost) {
+                throw new InvalidArgumentException('This card is already lost.');
+            }
+
+            if ($card->status === RfidCardStatus::Blocked) {
+                throw new InvalidArgumentException('Unblock the card before marking it lost.');
+            }
+
+            $member = $card->member;
+            $lostCard = $this->closeAssignment($card, RfidCardStatus::Lost);
+
+            if ($member !== null) {
+                $this->syncMemberRfidCard($member, null);
+                $this->queueDeviceAccessRevoke($member, $lostCard);
+            }
+
+            $this->activityLogger->log('rfid_card.lost', $lostCard, 'RFID card marked lost', [
+                'card_number' => $lostCard->card_number,
             ]);
 
-            $this->queueDeviceAccessSync($member);
-
-            return $assignedCard->load('member');
+            return $lostCard->load('member');
         });
     }
 
     public function disable(RfidCard $card): RfidCard
     {
-        if ($card->status === RfidCardStatus::Disabled) {
+        if ($card->status === RfidCardStatus::Blocked) {
             throw new InvalidArgumentException('This card is already disabled.');
         }
 
         return $this->transaction(function () use ($card): RfidCard {
+            $card = $this->lockCard($card);
             $member = $card->member;
 
+            $this->setOpenAssignmentStatus($card, RfidCardStatus::Blocked);
+
             $disabledCard = $this->rfidCards->update($card, [
-                'status' => RfidCardStatus::Disabled,
+                'status' => RfidCardStatus::Blocked,
             ]);
 
             if ($member !== null) {
@@ -149,8 +194,12 @@ class RfidCardService extends BaseService
         }
 
         return $this->transaction(function () use ($card, $member): RfidCard {
+            $card = $this->lockCard($card);
+
+            $this->setOpenAssignmentStatus($card, RfidCardStatus::Assigned);
+
             $enabledCard = $this->rfidCards->update($card, [
-                'status' => RfidCardStatus::Active,
+                'status' => RfidCardStatus::Assigned,
             ]);
 
             $this->syncMemberRfidCard($member, $enabledCard->card_number);
@@ -183,7 +232,7 @@ class RfidCardService extends BaseService
 
         $card = RfidCard::query()
             ->where('member_id', $member->id)
-            ->where('status', RfidCardStatus::Disabled)
+            ->where('status', RfidCardStatus::Blocked)
             ->orderByDesc('assigned_at')
             ->orderByDesc('id')
             ->first();
@@ -193,8 +242,12 @@ class RfidCardService extends BaseService
         }
 
         return $this->transaction(function () use ($member, $card): RfidCard {
+            $card = $this->lockCard($card);
+
+            $this->setOpenAssignmentStatus($card, RfidCardStatus::Assigned);
+
             $reactivatedCard = $this->rfidCards->update($card, [
-                'status' => RfidCardStatus::Active,
+                'status' => RfidCardStatus::Assigned,
             ]);
 
             $this->syncMemberRfidCard($member, $reactivatedCard->card_number);
@@ -205,6 +258,134 @@ class RfidCardService extends BaseService
 
             return $reactivatedCard;
         });
+    }
+
+    private function assertCardCanBeAssigned(RfidCard $card): void
+    {
+        if ($card->status === RfidCardStatus::Lost || $card->status === RfidCardStatus::Blocked) {
+            throw new InvalidArgumentException('Lost or blocked cards cannot be assigned.');
+        }
+
+        if (! $card->isAssignable()) {
+            throw new InvalidArgumentException('This card cannot be assigned.');
+        }
+    }
+
+    private function issueCard(RfidCard $card, Member $member, ?string $paymentMethod, string $event, string $message): RfidCard
+    {
+        $assignedCard = $this->rfidCards->update($card, [
+            'status' => RfidCardStatus::Assigned,
+            'member_id' => $member->id,
+            'assigned_at' => now(),
+        ]);
+
+        $invoice = $this->chargeForAssignment($assignedCard, $member, $paymentMethod);
+
+        RfidCardAssignment::query()->create([
+            'member_id' => $member->id,
+            'rfid_card_id' => $assignedCard->id,
+            'issue_date' => now(),
+            'return_date' => null,
+            'card_fee' => $assignedCard->card_fee,
+            'deposit_amount' => $assignedCard->deposit_amount,
+            'status' => RfidCardStatus::Assigned,
+            'invoice_id' => $invoice?->id,
+            'open_card_id' => $assignedCard->id,
+        ]);
+
+        $this->syncMemberRfidCard($member, $assignedCard->card_number);
+
+        $this->activityLogger->log($event, $assignedCard, $message, [
+            'member_code' => $member->member_code,
+        ]);
+
+        $this->queueDeviceAccessSync($member);
+
+        return $assignedCard->load('member');
+    }
+
+    private function chargeForAssignment(RfidCard $card, Member $member, ?string $paymentMethod): ?Invoice
+    {
+        $invoice = $this->invoiceService->createRfidInvoice(
+            $member,
+            (float) $card->card_fee,
+            (float) $card->deposit_amount,
+        );
+
+        if ($invoice === null) {
+            return null;
+        }
+
+        if ($paymentMethod === null || $paymentMethod === '') {
+            throw new InvalidArgumentException('Choose a payment method for the card fee and deposit.');
+        }
+
+        $this->paymentService->settleInvoice(
+            invoice: $invoice,
+            member: $member,
+            amountPaid: (float) $invoice->total,
+            paymentMethod: $paymentMethod,
+            type: PaymentType::RfidCard,
+        );
+
+        return $invoice->fresh();
+    }
+
+    private function closeAssignedCardsForMember(Member $member): void
+    {
+        $cards = RfidCard::query()
+            ->where('member_id', $member->id)
+            ->where('status', RfidCardStatus::Assigned)
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($cards as $card) {
+            $this->closeAssignment($card, RfidCardStatus::Returned);
+        }
+    }
+
+    private function closeAssignment(RfidCard $card, RfidCardStatus $status): RfidCard
+    {
+        $assignment = RfidCardAssignment::query()
+            ->where('rfid_card_id', $card->id)
+            ->whereNull('return_date')
+            ->lockForUpdate()
+            ->first();
+
+        if ($assignment !== null) {
+            $assignment->update([
+                'status' => $status,
+                'return_date' => now(),
+                'open_card_id' => null,
+            ]);
+        }
+
+        return $this->rfidCards->update($card, [
+            'status' => $status,
+            'member_id' => null,
+        ]);
+    }
+
+    private function setOpenAssignmentStatus(RfidCard $card, RfidCardStatus $status): void
+    {
+        RfidCardAssignment::query()
+            ->where('rfid_card_id', $card->id)
+            ->whereNull('return_date')
+            ->lockForUpdate()
+            ->update([
+                'status' => $status,
+            ]);
+    }
+
+    private function lockCard(RfidCard $card): RfidCard
+    {
+        $locked = RfidCard::query()->whereKey($card->id)->lockForUpdate()->first();
+
+        if ($locked === null) {
+            throw new InvalidArgumentException('The selected RFID card was not found.');
+        }
+
+        return $locked;
     }
 
     private function syncMemberRfidCard(Member $member, ?string $cardNumber): void

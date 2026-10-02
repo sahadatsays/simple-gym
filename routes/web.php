@@ -139,7 +139,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::post('rfid-cards', [RfidCardController::class, 'store'])->name('rfid-cards.store');
         Route::get('rfid-cards', [RfidCardController::class, 'index'])->name('rfid-cards.index');
         Route::post('rfid-cards/replace', [RfidCardController::class, 'replace'])->name('rfid-cards.replace');
+        Route::get('rfid-cards/{rfid_card}', [RfidCardController::class, 'show'])->name('rfid-cards.show');
         Route::post('rfid-cards/{rfid_card}/assign', [RfidCardController::class, 'assign'])->name('rfid-cards.assign');
+        Route::patch('rfid-cards/{rfid_card}/return', [RfidCardController::class, 'returnCard'])->name('rfid-cards.return');
+        Route::patch('rfid-cards/{rfid_card}/lost', [RfidCardController::class, 'markLost'])->name('rfid-cards.lost');
         Route::patch('rfid-cards/{rfid_card}/disable', [RfidCardController::class, 'disable'])->name('rfid-cards.disable');
         Route::patch('rfid-cards/{rfid_card}/enable', [RfidCardController::class, 'enable'])->name('rfid-cards.enable');
 

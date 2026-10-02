@@ -7,6 +7,7 @@ enum PaymentType: string
     case AdmissionFee = 'admission_fee';
     case MembershipFee = 'membership_fee';
     case PosSale = 'pos_sale';
+    case RfidCard = 'rfid_card';
 
     /**
      * @return array<string, string>
@@ -24,6 +25,7 @@ enum PaymentType: string
             self::AdmissionFee => 'Admission Fee',
             self::MembershipFee => 'Membership Fee',
             self::PosSale => 'POS Sale',
+            self::RfidCard => 'RFID Card',
         };
     }
 }

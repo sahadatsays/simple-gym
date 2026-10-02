@@ -6,6 +6,7 @@ use App\Contracts\Repositories\RfidCardRepositoryInterface;
 use App\Enums\RfidCardStatus;
 use App\Models\Member;
 use App\Models\RfidCard;
+use App\Models\RfidCardAssignment;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -23,7 +24,7 @@ class RfidCardRepository extends BaseRepository implements RfidCardRepositoryInt
     public function paginateWithFilters(array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->newQuery()
-            ->with('member')
+            ->with(['member', 'creator'])
             ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
                 $search = $filters['search'];
 
@@ -56,17 +57,32 @@ class RfidCardRepository extends BaseRepository implements RfidCardRepositoryInt
     {
         return $this->newQuery()
             ->where('member_id', $member->id)
-            ->where('status', RfidCardStatus::Active)
+            ->where('status', RfidCardStatus::Assigned)
             ->get();
     }
 
     public function disableActiveCardsForMember(Member $member): void
     {
-        $this->newQuery()
+        $cardIds = $this->newQuery()
             ->where('member_id', $member->id)
-            ->where('status', RfidCardStatus::Active)
+            ->where('status', RfidCardStatus::Assigned)
+            ->pluck('id');
+
+        if ($cardIds->isEmpty()) {
+            return;
+        }
+
+        $this->newQuery()
+            ->whereIn('id', $cardIds)
             ->update([
-                'status' => RfidCardStatus::Disabled,
+                'status' => RfidCardStatus::Blocked,
+            ]);
+
+        RfidCardAssignment::query()
+            ->whereIn('rfid_card_id', $cardIds)
+            ->whereNull('return_date')
+            ->update([
+                'status' => RfidCardStatus::Blocked,
             ]);
     }
 }

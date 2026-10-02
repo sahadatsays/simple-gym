@@ -90,7 +90,7 @@ class Member extends Model
      */
     public function activeRfidCard(): HasOne
     {
-        return $this->hasOne(RfidCard::class)->where('status', RfidCardStatus::Active);
+        return $this->hasOne(RfidCard::class)->where('status', RfidCardStatus::Assigned);
     }
 
     /**

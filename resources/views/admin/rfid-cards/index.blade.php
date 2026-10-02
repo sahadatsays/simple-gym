@@ -53,9 +53,11 @@
                     <thead>
                         <tr>
                             <th>Card Number</th>
-                            <th class="d-none d-md-table-cell">Assigned Member</th>
-                            <th class="d-none d-lg-table-cell">Assignment Date</th>
                             <th>Status</th>
+                            <th class="d-none d-lg-table-cell">Card Fee</th>
+                            <th class="d-none d-lg-table-cell">Deposit</th>
+                            <th class="d-none d-xl-table-cell">Created By</th>
+                            <th class="d-none d-md-table-cell">Assigned Member</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
@@ -63,13 +65,21 @@
                         @forelse ($cards as $card)
                             <tr>
                                 <td class="ps-4">
-                                    <div class="fw-semibold">{{ $card->card_number }}</div>
+                                    <a href="{{ route('admin.rfid-cards.show', $card) }}" class="fw-semibold text-decoration-none">{{ $card->card_number }}</a>
                                     @if ($card->member)
                                         <div class="small text-muted d-md-none">
                                             {{ $card->member->name }}
                                         </div>
                                     @endif
                                 </td>
+                                <td>
+                                    <span class="sg-status-badge {{ $card->status->badgeClass() }}">
+                                        {{ $card->status->label() }}
+                                    </span>
+                                </td>
+                                <td class="d-none d-lg-table-cell">{{ App\Support\MoneyFormatter::format($card->card_fee, $gymCurrency) }}</td>
+                                <td class="d-none d-lg-table-cell">{{ App\Support\MoneyFormatter::format($card->deposit_amount, $gymCurrency) }}</td>
+                                <td class="d-none d-xl-table-cell text-muted">{{ $card->creator?->name ?? '—' }}</td>
                                 <td class="d-none d-md-table-cell">
                                     @if ($card->member)
                                         <div>{{ $card->member->name }}</div>
@@ -78,21 +88,13 @@
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td class="d-none d-lg-table-cell text-muted">
-                                    {{ $card->assigned_at?->format('M j, Y g:i A') ?? '—' }}
-                                </td>
-                                <td>
-                                    <span class="sg-status-badge {{ $card->status->badgeClass() }}">
-                                        {{ $card->status->label() }}
-                                    </span>
-                                </td>
                                 <td class="text-end pe-4">
                                     <x-admin.rfid-card-actions :card="$card" :members="$members" />
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <div class="sg-empty-state">
                                         <h3 class="h6 mb-1">No RFID cards found</h3>
                                         <p class="text-muted small mb-0">Register a card or adjust your search.</p>
@@ -129,6 +131,8 @@
                                 placeholder="Scan or enter RFID"
                                 required
                             />
+                            <x-forms.money-input label="Card fee" name="card_fee" value="0" />
+                            <x-forms.money-input label="Deposit amount" name="deposit_amount" value="0" />
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -164,6 +168,14 @@
                                 name="card_number"
                                 placeholder="Scan or enter new RFID"
                                 required
+                            />
+                            <x-forms.money-input label="Card fee" name="card_fee" value="0" />
+                            <x-forms.money-input label="Deposit amount" name="deposit_amount" value="0" />
+                            <x-forms.select
+                                label="Payment method"
+                                name="payment_method"
+                                :options="App\Enums\PaymentMethod::options()"
+                                selected="cash"
                             />
                         </div>
                         <div class="modal-footer border-0 pt-0">

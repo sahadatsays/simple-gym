@@ -21,16 +21,19 @@ class RfidCardFactory extends Factory
     {
         return [
             'card_number' => fake()->unique()->numerify('RFID########'),
-            'status' => RfidCardStatus::Unassigned,
+            'card_fee' => 0,
+            'deposit_amount' => 0,
+            'status' => RfidCardStatus::Available,
             'member_id' => null,
             'assigned_at' => null,
+            'created_by' => null,
         ];
     }
 
     public function active(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => RfidCardStatus::Active,
+            'status' => RfidCardStatus::Assigned,
             'member_id' => Member::factory(),
             'assigned_at' => now(),
         ]);
@@ -39,7 +42,7 @@ class RfidCardFactory extends Factory
     public function disabled(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => RfidCardStatus::Disabled,
+            'status' => RfidCardStatus::Blocked,
             'assigned_at' => now()->subMonths(2),
         ]);
     }

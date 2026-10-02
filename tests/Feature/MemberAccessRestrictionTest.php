@@ -81,7 +81,7 @@ function createMemberWithActiveCard(array $memberAttributes = [], array $cardAtt
 
     $card = RfidCard::factory()->create(array_merge([
         'member_id' => $member->id,
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'assigned_at' => now(),
     ], $cardAttributes));
 
@@ -204,7 +204,7 @@ it('does not sync a newly assigned male card to the device during restriction', 
     ]);
 
     $card = RfidCard::factory()->create([
-        'status' => RfidCardStatus::Unassigned,
+        'status' => RfidCardStatus::Available,
     ]);
 
     $this->actingAs($admin)

@@ -30,7 +30,7 @@ it('queues device user removal for expired members with assigned cards', functio
     $card = RfidCard::factory()->create([
         'member_id' => $member->id,
         'card_number' => '1233447',
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
     ]);
 
     app(MemberDeviceAccessService::class)->revokeExpiredMemberAccess();
@@ -57,7 +57,7 @@ it('does not queue duplicate removal commands for the same expired member', func
 
     RfidCard::factory()->create([
         'member_id' => $member->id,
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
     ]);
 
     $service = app(MemberDeviceAccessService::class);
@@ -126,7 +126,7 @@ it('processes expired members through the queued job', function () {
 
     RfidCard::factory()->create([
         'member_id' => $member->id,
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
     ]);
 
     (new AccessExpireJob)->handle(app(MemberDeviceAccessService::class));

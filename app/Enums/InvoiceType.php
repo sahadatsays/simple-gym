@@ -7,6 +7,7 @@ enum InvoiceType: string
     case Registration = 'registration';
     case Renewal = 'renewal';
     case PosSale = 'pos_sale';
+    case RfidCard = 'rfid_card';
 
     /**
      * @return array<string, string>
@@ -24,6 +25,7 @@ enum InvoiceType: string
             self::Registration => 'Registration',
             self::Renewal => 'Renewal',
             self::PosSale => 'POS Sale',
+            self::RfidCard => 'RFID Card',
         };
     }
 }

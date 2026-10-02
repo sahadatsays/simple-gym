@@ -56,9 +56,11 @@ return [
     ],
 
     'rfid_card_status' => [
-        'unassigned' => 'Unassigned',
-        'active' => 'Active',
-        'disabled' => 'Disabled',
+        'available' => 'উপলব্ধ',
+        'assigned' => 'বরাদ্দ',
+        'lost' => 'হারানো',
+        'blocked' => 'অবরুদ্ধ',
+        'returned' => 'ফেরত',
     ],
 
     'zkteco_device_status' => [

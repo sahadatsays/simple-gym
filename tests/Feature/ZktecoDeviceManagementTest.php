@@ -127,7 +127,7 @@ it('clears all card users and queues clear user command', function () {
 
     $card = RfidCard::factory()->create([
         'card_number' => '123456',
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'member_id' => $member->id,
         'assigned_at' => now(),
     ]);
@@ -135,7 +135,7 @@ it('clears all card users and queues clear user command', function () {
     Member::factory()->create();
     $unassignedCard = RfidCard::factory()->create([
         'card_number' => '999999',
-        'status' => RfidCardStatus::Unassigned,
+        'status' => RfidCardStatus::Available,
         'member_id' => null,
     ]);
 
@@ -164,7 +164,7 @@ it('queues a delete user command', function () {
 
     $card = RfidCard::factory()->create([
         'card_number' => '123456',
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'member_id' => $member->id,
         'assigned_at' => now(),
     ]);
@@ -188,7 +188,7 @@ it('queues a user upsert command from rfid card pim', function () {
 
     $card = RfidCard::factory()->create([
         'card_number' => '123456',
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'member_id' => $member->id,
         'assigned_at' => now(),
     ]);

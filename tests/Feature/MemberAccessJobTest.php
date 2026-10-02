@@ -45,7 +45,7 @@ it('queues device user sync when assigning an rfid card', function () {
 
     $card = RfidCard::factory()->create([
         'card_number' => '1233447',
-        'status' => RfidCardStatus::Unassigned,
+        'status' => RfidCardStatus::Available,
     ]);
 
     $this->actingAs($this->admin)
@@ -59,7 +59,7 @@ it('queues device user sync when assigning an rfid card', function () {
     $command = ZktecoCommand::query()->first();
 
     expect($command->serial_number)->toBe('JJA1254800833')
-        ->and($command->command)->toBe("DATA UPDATE user Pin={$card->fresh()->id}\tName=Sahadat Hossain\tCardNo=1233447\tPri=0\tGrp=1");
+        ->and($command->command)->toBe("DATA UPDATE user Pin={$card->fresh()->id}\tName=Sahadat Hossain\tCardNo=1233447\tPri=0\tTimezone=1\tGrp=1");
 });
 
 it('queues device user sync when replacing a member card', function () {
@@ -78,7 +78,7 @@ it('queues device user sync when replacing a member card', function () {
 
     RfidCard::factory()->create([
         'card_number' => '9999999',
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'member_id' => $member->id,
     ]);
 
@@ -106,7 +106,7 @@ it('dispatches member access job after card assignment', function () {
     ]);
 
     $card = RfidCard::factory()->create([
-        'status' => RfidCardStatus::Unassigned,
+        'status' => RfidCardStatus::Available,
     ]);
 
     $this->actingAs($this->admin)
@@ -127,7 +127,7 @@ it('skips device sync when no active devices exist', function () {
 
     $card = RfidCard::factory()->create([
         'card_number' => '1233447',
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'member_id' => $member->id,
     ]);
 
@@ -150,7 +150,7 @@ it('clears prior access removal records when granting access again', function ()
 
     $card = RfidCard::factory()->create([
         'card_number' => '1233447',
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'member_id' => $member->id,
     ]);
 

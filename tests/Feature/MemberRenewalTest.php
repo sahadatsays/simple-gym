@@ -531,7 +531,7 @@ it('reactivates a disabled card and syncs the member to the device after renewal
 
     $card = RfidCard::factory()->create([
         'card_number' => '1233447',
-        'status' => RfidCardStatus::Disabled,
+        'status' => RfidCardStatus::Blocked,
         'member_id' => $member->id,
         'assigned_at' => now()->subMonths(2),
     ]);
@@ -546,7 +546,7 @@ it('reactivates a disabled card and syncs the member to the device after renewal
 
     expect($member->fresh()->status)->toBe(MemberStatus::Active)
         ->and($member->fresh()->rfid_card)->toBe('1233447')
-        ->and($card->fresh()->status)->toBe(RfidCardStatus::Active)
+        ->and($card->fresh()->status)->toBe(RfidCardStatus::Assigned)
         ->and(ZktecoCommand::query()->count())->toBe(1)
         ->and(ZktecoCommand::query()->value('command'))
         ->toBe("DATA UPDATE user Pin={$card->id}\tName=Renewed Member\tCardNo=1233447\tPri=0\tTimezone=1\tGrp=1");
@@ -570,7 +570,7 @@ it('syncs an already active card to the device when a member renews early', func
 
     $card = RfidCard::factory()->create([
         'card_number' => '7654321',
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'member_id' => $member->id,
     ]);
 

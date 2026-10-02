@@ -41,4 +41,14 @@ class RfidCardPolicy
     {
         return $user->can('rfid-cards.manage');
     }
+
+    public function returnCard(User $user, RfidCard $rfidCard): bool
+    {
+        return $user->can('rfid-cards.manage');
+    }
+
+    public function markLost(User $user, RfidCard $rfidCard): bool
+    {
+        return $user->can('rfid-cards.manage');
+    }
 }

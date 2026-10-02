@@ -9,13 +9,18 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
 #[Fillable([
     'card_number',
+    'card_fee',
+    'deposit_amount',
     'status',
     'member_id',
     'assigned_at',
+    'created_by',
 ])]
 class RfidCard extends Model
 {
@@ -28,6 +33,8 @@ class RfidCard extends Model
     protected function casts(): array
     {
         return [
+            'card_fee' => 'decimal:2',
+            'deposit_amount' => 'decimal:2',
             'status' => RfidCardStatus::class,
             'assigned_at' => 'datetime',
         ];
@@ -41,19 +48,43 @@ class RfidCard extends Model
         return $this->belongsTo(Member::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @return HasMany<RfidCardAssignment, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(RfidCardAssignment::class)->latest('issue_date')->latest('id');
+    }
+
+    /**
+     * @return HasOne<RfidCardAssignment, $this>
+     */
+    public function openAssignment(): HasOne
+    {
+        return $this->hasOne(RfidCardAssignment::class)->whereNull('return_date');
+    }
+
     public function isAssignable(): bool
     {
-        return $this->status === RfidCardStatus::Unassigned;
+        return $this->status->isAssignable();
     }
 
     public function isActive(): bool
     {
-        return $this->status === RfidCardStatus::Active;
+        return $this->status === RfidCardStatus::Assigned;
     }
 
     public function isDisabled(): bool
     {
-        return $this->status === RfidCardStatus::Disabled;
+        return $this->status === RfidCardStatus::Blocked;
     }
 
     public function canBeEnabled(): bool
@@ -68,7 +99,7 @@ class RfidCard extends Model
             return false;
         }
 
-        return ! $member->rfidCards()->where('status', RfidCardStatus::Active)->exists();
+        return ! $member->rfidCards()->where('status', RfidCardStatus::Assigned)->exists();
     }
 
     /**
@@ -77,7 +108,7 @@ class RfidCard extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', RfidCardStatus::Active);
+        return $query->where('status', RfidCardStatus::Assigned);
     }
 
     /**

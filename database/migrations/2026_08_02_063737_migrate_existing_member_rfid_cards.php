@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\RfidCardStatus;
 use App\Models\Member;
 use App\Models\RfidCard;
 use Illuminate\Database\Migrations\Migration;
@@ -15,7 +14,7 @@ return new class extends Migration
                 RfidCard::query()->firstOrCreate(
                     ['card_number' => $member->rfid_card],
                     [
-                        'status' => RfidCardStatus::Active,
+                        'status' => 'active',
                         'member_id' => $member->id,
                         'assigned_at' => $member->joined_at ?? now(),
                     ],

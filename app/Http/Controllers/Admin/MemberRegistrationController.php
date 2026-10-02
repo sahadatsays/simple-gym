@@ -39,7 +39,7 @@ class MemberRegistrationController extends Controller
             'plans' => $plans,
             'nextMemberCode' => $this->members->nextMemberCode(),
             'unassignedCards' => RfidCard::query()
-                ->where('status', RfidCardStatus::Unassigned)
+                ->where('status', RfidCardStatus::Available)
                 ->orderBy('card_number')
                 ->get(['id', 'card_number']),
         ]);

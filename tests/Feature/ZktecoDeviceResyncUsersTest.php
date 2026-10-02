@@ -185,7 +185,7 @@ function createResyncMember(Gender $gender, string $name, array $memberAttribute
 
     $card = RfidCard::factory()->create([
         'member_id' => $member->id,
-        'status' => RfidCardStatus::Active,
+        'status' => RfidCardStatus::Assigned,
         'assigned_at' => now(),
     ]);
 

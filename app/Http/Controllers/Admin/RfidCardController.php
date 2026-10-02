@@ -38,11 +38,32 @@ class RfidCardController extends Controller
     {
         $this->authorize('create', RfidCard::class);
 
-        $this->rfidCardService->register($request->validated('card_number'));
+        $this->rfidCardService->register(
+            $request->validated('card_number'),
+            (float) ($request->validated('card_fee') ?? 0),
+            (float) ($request->validated('deposit_amount') ?? 0),
+            $request->user()?->id,
+        );
 
         Flash::success('RFID card registered successfully.');
 
         return redirect()->route('admin.rfid-cards.index');
+    }
+
+    public function show(RfidCard $rfidCard): View
+    {
+        $this->authorize('view', $rfidCard);
+
+        $rfidCard->load([
+            'creator',
+            'member',
+            'assignments.member',
+            'assignments.invoice',
+        ]);
+
+        return view('admin.rfid-cards.show', [
+            'card' => $rfidCard,
+        ]);
     }
 
     public function assign(AssignRfidCardRequest $request, RfidCard $rfidCard): RedirectResponse
@@ -50,7 +71,11 @@ class RfidCardController extends Controller
         $this->authorize('assign', $rfidCard);
 
         try {
-            $this->rfidCardService->assign($rfidCard, $request->member());
+            $this->rfidCardService->assign(
+                $rfidCard,
+                $request->member(),
+                $request->validated('payment_method'),
+            );
         } catch (InvalidArgumentException $exception) {
             Flash::error($exception->getMessage());
 
@@ -67,7 +92,14 @@ class RfidCardController extends Controller
         $this->authorize('replace', RfidCard::class);
 
         try {
-            $this->rfidCardService->replace($request->member(), $request->validated('card_number'));
+            $this->rfidCardService->replace(
+                $request->member(),
+                $request->validated('card_number'),
+                (float) ($request->validated('card_fee') ?? 0),
+                (float) ($request->validated('deposit_amount') ?? 0),
+                $request->validated('payment_method'),
+                $request->user()?->id,
+            );
         } catch (InvalidArgumentException $exception) {
             Flash::error($exception->getMessage());
 
@@ -109,6 +141,40 @@ class RfidCardController extends Controller
         }
 
         Flash::success('RFID card enabled successfully.');
+
+        return redirect()->route('admin.rfid-cards.index');
+    }
+
+    public function returnCard(RfidCard $rfidCard): RedirectResponse
+    {
+        $this->authorize('returnCard', $rfidCard);
+
+        try {
+            $this->rfidCardService->returnCard($rfidCard);
+        } catch (InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
+
+        Flash::success('RFID card returned successfully.');
+
+        return redirect()->route('admin.rfid-cards.index');
+    }
+
+    public function markLost(RfidCard $rfidCard): RedirectResponse
+    {
+        $this->authorize('markLost', $rfidCard);
+
+        try {
+            $this->rfidCardService->markLost($rfidCard);
+        } catch (InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
+
+        Flash::success('RFID card marked as lost.');
 
         return redirect()->route('admin.rfid-cards.index');
     }

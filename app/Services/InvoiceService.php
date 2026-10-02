@@ -110,6 +110,45 @@ class InvoiceService extends BaseService
     /**
      * @param  array<int, array{description: string, amount: float}>  $lineItems
      */
+    public function createRfidInvoice(Member $member, float $cardFee, float $depositAmount): ?Invoice
+    {
+        $lineItems = [];
+
+        if (Money::greaterThan($cardFee, 0)) {
+            $lineItems[] = [
+                'description' => 'RFID card fee',
+                'amount' => Money::round($cardFee),
+            ];
+        }
+
+        if (Money::greaterThan($depositAmount, 0)) {
+            $lineItems[] = [
+                'description' => 'RFID card deposit',
+                'amount' => Money::round($depositAmount),
+            ];
+        }
+
+        if ($lineItems === []) {
+            return null;
+        }
+
+        $charges = $this->buildChargeSummary($lineItems);
+
+        return $this->invoices->create([
+            'member_id' => $member->id,
+            'membership_plan_id' => null,
+            'type' => InvoiceType::RfidCard,
+            'invoice_number' => $this->invoices->nextInvoiceNumber(),
+            'subtotal' => $charges['subtotal'],
+            'discount_amount' => $charges['discount_amount'],
+            'total' => $charges['total'],
+            'status' => InvoiceStatus::Unpaid,
+            'line_items' => $charges['line_items'],
+            'issued_at' => now(),
+            'due_at' => null,
+        ]);
+    }
+
     public function createPosInvoice(?Member $member, array $lineItems, float $discountAmount = 0, ?Carbon $dueAt = null): Invoice
     {
         $charges = $this->calculatePosCharges($lineItems, $discountAmount);
@@ -207,6 +246,10 @@ class InvoiceService extends BaseService
     {
         if ($invoice->isPosSale()) {
             return PaymentType::PosSale;
+        }
+
+        if ($invoice->type === InvoiceType::RfidCard) {
+            return PaymentType::RfidCard;
         }
 
         $descriptions = collect($invoice->line_items ?? [])

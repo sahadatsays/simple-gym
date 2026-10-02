@@ -1137,6 +1137,16 @@ body {
     color: #92400e;
 }
 
+.sg-status-badge-info {
+    background: #e0f2fe;
+    color: #075985;
+}
+
+.sg-status-badge-muted {
+    background: #f1f5f9;
+    color: #475569;
+}
+
 .sg-member-avatar {
     border-radius: 0.75rem;
     flex-shrink: 0;

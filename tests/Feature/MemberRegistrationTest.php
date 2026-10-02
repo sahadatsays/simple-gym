@@ -40,7 +40,7 @@ beforeEach(function () {
 it('shows the registration form', function () {
     RfidCard::factory()->create([
         'card_number' => 'CARD001',
-        'status' => RfidCardStatus::Unassigned,
+        'status' => RfidCardStatus::Available,
     ]);
 
     $this->actingAs($this->admin)
@@ -63,7 +63,7 @@ it('completes the full registration workflow', function () {
 
     $card = RfidCard::factory()->create([
         'card_number' => 'CARD999',
-        'status' => RfidCardStatus::Unassigned,
+        'status' => RfidCardStatus::Available,
     ]);
 
     $joinedAt = now()->toDateString();
@@ -110,7 +110,7 @@ it('completes the full registration workflow', function () {
 
     $card->refresh();
 
-    expect($card->status)->toBe(RfidCardStatus::Active)
+    expect($card->status)->toBe(RfidCardStatus::Assigned)
         ->and($card->member_id)->toBe($member->id)
         ->and($member->fresh()->rfid_card)->toBe('CARD999');
 });
@@ -118,7 +118,7 @@ it('completes the full registration workflow', function () {
 it('registers a member against the discounted admission and plan total', function () {
     $card = RfidCard::factory()->create([
         'card_number' => 'CARDDISCOUNT',
-        'status' => RfidCardStatus::Unassigned,
+        'status' => RfidCardStatus::Available,
     ]);
 
     $joinedAt = now()->toDateString();

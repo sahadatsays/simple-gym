@@ -12,6 +12,10 @@
         Actions
     </button>
     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+        <li>
+            <a class="dropdown-item" href="{{ route('admin.rfid-cards.show', $card) }}">Assignment History</a>
+        </li>
+
         @if ($card->isAssignable())
             @can('assign', $card)
                 <li>
@@ -38,6 +42,34 @@
                     >
                         Replace Card
                     </button>
+                </li>
+            @endcan
+
+            @can('returnCard', $card)
+                <li>
+                    <form
+                        action="{{ route('admin.rfid-cards.return', $card) }}"
+                        method="POST"
+                        onsubmit="return confirm('Return this RFID card and close the assignment?');"
+                    >
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="dropdown-item">Return Card</button>
+                    </form>
+                </li>
+            @endcan
+
+            @can('markLost', $card)
+                <li>
+                    <form
+                        action="{{ route('admin.rfid-cards.lost', $card) }}"
+                        method="POST"
+                        onsubmit="return confirm('Mark this RFID card as lost? It cannot be assigned again.');"
+                    >
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="dropdown-item text-danger">Mark Lost</button>
+                    </form>
                 </li>
             @endcan
 
@@ -88,7 +120,8 @@
                         </div>
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
-                                Assign <strong>{{ $card->card_number }}</strong> to a member. Any existing active card for that member will be disabled.
+                                Assign <strong>{{ $card->card_number }}</strong> to a member. The member's current card assignment will be closed.
+                                Card fee {{ App\Support\MoneyFormatter::format($card->card_fee, $gymCurrency) }}, deposit {{ App\Support\MoneyFormatter::format($card->deposit_amount, $gymCurrency) }}.
                             </p>
                             <x-forms.searchable-select
                                 label="Member"
@@ -97,6 +130,12 @@
                                 :options="$members->mapWithKeys(fn ($member) => [$member->id => $member->name.' ('.$member->member_code.')'])->all()"
                                 placeholder="Search member..."
                                 required
+                            />
+                            <x-forms.select
+                                label="Payment method"
+                                name="payment_method"
+                                :options="App\Enums\PaymentMethod::options()"
+                                selected="cash"
                             />
                         </div>
                         <div class="modal-footer border-0 pt-0">
@@ -124,7 +163,7 @@
                         </div>
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
-                                Replace the active card for <strong>{{ $card->member->name }}</strong>. The current card will be disabled automatically.
+                                Replace the active card for <strong>{{ $card->member->name }}</strong>. The current assignment will be closed and kept in history.
                             </p>
                             <x-forms.input
                                 label="New card number"
