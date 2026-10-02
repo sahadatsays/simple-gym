@@ -136,6 +136,175 @@ it('applies discount when receiving invoice payment', function () {
         ->and((float) $payment->amount)->toBe(1800.0);
 });
 
+it('shows the remaining invoice due on the receive payment form', function () {
+    $member = Member::factory()->create(['membership_plan_id' => $this->plan->id]);
+
+    $invoice = Invoice::factory()->create([
+        'member_id' => $member->id,
+        'membership_plan_id' => $this->plan->id,
+        'status' => InvoiceStatus::Partial,
+        'invoice_number' => 'INV-DUE-1500',
+        'subtotal' => 2000,
+        'discount_amount' => 200,
+        'total' => 1800,
+    ]);
+
+    Payment::factory()->create([
+        'member_id' => $member->id,
+        'invoice_id' => $invoice->id,
+        'amount' => 300,
+        'status' => PaymentStatus::Completed,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.payments.create'))
+        ->assertSuccessful()
+        ->assertSee('INV-DUE-1500')
+        ->assertSee('outstanding_balance', false)
+        ->assertSee('1500', false);
+});
+
+it('receives only the remaining due on a discounted partial invoice', function () {
+    $member = Member::factory()->create(['membership_plan_id' => $this->plan->id]);
+
+    $invoice = Invoice::factory()->create([
+        'member_id' => $member->id,
+        'membership_plan_id' => $this->plan->id,
+        'status' => InvoiceStatus::Partial,
+        'subtotal' => 2000,
+        'discount_amount' => 200,
+        'total' => 1800,
+    ]);
+
+    Payment::factory()->create([
+        'member_id' => $member->id,
+        'invoice_id' => $invoice->id,
+        'amount' => 300,
+        'status' => PaymentStatus::Completed,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.payments.store'), [
+            'invoice_id' => $invoice->id,
+            'payment_method' => PaymentMethod::Cash->value,
+            'amount_paid' => 1500,
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $invoice->refresh();
+    $payment = Payment::query()->where('invoice_id', $invoice->id)->latest('id')->first();
+
+    expect($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and((float) $invoice->discount_amount)->toBe(200.0)
+        ->and((float) $invoice->total)->toBe(1800.0)
+        ->and($invoice->outstandingBalance())->toBe(0.0)
+        ->and((float) $payment->amount)->toBe(1500.0)
+        ->and((float) $payment->discount_amount)->toBe(0.0);
+});
+
+it('rejects a payment above the remaining due', function () {
+    $member = Member::factory()->create(['membership_plan_id' => $this->plan->id]);
+
+    $invoice = Invoice::factory()->create([
+        'member_id' => $member->id,
+        'membership_plan_id' => $this->plan->id,
+        'status' => InvoiceStatus::Partial,
+        'subtotal' => 2000,
+        'discount_amount' => 200,
+        'total' => 1800,
+    ]);
+
+    Payment::factory()->create([
+        'member_id' => $member->id,
+        'invoice_id' => $invoice->id,
+        'amount' => 300,
+        'status' => PaymentStatus::Completed,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.payments.store'), [
+            'invoice_id' => $invoice->id,
+            'payment_method' => PaymentMethod::Cash->value,
+            'amount_paid' => 1800,
+        ])
+        ->assertSessionHasErrors(['amount_paid']);
+
+    expect($invoice->fresh()->status)->toBe(InvoiceStatus::Partial)
+        ->and(Payment::query()->where('invoice_id', $invoice->id)->count())->toBe(1);
+});
+
+it('applies an extra discount only against the amount still due', function () {
+    $member = Member::factory()->create(['membership_plan_id' => $this->plan->id]);
+
+    $invoice = Invoice::factory()->create([
+        'member_id' => $member->id,
+        'membership_plan_id' => $this->plan->id,
+        'status' => InvoiceStatus::Partial,
+        'subtotal' => 2000,
+        'discount_amount' => 200,
+        'total' => 1800,
+    ]);
+
+    Payment::factory()->create([
+        'member_id' => $member->id,
+        'invoice_id' => $invoice->id,
+        'amount' => 300,
+        'status' => PaymentStatus::Completed,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.payments.store'), [
+            'invoice_id' => $invoice->id,
+            'payment_method' => PaymentMethod::Cash->value,
+            'discount_amount' => 100,
+            'amount_paid' => 1400,
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $invoice->refresh();
+    $payment = Payment::query()->where('invoice_id', $invoice->id)->latest('id')->first();
+
+    expect((float) $invoice->discount_amount)->toBe(300.0)
+        ->and((float) $invoice->total)->toBe(1700.0)
+        ->and($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and((float) $payment->amount)->toBe(1400.0)
+        ->and((float) $payment->discount_amount)->toBe(100.0);
+});
+
+it('rejects a collection discount larger than the amount due', function () {
+    $member = Member::factory()->create(['membership_plan_id' => $this->plan->id]);
+
+    $invoice = Invoice::factory()->create([
+        'member_id' => $member->id,
+        'membership_plan_id' => $this->plan->id,
+        'status' => InvoiceStatus::Partial,
+        'subtotal' => 2000,
+        'discount_amount' => 200,
+        'total' => 1800,
+    ]);
+
+    Payment::factory()->create([
+        'member_id' => $member->id,
+        'invoice_id' => $invoice->id,
+        'amount' => 300,
+        'status' => PaymentStatus::Completed,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.payments.store'), [
+            'invoice_id' => $invoice->id,
+            'payment_method' => PaymentMethod::Cash->value,
+            'discount_amount' => 1600,
+            'amount_paid' => 100,
+        ])
+        ->assertSessionHasErrors(['discount_amount']);
+
+    expect((float) $invoice->fresh()->discount_amount)->toBe(200.0)
+        ->and((float) $invoice->fresh()->total)->toBe(1800.0);
+});
+
 it('rejects payment when amount exceeds invoice total', function () {
     $member = Member::factory()->create(['membership_plan_id' => $this->plan->id]);
 

@@ -60,16 +60,20 @@ class StorePaymentRequest extends FormRequest
             return;
         }
 
-        $discountAmount = (float) ($this->input('discount_amount') ?? 0);
+        $discountAmount = Money::round((float) ($this->input('discount_amount') ?? 0));
         $amountPaid = Money::round((float) $this->input('amount_paid'));
         $outstanding = Money::round($invoice->outstandingBalance());
 
-        if ($discountAmount > (float) $invoice->subtotal) {
-            $validator->errors()->add('discount_amount', 'Discount cannot exceed the invoice subtotal.');
+        if (Money::greaterThan($discountAmount, $outstanding)) {
+            $validator->errors()->add('discount_amount', 'Discount cannot exceed the amount due.');
+
+            return;
         }
 
-        if (Money::greaterThan($amountPaid, $outstanding)) {
-            $validator->errors()->add('amount_paid', 'Paid amount cannot exceed the outstanding balance.');
+        $amountDue = Money::round(max(0, $outstanding - $discountAmount));
+
+        if (Money::greaterThan($amountPaid, $amountDue)) {
+            $validator->errors()->add('amount_paid', 'Paid amount cannot exceed the amount due.');
         }
     }
 }

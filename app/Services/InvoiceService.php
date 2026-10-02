@@ -129,6 +129,10 @@ class InvoiceService extends BaseService
         ]);
     }
 
+    /**
+     * Add a discount to the amount still owed.
+     * Existing invoice discounts and payments already received stay in place.
+     */
     public function applyDiscount(Invoice $invoice, float $discountAmount): Invoice
     {
         if ($invoice->isPaid()) {
@@ -141,15 +145,15 @@ class InvoiceService extends BaseService
             throw new InvalidArgumentException('Discount amount cannot be negative.');
         }
 
-        $subtotal = Money::round((float) $invoice->subtotal);
+        $outstanding = Money::round($invoice->outstandingBalance());
 
-        if (Money::greaterThan($discountAmount, $subtotal)) {
-            throw new InvalidArgumentException('Discount cannot exceed the invoice subtotal.');
+        if (Money::greaterThan($discountAmount, $outstanding)) {
+            throw new InvalidArgumentException('Discount cannot exceed the amount due.');
         }
 
         return $this->invoices->update($invoice, [
-            'discount_amount' => $discountAmount,
-            'total' => Money::round(max(0, $subtotal - $discountAmount)),
+            'discount_amount' => Money::round((float) $invoice->discount_amount + $discountAmount),
+            'total' => Money::round(max(0, (float) $invoice->total - $discountAmount)),
         ]);
     }
 

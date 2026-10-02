@@ -99,8 +99,9 @@
                                     <span @class([
                                         'badge',
                                         'text-bg-success' => $invoice->status === App\Enums\InvoiceStatus::Paid,
-                                        'text-bg-warning' => $invoice->status === App\Enums\InvoiceStatus::Unpaid,
+                                        'text-bg-danger' => $invoice->status === App\Enums\InvoiceStatus::Unpaid,
                                         'text-bg-secondary' => $invoice->status === App\Enums\InvoiceStatus::Void,
+                                        'text-bg-warning' => $invoice->status === App\Enums\InvoiceStatus::Partial,
                                     ])>
                                         {{ $invoice->status->label() }}
                                     </span>

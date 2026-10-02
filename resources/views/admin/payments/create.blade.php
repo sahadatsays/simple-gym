@@ -39,7 +39,7 @@
                         @foreach ($invoiceOptions as $invoice)
                             <option value="{{ $invoice['id'] }}" @selected(old('invoice_id') == $invoice['id'])>
                                 {{ $invoice['invoice_number'] }} — {{ $invoice['member_name'] ?? 'Walk-in' }}
-                                ({{ App\Support\MoneyFormatter::format($invoice['total'], $gymCurrency) }})
+                                ({{ App\Support\MoneyFormatter::format($invoice['outstanding_balance'], $gymCurrency) }} due)
                             </option>
                         @endforeach
                     </select>
@@ -78,6 +78,22 @@
                                         <th>Subtotal</th>
                                         <th class="text-end" x-text="formatMoney(selectedInvoice?.subtotal ?? 0)"></th>
                                     </tr>
+                                    <tr x-show="Number(selectedInvoice?.discount_amount || 0) > 0">
+                                        <th>Invoice discount</th>
+                                        <th class="text-end" x-text="formatMoney(selectedInvoice?.discount_amount ?? 0)"></th>
+                                    </tr>
+                                    <tr>
+                                        <th>Total</th>
+                                        <th class="text-end" x-text="formatMoney(selectedInvoice?.total ?? 0)"></th>
+                                    </tr>
+                                    <tr x-show="amountAlreadyPaid > 0">
+                                        <th>Already paid</th>
+                                        <th class="text-end" x-text="formatMoney(amountAlreadyPaid)"></th>
+                                    </tr>
+                                    <tr>
+                                        <th>Amount due</th>
+                                        <th class="text-end" x-text="formatMoney(outstandingBalance)"></th>
+                                    </tr>
                                 </tfoot>
                             </table>
                         </div>
@@ -99,8 +115,10 @@
                         @input="syncAmountPaid()"
                         step="0.01"
                         min="0"
+                        :max="outstandingBalance"
                         @class(['form-control', 'is-invalid' => $errors->has('discount_amount')])
                     >
+                    <div class="form-text">Optional. Reduces the amount due.</div>
                     @error('discount_amount')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
@@ -175,10 +193,6 @@
                 currencySymbol: @js(App\Support\MoneyFormatter::symbol($gymCurrency)),
                 paymentTypeLabels: @js(App\Enums\PaymentType::options()),
 
-                init() {
-                    this.syncInvoicePayment();
-                },
-
                 get selectedInvoice() {
                     return this.invoices.find((invoice) => String(invoice.id) === this.selectedInvoiceId) ?? null;
                 },
@@ -187,14 +201,26 @@
                     return this.paymentTypeLabels[this.paymentType] ?? '—';
                 },
 
-                get totalDue() {
-                    const subtotal = Number(this.selectedInvoice?.subtotal ?? 0);
-                    const discount = Number(this.discountAmount || 0);
-
-                    return Math.max(0, subtotal - discount);
+                get amountAlreadyPaid() {
+                    return Number(this.selectedInvoice?.amount_paid ?? 0);
                 },
 
-                syncInvoicePayment() {
+                get outstandingBalance() {
+                    return Math.max(0, Number(this.selectedInvoice?.outstanding_balance ?? 0));
+                },
+
+                get totalDue() {
+                    const discount = Number(this.discountAmount || 0);
+
+                    return Math.max(0, Number((this.outstandingBalance - discount).toFixed(2)));
+                },
+
+                init() {
+                    const preserveAmount = this.amountPaid !== '' && this.amountPaid !== null;
+                    this.syncInvoicePayment(preserveAmount);
+                },
+
+                syncInvoicePayment(preserveAmount = false) {
                     if (! this.selectedInvoice) {
                         this.paymentType = '';
                         this.amountPaid = '';
@@ -202,10 +228,21 @@
                     }
 
                     this.paymentType = this.selectedInvoice.payment_type;
+
+                    if (preserveAmount) {
+                        return;
+                    }
+
                     this.syncAmountPaid();
                 },
 
                 syncAmountPaid() {
+                    const discount = Number(this.discountAmount || 0);
+
+                    if (discount > this.outstandingBalance) {
+                        this.discountAmount = this.outstandingBalance.toFixed(2);
+                    }
+
                     this.amountPaid = this.totalDue > 0 ? this.totalDue.toFixed(2) : '';
                 },
 
