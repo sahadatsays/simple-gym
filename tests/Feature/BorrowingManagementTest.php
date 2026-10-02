@@ -96,27 +96,69 @@ it('creates an active borrowing with an auto-generated number', function () {
 });
 
 it('shows a borrowing and its repayment history', function () {
+    $recorder = User::factory()->create(['name' => 'Karim Recorder', 'is_active' => true]);
+
     $borrowing = Borrowing::factory()->create([
         'lender_name' => 'Office Depot',
+        'borrowing_date' => '2026-08-01',
+        'due_date' => '2026-09-01',
         'amount' => 2000,
+        'purpose' => 'Flooring',
         'created_by' => $this->admin->id,
     ]);
 
     BorrowingRepayment::factory()->create([
         'borrowing_id' => $borrowing->id,
         'repayment_no' => 'RPY-20260816-00001',
+        'repayment_date' => '2026-08-16',
         'amount' => 500,
+        'payment_method' => PaymentMethod::Cash,
+        'created_by' => $recorder->id,
     ]);
 
     $this->actingAs($this->admin)
         ->get(route('admin.borrowings.show', $borrowing))
         ->assertSuccessful()
-        ->assertSee($borrowing->borrowing_no)
-        ->assertSee('Office Depot')
-        ->assertSee($this->admin->name)
-        ->assertSee('RPY-20260816-00001')
-        ->assertSee('1,500');
+        ->assertSeeInOrder([
+            'Record Repayment',
+            'Borrowing No',
+            $borrowing->borrowing_no,
+            'Lender',
+            'Office Depot',
+            'Borrowing Date',
+            'Original Amount',
+            '2,000',
+            'Total Repaid',
+            '500',
+            'Remaining Amount',
+            '1,500',
+            'Due Date',
+            'Purpose',
+            'Flooring',
+            'Status',
+            'Repayment History',
+            'Repayment No',
+            'Payment Method',
+            'Created By',
+            'RPY-20260816-00001',
+            'Karim Recorder',
+        ]);
 });
+
+it('hides record repayment when nothing remains or the borrowing is closed', function (BorrowingStatus $status) {
+    $borrowing = Borrowing::factory()->create([
+        'amount' => 1000,
+        'status' => $status,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.borrowings.show', $borrowing))
+        ->assertSuccessful()
+        ->assertDontSee('Record Repayment');
+})->with([
+    BorrowingStatus::FullyRepaid,
+    BorrowingStatus::Cancelled,
+]);
 
 it('updates a borrowing', function () {
     $borrowing = Borrowing::factory()->create([

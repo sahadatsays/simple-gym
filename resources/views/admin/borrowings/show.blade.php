@@ -7,108 +7,97 @@
         <x-slot:actions>
             @can('update', $borrowing)
                 @if ($borrowing->acceptsRepayment())
-                    <a href="{{ route('admin.borrowings.repayments.create', ['borrowing_id' => $borrowing->id]) }}" class="btn btn-primary">Record Repayment</a>
+                    <a href="{{ route('admin.borrowings.repayments.create', ['borrowing_id' => $borrowing->id]) }}" class="btn btn-primary">
+                        Record Repayment
+                    </a>
                 @endif
-                <a href="{{ route('admin.borrowings.edit', $borrowing) }}" class="btn btn-light">Edit</a>
+                <a href="{{ route('admin.borrowings.edit', $borrowing) }}" @class(['btn', 'btn-primary' => ! $borrowing->acceptsRepayment(), 'btn-light' => $borrowing->acceptsRepayment()])>
+                    Edit
+                </a>
             @endcan
             <a href="{{ route('admin.borrowings.index') }}" class="btn btn-light">Back to Borrowings</a>
         </x-slot:actions>
     </x-ui.page-header>
 
-    <div class="row g-4">
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h6 fw-semibold mb-3">Borrowing</h2>
-                    <dl class="row sg-profile-list mb-0">
-                        <dt class="col-sm-5">Borrowing No.</dt>
-                        <dd class="col-sm-7">{{ $borrowing->borrowing_no }}</dd>
-
-                        <dt class="col-sm-5">Lender</dt>
-                        <dd class="col-sm-7">{{ $borrowing->lender_name }}</dd>
-
-                        <dt class="col-sm-5">Phone</dt>
-                        <dd class="col-sm-7">{{ $borrowing->lender_phone ?: '—' }}</dd>
-
-                        <dt class="col-sm-5">Borrowing date</dt>
-                        <dd class="col-sm-7">{{ $borrowing->borrowing_date->format('M j, Y') }}</dd>
-
-                        <dt class="col-sm-5">Due date</dt>
-                        <dd class="col-sm-7">{{ $borrowing->due_date?->format('M j, Y') ?? '—' }}</dd>
-
-                        <dt class="col-sm-5">Amount</dt>
-                        <dd class="col-sm-7">{{ App\Support\MoneyFormatter::format($borrowing->amount, $gymCurrency) }}</dd>
-
-                        <dt class="col-sm-5">Total repaid</dt>
-                        <dd class="col-sm-7">{{ App\Support\MoneyFormatter::format($borrowing->total_repaid, $gymCurrency) }}</dd>
-
-                        <dt class="col-sm-5">Remaining</dt>
-                        <dd class="col-sm-7">{{ App\Support\MoneyFormatter::format($borrowing->remaining_amount, $gymCurrency) }}</dd>
-
-                        <dt class="col-sm-5">Payment method</dt>
-                        <dd class="col-sm-7">{{ $borrowing->payment_method->label() }}</dd>
-
-                        <dt class="col-sm-5">Purpose</dt>
-                        <dd class="col-sm-7">{{ $borrowing->purpose ?: '—' }}</dd>
-
-                        <dt class="col-sm-5">Status</dt>
-                        <dd class="col-sm-7">
-                            <span class="sg-status-badge {{ $borrowing->status->badgeClass() }}">
-                                {{ $borrowing->status->label() }}
-                            </span>
-                        </dd>
-
-                        @if ($borrowing->description)
-                            <dt class="col-sm-5">Description</dt>
-                            <dd class="col-sm-7">{{ $borrowing->description }}</dd>
+    <div class="row g-3 g-lg-4 mb-4">
+        <div class="col-12">
+            <x-admin.detail-section title="Borrowing" class="h-100">
+                <x-admin.detail-list>
+                    <x-admin.detail-item label="Borrowing No" :value="$borrowing->borrowing_no" />
+                    <x-admin.detail-item label="Lender">
+                        {{ $borrowing->lender_name }}
+                        @if ($borrowing->lender_phone)
+                            <div class="small text-muted">{{ $borrowing->lender_phone }}</div>
                         @endif
-
-                        @if ($borrowing->creator)
-                            <dt class="col-sm-5">Created by</dt>
-                            <dd class="col-sm-7">{{ $borrowing->creator->name }}</dd>
-                        @endif
-
-                        <dt class="col-sm-5">Recorded</dt>
-                        <dd class="col-sm-7">{{ $borrowing->created_at?->format('M j, Y g:i A') }}</dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h6 fw-semibold mb-3">Repayment history</h2>
-
-                    @if ($borrowing->repayments->isEmpty())
-                        <p class="text-muted mb-0">No repayments recorded. This borrowing can still be deleted.</p>
-                    @else
-                        <p class="text-muted small">These returns are kept. A borrowing with history cannot be deleted.</p>
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>No.</th>
-                                        <th>Date</th>
-                                        <th>Method</th>
-                                        <th class="text-end">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($borrowing->repayments as $repayment)
-                                        <tr>
-                                            <td>{{ $repayment->repayment_no }}</td>
-                                            <td>{{ $repayment->repayment_date->format('M j, Y') }}</td>
-                                            <td>{{ $repayment->payment_method->label() }}</td>
-                                            <td class="text-end">{{ App\Support\MoneyFormatter::format($repayment->amount, $gymCurrency) }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
-                </div>
-            </div>
+                    </x-admin.detail-item>
+                    <x-admin.detail-item label="Borrowing Date" :value="$borrowing->borrowing_date->format('M j, Y')" />
+                    <x-admin.detail-item label="Original Amount" :value="App\Support\MoneyFormatter::format($borrowing->amount, $gymCurrency)" />
+                    <x-admin.detail-item label="Total Repaid" :value="App\Support\MoneyFormatter::format($borrowing->total_repaid, $gymCurrency)" />
+                    <x-admin.detail-item label="Remaining Amount" :value="App\Support\MoneyFormatter::format($borrowing->remaining_amount, $gymCurrency)" />
+                    <x-admin.detail-item label="Due Date" :value="$borrowing->due_date?->format('M j, Y') ?? '—'" />
+                    <x-admin.detail-item label="Purpose" :value="$borrowing->purpose ?: '—'" />
+                    <x-admin.detail-item label="Status">
+                        <span class="sg-status-badge {{ $borrowing->status->badgeClass() }}">
+                            {{ $borrowing->status->label() }}
+                        </span>
+                    </x-admin.detail-item>
+                </x-admin.detail-list>
+            </x-admin.detail-section>
         </div>
     </div>
+
+    <x-admin.detail-table-section title="Repayment History" class="mb-4">
+        <table class="table table-hover align-middle mb-0 sg-data-table">
+            <thead>
+                <tr>
+                    <th class="ps-4">Repayment No</th>
+                    <th>Date</th>
+                    <th class="text-end">Amount</th>
+                    <th>Payment Method</th>
+                    <th class="pe-4">Created By</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($borrowing->repayments as $repayment)
+                    <tr>
+                        <td class="ps-4 text-nowrap">{{ $repayment->repayment_no }}</td>
+                        <td class="text-nowrap">{{ $repayment->repayment_date->format('M j, Y') }}</td>
+                        <td class="text-end text-nowrap">{{ App\Support\MoneyFormatter::format($repayment->amount, $gymCurrency) }}</td>
+                        <td>{{ $repayment->payment_method->label() }}</td>
+                        <td class="pe-4">{{ $repayment->creator?->name ?? '—' }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="sg-empty-state">
+                                <h3 class="h6 mb-1">No repayments recorded</h3>
+                                <p class="text-muted small mb-0">Returns against this borrowing will appear here.</p>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </x-admin.detail-table-section>
+
+    @if ($borrowing->description || $borrowing->creator)
+        <x-admin.detail-section title="Additional Information">
+            <x-admin.detail-list>
+                <x-admin.detail-item label="Payment Method" :value="$borrowing->payment_method->label()" />
+                @if ($borrowing->creator)
+                    <x-admin.detail-item label="Created By" :value="$borrowing->creator->name" />
+                @endif
+                @if ($borrowing->created_at)
+                    <x-admin.detail-item label="Recorded" :value="$borrowing->created_at->format('M j, Y g:i A')" />
+                @endif
+            </x-admin.detail-list>
+
+            @if ($borrowing->description)
+                <div class="mt-3 pt-3 border-top">
+                    <h3 class="h6 fw-semibold mb-2">Description</h3>
+                    <p class="mb-0">{{ $borrowing->description }}</p>
+                </div>
+            @endif
+        </x-admin.detail-section>
+    @endif
 @endsection

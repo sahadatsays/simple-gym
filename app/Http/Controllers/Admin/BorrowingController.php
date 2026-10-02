@@ -56,7 +56,7 @@ class BorrowingController extends Controller
 
         $borrowing->load([
             'creator',
-            'repayments' => fn ($query) => $query->orderBy('repayment_date')->orderBy('id'),
+            'repayments' => fn ($query) => $query->with('creator')->orderBy('repayment_date')->orderBy('id'),
         ]);
 
         return view('admin.borrowings.show', [
