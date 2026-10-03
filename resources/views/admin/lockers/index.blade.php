@@ -73,6 +73,9 @@
                                     <a href="{{ route('admin.lockers.show', $locker) }}" class="fw-semibold text-decoration-none">
                                         {{ $locker->locker_number }}
                                     </a>
+                                    @if ($locker->location)
+                                        <div class="small text-muted d-md-none">{{ $locker->location }}</div>
+                                    @endif
                                     @if ($locker->notes)
                                         <div class="small text-muted text-truncate d-none d-md-block" style="max-width: 220px;">
                                             {{ $locker->notes }}

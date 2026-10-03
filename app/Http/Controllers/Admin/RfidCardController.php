@@ -48,10 +48,14 @@ class RfidCardController extends Controller
     {
         $this->authorize('create', RfidCard::class);
 
-        $this->rfidCardService->register(
-            $request->validated('card_number'),
-            $request->user()?->id,
-        );
+        try {
+            $this->rfidCardService->register(
+                $request->validated('card_number'),
+                $request->user()?->id,
+            );
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['card_number' => $exception->getMessage()]);
+        }
 
         Flash::success('RFID card registered successfully.');
 

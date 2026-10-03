@@ -99,7 +99,11 @@ class RfidCard extends Model
             return false;
         }
 
-        return ! $member->rfidCards()->where('status', RfidCardStatus::Assigned)->exists();
+        if ($member->relationLoaded('activeRfidCard')) {
+            return $member->activeRfidCard === null;
+        }
+
+        return ! $member->activeRfidCard()->exists();
     }
 
     /**

@@ -69,6 +69,7 @@ class MemberController extends Controller
 
         $member->load([
             'membershipPlan',
+            'paidRfidCardFeeInvoices',
             'activeRfidCard.openAssignment',
             'rfidCardAssignments.rfidCard',
             'lockerReservations.locker',

@@ -76,7 +76,7 @@ it('queues device user sync when replacing a member card', function () {
         'membership_expires_at' => now()->addMonth(),
     ]);
 
-    RfidCard::factory()->create([
+    $oldCard = RfidCard::factory()->create([
         'card_number' => '9999999',
         'status' => RfidCardStatus::Assigned,
         'member_id' => $member->id,
@@ -90,10 +90,11 @@ it('queues device user sync when replacing a member card', function () {
         ->assertRedirect(route('admin.rfid-cards.index'));
 
     $newCard = RfidCard::query()->where('card_number', '1233447')->first();
+    $commands = ZktecoCommand::query()->orderBy('id')->pluck('command');
 
-    expect(ZktecoCommand::query()->count())->toBe(1)
-        ->and(ZktecoCommand::query()->value('command'))
-        ->toContain('Pin='.$newCard->id)
+    expect($commands)->toHaveCount(2)
+        ->and($commands[0])->toBe('DATA DELETE user Pin='.$oldCard->id)
+        ->and($commands[1])->toContain('Pin='.$newCard->id)
         ->toContain('CardNo=1233447');
 });
 

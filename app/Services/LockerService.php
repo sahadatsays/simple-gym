@@ -7,6 +7,7 @@ use App\Enums\LockerStatus;
 use App\Models\Locker;
 use App\Support\ActivityLogger;
 use App\Support\Money;
+use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
 
 class LockerService extends BaseService
@@ -26,7 +27,11 @@ class LockerService extends BaseService
             $payload['monthly_fee'] = Money::round((float) ($payload['monthly_fee'] ?? 0));
             $payload['created_by'] = $createdBy;
 
-            $locker = $this->lockers->create($payload);
+            try {
+                $locker = $this->lockers->create($payload);
+            } catch (UniqueConstraintViolationException) {
+                throw new InvalidArgumentException('This locker number is already registered.');
+            }
 
             $this->activityLogger->log('locker.created', $locker, 'Locker created', [
                 'locker_number' => $locker->locker_number,

@@ -20,6 +20,7 @@ use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
 use App\Services\FinancialSummaryService;
 use App\Services\PaymentService;
+use App\Services\RfidCardService;
 use App\Support\DashboardDateRange;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -699,6 +700,37 @@ it('does not collect a card fee when settings have no charge', function () {
 
     expect(Invoice::query()->count())->toBe(0)
         ->and((float) $card->fresh()->card_fee)->toBe(0.0);
+});
+
+it('rejects a duplicate card number without creating another card', function () {
+    app(RfidCardService::class)->register('RFID-DUP', $this->admin->id);
+
+    expect(fn () => app(RfidCardService::class)->register('RFID-DUP', $this->admin->id))
+        ->toThrow(InvalidArgumentException::class, 'already registered');
+
+    expect(RfidCard::query()->where('card_number', 'RFID-DUP')->count())->toBe(1);
+});
+
+it('does not charge a replacement when the member has no active card', function () {
+    GymSetting::query()->first()->update([
+        'rfid_replacement_card_fee' => 40,
+    ]);
+
+    $member = Member::factory()->create();
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.rfid-cards.index'))
+        ->post(route('admin.rfid-cards.replace'), [
+            'member_id' => $member->id,
+            'card_number' => 'RFID-NO-ACTIVE',
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect(route('admin.rfid-cards.index'))
+        ->assertSessionHas('flash.message', 'This member does not have an active card to replace.');
+
+    expect(RfidCard::query()->where('card_number', 'RFID-NO-ACTIVE')->exists())->toBeFalse()
+        ->and(Invoice::query()->count())->toBe(0)
+        ->and(Payment::query()->count())->toBe(0);
 });
 
 it('denies rfid management without permission', function () {

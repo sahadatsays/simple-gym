@@ -14,6 +14,7 @@ use App\Models\RfidCard;
 use App\Models\RfidCardAssignment;
 use App\Support\ActivityLogger;
 use App\Support\Money;
+use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
 
 class RfidCardService extends BaseService
@@ -30,13 +31,7 @@ class RfidCardService extends BaseService
     public function register(string $cardNumber, ?int $createdBy): RfidCard
     {
         return $this->transaction(function () use ($cardNumber, $createdBy): RfidCard {
-            $card = $this->rfidCards->create([
-                'card_number' => $cardNumber,
-                'card_fee' => 0,
-                'deposit_amount' => 0,
-                'status' => RfidCardStatus::Available,
-                'created_by' => $createdBy,
-            ]);
+            $card = $this->createAvailableCard($cardNumber, $createdBy);
 
             $this->activityLogger->log('rfid_card.registered', $card, 'RFID card registered', [
                 'card_number' => $card->card_number,
@@ -49,6 +44,7 @@ class RfidCardService extends BaseService
     public function assign(RfidCard $card, Member $member, ?string $paymentMethod = null): RfidCard
     {
         return $this->transaction(function () use ($card, $member, $paymentMethod): RfidCard {
+            $member = $this->lockMember($member);
             $card = $this->lockCard($card);
 
             $this->assertCardCanBeAssigned($card);
@@ -73,11 +69,7 @@ class RfidCardService extends BaseService
     public function issue(Member $member, string $cardNumber, ?string $paymentMethod = null, ?int $createdBy = null): RfidCard
     {
         return $this->transaction(function () use ($member, $cardNumber, $paymentMethod, $createdBy): RfidCard {
-            $member = Member::query()->whereKey($member->id)->lockForUpdate()->first();
-
-            if ($member === null) {
-                throw new InvalidArgumentException('The selected member was not found.');
-            }
+            $member = $this->lockMember($member);
 
             if ($member->activeRfidCard()->exists()) {
                 throw new InvalidArgumentException('This member already has an active card. Replace it instead.');
@@ -86,13 +78,7 @@ class RfidCardService extends BaseService
             $card = $this->rfidCards->findByCardNumber($cardNumber);
 
             if ($card === null) {
-                $card = $this->rfidCards->create([
-                    'card_number' => $cardNumber,
-                    'card_fee' => 0,
-                    'deposit_amount' => 0,
-                    'status' => RfidCardStatus::Available,
-                    'created_by' => $createdBy,
-                ]);
+                $card = $this->createAvailableCard($cardNumber, $createdBy);
             }
 
             return $this->assign($card, $member, $paymentMethod);
@@ -102,16 +88,16 @@ class RfidCardService extends BaseService
     public function replace(Member $member, string $cardNumber, ?string $paymentMethod = null, ?int $createdBy = null): RfidCard
     {
         return $this->transaction(function () use ($member, $cardNumber, $paymentMethod, $createdBy): RfidCard {
+            $member = $this->lockMember($member);
+
+            if (! $member->activeRfidCard()->lockForUpdate()->exists()) {
+                throw new InvalidArgumentException('This member does not have an active card to replace.');
+            }
+
             $card = $this->rfidCards->findByCardNumber($cardNumber);
 
             if ($card === null) {
-                $card = $this->rfidCards->create([
-                    'card_number' => $cardNumber,
-                    'card_fee' => 0,
-                    'deposit_amount' => 0,
-                    'status' => RfidCardStatus::Available,
-                    'created_by' => $createdBy,
-                ]);
+                $card = $this->createAvailableCard($cardNumber, $createdBy);
             }
 
             $card = $this->lockCard($card);
@@ -297,7 +283,12 @@ class RfidCardService extends BaseService
         }
 
         return $this->transaction(function () use ($card, $member): RfidCard {
+            $member = $this->lockMember($member);
             $card = $this->lockCard($card);
+
+            if ($member->activeRfidCard()->exists()) {
+                throw new InvalidArgumentException('This member already has an active RFID card.');
+            }
 
             $this->setOpenAssignmentStatus($card, RfidCardStatus::Assigned);
 
@@ -476,7 +467,8 @@ class RfidCardService extends BaseService
             ->get();
 
         foreach ($cards as $card) {
-            $this->closeAssignment($card, RfidCardStatus::Returned);
+            $closedCard = $this->closeAssignment($card, RfidCardStatus::Returned);
+            $this->queueDeviceAccessRevoke($member, $closedCard);
         }
     }
 
@@ -511,6 +503,32 @@ class RfidCardService extends BaseService
             ->update([
                 'status' => $status,
             ]);
+    }
+
+    private function lockMember(Member $member): Member
+    {
+        $locked = Member::query()->whereKey($member->id)->lockForUpdate()->first();
+
+        if ($locked === null) {
+            throw new InvalidArgumentException('The selected member was not found.');
+        }
+
+        return $locked;
+    }
+
+    private function createAvailableCard(string $cardNumber, ?int $createdBy): RfidCard
+    {
+        try {
+            return $this->rfidCards->create([
+                'card_number' => $cardNumber,
+                'card_fee' => 0,
+                'deposit_amount' => 0,
+                'status' => RfidCardStatus::Available,
+                'created_by' => $createdBy,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            throw new InvalidArgumentException('This card number is already registered.');
+        }
     }
 
     private function lockCard(RfidCard $card): RfidCard

@@ -3,6 +3,7 @@
 use App\Enums\LockerStatus;
 use App\Models\Locker;
 use App\Models\User;
+use App\Services\LockerService;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -105,6 +106,23 @@ it('rejects a duplicate locker number and a negative monthly fee', function () {
         ->assertSessionHasErrors(['locker_number', 'monthly_fee']);
 
     expect(Locker::query()->count())->toBe(1);
+});
+
+it('reports a duplicate locker number from the service', function () {
+    $service = app(LockerService::class);
+    $service->create([
+        'locker_number' => 'A-DUP',
+        'monthly_fee' => 0,
+        'status' => LockerStatus::Available->value,
+    ], $this->admin->id);
+
+    expect(fn () => $service->create([
+        'locker_number' => 'A-DUP',
+        'monthly_fee' => 0,
+        'status' => LockerStatus::Available->value,
+    ], $this->admin->id))->toThrow(InvalidArgumentException::class, 'already registered');
+
+    expect(Locker::query()->where('locker_number', 'A-DUP')->count())->toBe(1);
 });
 
 it('reserves an available locker', function () {

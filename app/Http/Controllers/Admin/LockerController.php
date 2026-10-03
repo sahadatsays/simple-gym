@@ -40,10 +40,14 @@ class LockerController extends Controller
 
     public function store(StoreLockerRequest $request): RedirectResponse
     {
-        $locker = $this->lockerService->create(
-            $request->validated(),
-            $request->user()?->id,
-        );
+        try {
+            $locker = $this->lockerService->create(
+                $request->validated(),
+                $request->user()?->id,
+            );
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['locker_number' => $exception->getMessage()]);
+        }
 
         Flash::success('Locker created successfully.');
 

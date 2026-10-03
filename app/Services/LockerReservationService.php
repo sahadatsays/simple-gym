@@ -62,19 +62,26 @@ class LockerReservationService extends BaseService
     public function renew(LockerReservation $reservation, ?string $paymentMethod, ?int $createdBy): LockerReservation
     {
         return $this->transaction(function () use ($reservation, $paymentMethod, $createdBy): LockerReservation {
+            $reservation->loadMissing('locker');
+
+            if ($reservation->locker === null) {
+                throw new InvalidArgumentException('This reservation cannot be renewed.');
+            }
+
+            $locker = $this->lockLocker($reservation->locker);
             $locked = LockerReservation::query()->whereKey($reservation->id)->lockForUpdate()->first();
 
             if ($locked === null || $locked->status === LockerReservationStatus::Cancelled) {
                 throw new InvalidArgumentException('A cancelled reservation cannot be renewed.');
             }
 
-            $locked->load(['locker', 'member']);
+            $locked->load('member');
 
-            if ($locked->locker === null || $locked->member === null) {
+            if ($locked->member === null) {
                 throw new InvalidArgumentException('This reservation cannot be renewed.');
             }
 
-            if (! $locked->locker->canBeReserved()) {
+            if (! $locker->canBeReserved()) {
                 throw new InvalidArgumentException('Disabled or maintenance lockers cannot be renewed.');
             }
 
@@ -87,7 +94,7 @@ class LockerReservationService extends BaseService
             ];
 
             $renewal = $this->reserve(
-                $locked->locker,
+                $locker,
                 $locked->member,
                 Carbon::parse($period['start_date'])->format('Y-m'),
                 $paymentMethod,
@@ -112,6 +119,13 @@ class LockerReservationService extends BaseService
     public function cancel(LockerReservation $reservation): LockerReservation
     {
         return $this->transaction(function () use ($reservation): LockerReservation {
+            $reservation->loadMissing('locker');
+
+            if ($reservation->locker === null) {
+                throw new InvalidArgumentException('The locker for this reservation was not found.');
+            }
+
+            $locker = $this->lockLocker($reservation->locker);
             $locked = LockerReservation::query()->whereKey($reservation->id)->lockForUpdate()->first();
 
             if ($locked === null || ! $locked->isActive()) {
@@ -122,7 +136,6 @@ class LockerReservationService extends BaseService
                 'status' => LockerReservationStatus::Cancelled,
             ]);
 
-            $locker = $this->lockLocker($locked->locker()->first() ?? throw new InvalidArgumentException('The locker for this reservation was not found.'));
             $this->releaseLockerIfIdle($locker);
 
             $this->activityLogger->log('locker_reservation.cancelled', $locked, 'Locker reservation cancelled', [
@@ -139,26 +152,16 @@ class LockerReservationService extends BaseService
             $lockerIds = LockerReservation::query()
                 ->where('status', LockerReservationStatus::Active)
                 ->whereDate('end_date', '<', today())
+                ->orderBy('locker_id')
                 ->pluck('locker_id')
                 ->unique()
                 ->values();
-
-            if ($lockerIds->isEmpty()) {
-                return;
-            }
-
-            LockerReservation::query()
-                ->where('status', LockerReservationStatus::Active)
-                ->whereDate('end_date', '<', today())
-                ->update([
-                    'status' => LockerReservationStatus::Expired->value,
-                ]);
 
             foreach ($lockerIds as $lockerId) {
                 $locker = Locker::query()->whereKey($lockerId)->lockForUpdate()->first();
 
                 if ($locker !== null) {
-                    $this->releaseLockerIfIdle($locker);
+                    $this->expireDueForLocker($locker);
                 }
             }
         });
