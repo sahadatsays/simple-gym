@@ -99,6 +99,13 @@ return [
                     'match' => 'admin.lockers.*',
                     'icon' => 'lock',
                 ],
+                [
+                    'key' => 'locker_reservations',
+                    'route' => 'admin.locker-reservations.index',
+                    'permission' => 'lockers.view',
+                    'match' => 'admin.locker-reservations.*',
+                    'icon' => 'calendar2-check',
+                ],
             ],
         ],
         [

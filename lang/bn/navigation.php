@@ -23,6 +23,7 @@ return [
         'renew' => 'নবায়ন',
         'rfid' => 'আরএফআইডি',
         'lockers' => 'লকার',
+        'locker_reservations' => 'লকার সংরক্ষণ',
         'payments' => 'পেমেন্ট',
         'invoices' => 'ইনভয়েস',
         'investments' => 'বিনিয়োগ',

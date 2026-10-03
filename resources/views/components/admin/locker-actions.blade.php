@@ -24,6 +24,14 @@
             </li>
         @endcan
 
+        @can('create', App\Models\LockerReservation::class)
+            @if ($locker->canBeReserved())
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.locker-reservations.create', ['locker_id' => $locker->id]) }}">Reserve</a>
+                </li>
+            @endif
+        @endcan
+
         @can('delete', $locker)
             <li><hr class="dropdown-divider"></li>
             <li>

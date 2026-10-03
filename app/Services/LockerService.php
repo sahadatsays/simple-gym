@@ -60,6 +60,10 @@ class LockerService extends BaseService
     public function delete(Locker $locker): void
     {
         $this->transaction(function () use ($locker): void {
+            if ($locker->reservations()->exists()) {
+                throw new InvalidArgumentException('This locker has reservation history and cannot be deleted.');
+            }
+
             $this->activityLogger->log('locker.deleted', $locker, 'Locker deleted', [
                 'locker_number' => $locker->locker_number,
             ]);

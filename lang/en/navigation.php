@@ -23,6 +23,7 @@ return [
         'renew' => 'Renew',
         'rfid' => 'RFID',
         'lockers' => 'Lockers',
+        'locker_reservations' => 'Locker Reservations',
         'payments' => 'Payments',
         'invoices' => 'Invoices',
         'investments' => 'Investments',

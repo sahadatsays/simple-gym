@@ -54,7 +54,7 @@ class LockerController extends Controller
     {
         $this->authorize('view', $locker);
 
-        $locker->load('creator');
+        $locker->load(['creator', 'reservations.member', 'reservations.invoice']);
 
         return view('admin.lockers.show', [
             'locker' => $locker,
@@ -87,7 +87,13 @@ class LockerController extends Controller
     {
         $this->authorize('delete', $locker);
 
-        $this->lockerService->delete($locker);
+        try {
+            $this->lockerService->delete($locker);
+        } catch (InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
 
         Flash::success('Locker deleted successfully.');
 

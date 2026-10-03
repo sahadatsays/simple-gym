@@ -15,6 +15,7 @@ use App\Contracts\Repositories\InvestmentCategoryRepositoryInterface;
 use App\Contracts\Repositories\InvestmentRepositoryInterface;
 use App\Contracts\Repositories\InvoiceRepositoryInterface;
 use App\Contracts\Repositories\LockerRepositoryInterface;
+use App\Contracts\Repositories\LockerReservationRepositoryInterface;
 use App\Contracts\Repositories\MemberRepositoryInterface;
 use App\Contracts\Repositories\MembershipPlanRepositoryInterface;
 use App\Contracts\Repositories\PaymentRepositoryInterface;
@@ -34,6 +35,7 @@ use App\Repositories\InvestmentCategoryRepository;
 use App\Repositories\InvestmentRepository;
 use App\Repositories\InvoiceRepository;
 use App\Repositories\LockerRepository;
+use App\Repositories\LockerReservationRepository;
 use App\Repositories\MemberRepository;
 use App\Repositories\MembershipPlanRepository;
 use App\Repositories\PaymentRepository;
@@ -53,6 +55,7 @@ class RepositoryServiceProvider extends ServiceProvider
         MemberRepositoryInterface::class => MemberRepository::class,
         InvoiceRepositoryInterface::class => InvoiceRepository::class,
         LockerRepositoryInterface::class => LockerRepository::class,
+        LockerReservationRepositoryInterface::class => LockerReservationRepository::class,
         PaymentRepositoryInterface::class => PaymentRepository::class,
         InvestmentRepositoryInterface::class => InvestmentRepository::class,
         InvestmentCategoryRepositoryInterface::class => InvestmentCategoryRepository::class,

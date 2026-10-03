@@ -141,10 +141,34 @@ class InvoiceService extends BaseService
 
         $charges = $this->buildChargeSummary($lineItems);
 
+        return $this->createChargeInvoice($member, InvoiceType::RfidCard, $charges);
+    }
+
+    public function createLockerInvoice(Member $member, string $description, float $amount): ?Invoice
+    {
+        if (! Money::greaterThan($amount, 0)) {
+            return null;
+        }
+
+        $charges = $this->buildChargeSummary([
+            [
+                'description' => $description,
+                'amount' => Money::round($amount),
+            ],
+        ]);
+
+        return $this->createChargeInvoice($member, InvoiceType::Locker, $charges);
+    }
+
+    /**
+     * @param  array{line_items: array<int, array{description: string, amount: float}>, subtotal: float, discount_amount: float, total: float}  $charges
+     */
+    private function createChargeInvoice(Member $member, InvoiceType $type, array $charges): Invoice
+    {
         return $this->invoices->create([
             'member_id' => $member->id,
             'membership_plan_id' => null,
-            'type' => InvoiceType::RfidCard,
+            'type' => $type,
             'invoice_number' => $this->invoices->nextInvoiceNumber(),
             'subtotal' => $charges['subtotal'],
             'discount_amount' => $charges['discount_amount'],
@@ -257,6 +281,10 @@ class InvoiceService extends BaseService
 
         if ($invoice->type === InvoiceType::RfidCard) {
             return PaymentType::RfidCard;
+        }
+
+        if ($invoice->type === InvoiceType::Locker) {
+            return PaymentType::Locker;
         }
 
         $descriptions = collect($invoice->line_items ?? [])
