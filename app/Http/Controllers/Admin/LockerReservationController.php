@@ -6,12 +6,14 @@ use App\Contracts\Repositories\LockerReservationRepositoryInterface;
 use App\Enums\LockerStatus;
 use App\Exceptions\PaymentFailedException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\IndexLockerRenewalRequest;
 use App\Http\Requests\Admin\IndexLockerReservationRequest;
 use App\Http\Requests\Admin\RenewLockerReservationRequest;
 use App\Http\Requests\Admin\StoreLockerReservationRequest;
 use App\Models\Locker;
 use App\Models\LockerReservation;
 use App\Models\Member;
+use App\Services\GymSettingService;
 use App\Services\LockerReservationService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +25,7 @@ class LockerReservationController extends Controller
     public function __construct(
         private LockerReservationRepositoryInterface $reservations,
         private LockerReservationService $reservationService,
+        private GymSettingService $gymSettings,
     ) {}
 
     public function index(IndexLockerReservationRequest $request): View
@@ -37,9 +40,28 @@ class LockerReservationController extends Controller
         ]);
     }
 
+    public function renewals(IndexLockerRenewalRequest $request): View
+    {
+        $this->reservationService->expireDueReservations();
+
+        $filters = $request->validated();
+
+        return view('admin.locker-reservations.renewals', [
+            'reservations' => $this->reservations->paginateRenewalReview(
+                $filters,
+                $this->gymSettings->membershipReminderDays(),
+                config('gym.pagination.per_page'),
+            ),
+            'filters' => $filters,
+            'reminderDays' => $this->gymSettings->membershipReminderDays(),
+        ]);
+    }
+
     public function create(): View
     {
         $this->authorize('create', LockerReservation::class);
+
+        $this->reservationService->expireDueReservations();
 
         return view('admin.locker-reservations.create', [
             'members' => Member::query()->orderBy('name')->get(['id', 'name', 'member_code']),

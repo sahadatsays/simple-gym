@@ -9,6 +9,9 @@
                 <a href="{{ route('admin.locker-reservations.index') }}" class="btn btn-light">
                     Reservations
                 </a>
+                <a href="{{ route('admin.locker-reservations.renewals') }}" class="btn btn-light">
+                    Renewals
+                </a>
             @endcan
             @can('create', App\Models\Locker::class)
                 <a href="{{ route('admin.lockers.create') }}" class="btn btn-primary">

@@ -42,4 +42,34 @@ class LockerReservationRepository extends BaseRepository implements LockerReserv
             ->paginate($perPage)
             ->withQueryString();
     }
+
+    /**
+     * @param  array{search?: string|null, direction?: string|null}  $filters
+     * @return LengthAwarePaginator<int, LockerReservation>
+     */
+    public function paginateRenewalReview(array $filters, int $reminderDays, int $perPage): LengthAwarePaginator
+    {
+        $direction = ($filters['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+
+        return $this->newQuery()
+            ->with(['locker', 'member'])
+            ->renewalReview($reminderDays)
+            ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->where(function ($nested) use ($search): void {
+                    $nested->whereHas('locker', function ($locker) use ($search): void {
+                        $locker->where('locker_number', 'like', "%{$search}%")
+                            ->orWhere('location', 'like', "%{$search}%");
+                    })->orWhereHas('member', function ($member) use ($search): void {
+                        $member->where('name', 'like', "%{$search}%")
+                            ->orWhere('member_code', 'like', "%{$search}%");
+                    });
+                });
+            })
+            ->orderBy('end_date', $direction)
+            ->orderBy('id')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
 }

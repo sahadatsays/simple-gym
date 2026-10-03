@@ -106,6 +106,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::resource('members', MemberController::class);
         Route::resource('lockers', LockerController::class);
         Route::get('locker-reservations', [LockerReservationController::class, 'index'])->name('locker-reservations.index');
+        Route::get('locker-reservations/renewals', [LockerReservationController::class, 'renewals'])->name('locker-reservations.renewals');
         Route::get('locker-reservations/create', [LockerReservationController::class, 'create'])->name('locker-reservations.create');
         Route::post('locker-reservations', [LockerReservationController::class, 'store'])->name('locker-reservations.store');
         Route::get('locker-reservations/{locker_reservation}', [LockerReservationController::class, 'show'])->name('locker-reservations.show');

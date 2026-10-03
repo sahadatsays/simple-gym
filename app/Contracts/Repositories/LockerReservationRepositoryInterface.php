@@ -15,4 +15,10 @@ interface LockerReservationRepositoryInterface extends RepositoryInterface
      * @return LengthAwarePaginator<int, LockerReservation>
      */
     public function paginateWithFilters(array $filters, int $perPage): LengthAwarePaginator;
+
+    /**
+     * @param  array{search?: string|null, direction?: string|null}  $filters
+     * @return LengthAwarePaginator<int, LockerReservation>
+     */
+    public function paginateRenewalReview(array $filters, int $reminderDays, int $perPage): LengthAwarePaginator;
 }

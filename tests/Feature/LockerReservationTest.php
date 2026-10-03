@@ -374,6 +374,171 @@ it('lets staff view reservations but not create them', function () {
         ->assertForbidden();
 });
 
+it('shows an expired locker as available on the reserve list', function () {
+    $locker = Locker::factory()->create([
+        'locker_number' => 'L-EXP',
+        'status' => LockerStatus::Reserved,
+        'monthly_fee' => 0,
+    ]);
+    LockerReservation::factory()->create([
+        'locker_id' => $locker->id,
+        'start_date' => now()->subMonth()->startOfMonth()->toDateString(),
+        'end_date' => now()->subDay()->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.lockers.index'))
+        ->assertSuccessful()
+        ->assertSee('L-EXP')
+        ->assertSee('Available')
+        ->assertSee(route('admin.locker-reservations.create', ['locker_id' => $locker->id]), false)
+        ->assertSee(route('admin.locker-reservations.renewals'), false);
+
+    expect($locker->fresh()->status)->toBe(LockerStatus::Available);
+});
+
+it('lists expired and soon-ending reservations for renewal', function () {
+    $expiredLocker = Locker::factory()->create([
+        'locker_number' => 'L-OLD',
+        'status' => LockerStatus::Reserved,
+    ]);
+    LockerReservation::factory()->create([
+        'locker_id' => $expiredLocker->id,
+        'start_date' => now()->subMonths(2)->startOfMonth()->toDateString(),
+        'end_date' => now()->subMonth()->endOfMonth()->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $soonLocker = Locker::factory()->create([
+        'locker_number' => 'L-SOON',
+        'status' => LockerStatus::Reserved,
+    ]);
+    LockerReservation::factory()->create([
+        'locker_id' => $soonLocker->id,
+        'start_date' => now()->startOfMonth()->toDateString(),
+        'end_date' => now()->addDays(2)->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $laterLocker = Locker::factory()->create([
+        'locker_number' => 'L-LATER',
+        'status' => LockerStatus::Reserved,
+    ]);
+    LockerReservation::factory()->create([
+        'locker_id' => $laterLocker->id,
+        'start_date' => now()->startOfMonth()->toDateString(),
+        'end_date' => now()->addDays(40)->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $cancelledLocker = Locker::factory()->create([
+        'locker_number' => 'L-CAN',
+        'status' => LockerStatus::Available,
+    ]);
+    LockerReservation::factory()->create([
+        'locker_id' => $cancelledLocker->id,
+        'start_date' => now()->subMonth()->startOfMonth()->toDateString(),
+        'end_date' => now()->subDay()->toDateString(),
+        'status' => LockerReservationStatus::Cancelled,
+    ]);
+
+    $renewedLocker = Locker::factory()->create([
+        'locker_number' => 'L-DONE',
+        'status' => LockerStatus::Reserved,
+    ]);
+    LockerReservation::factory()->create([
+        'locker_id' => $renewedLocker->id,
+        'start_date' => now()->subMonth()->startOfMonth()->toDateString(),
+        'end_date' => now()->subMonth()->endOfMonth()->toDateString(),
+        'status' => LockerReservationStatus::Expired,
+    ]);
+    LockerReservation::factory()->create([
+        'locker_id' => $renewedLocker->id,
+        'start_date' => now()->startOfMonth()->toDateString(),
+        'end_date' => now()->addDays(20)->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.locker-reservations.renewals'))
+        ->assertSuccessful()
+        ->assertSee('L-OLD')
+        ->assertSee('L-SOON')
+        ->assertSee('table-responsive')
+        ->assertDontSee('L-LATER')
+        ->assertDontSee('L-CAN')
+        ->assertDontSee('L-DONE');
+});
+
+it('renews an expired reservation from the renewal list', function () {
+    $member = Member::factory()->create();
+    $locker = Locker::factory()->create([
+        'locker_number' => 'L-REN',
+        'monthly_fee' => 120,
+        'status' => LockerStatus::Reserved,
+    ]);
+    $reservation = LockerReservation::factory()->create([
+        'locker_id' => $locker->id,
+        'member_id' => $member->id,
+        'start_date' => now()->subMonth()->startOfMonth()->toDateString(),
+        'end_date' => now()->subMonth()->endOfMonth()->toDateString(),
+        'monthly_fee' => 120,
+        'status' => LockerReservationStatus::Active,
+    ]);
+    $originalEnd = $reservation->end_date->toDateString();
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.locker-reservations.renewals'))
+        ->assertSuccessful()
+        ->assertSee(route('admin.locker-reservations.renew', $reservation), false);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.locker-reservations.renew', $reservation), [
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect();
+
+    $reservation->refresh();
+    $renewal = LockerReservation::query()->whereKeyNot($reservation->id)->first();
+
+    expect($reservation->status)->toBe(LockerReservationStatus::Expired)
+        ->and($reservation->end_date->toDateString())->toBe($originalEnd)
+        ->and($reservation->invoice_id)->toBeNull()
+        ->and($renewal)->not->toBeNull()
+        ->and($renewal->status)->toBe(LockerReservationStatus::Active)
+        ->and($renewal->start_date->toDateString())->toBe($reservation->end_date->copy()->addDay()->toDateString())
+        ->and($renewal->invoice_id)->not->toBeNull()
+        ->and(Invoice::query()->count())->toBe(1)
+        ->and(Payment::query()->count())->toBe(1)
+        ->and(Payment::query()->first()->type)->toBe(PaymentType::Locker);
+});
+
+it('lets staff open the renewal list without the renew action', function () {
+    $staff = User::factory()->create([
+        'username' => 'staffuser',
+        'is_active' => true,
+    ]);
+    $staff->assignRole('staff');
+
+    $locker = Locker::factory()->create([
+        'locker_number' => 'L-VIEW',
+        'status' => LockerStatus::Reserved,
+    ]);
+    $reservation = LockerReservation::factory()->create([
+        'locker_id' => $locker->id,
+        'start_date' => now()->subMonth()->startOfMonth()->toDateString(),
+        'end_date' => now()->subDay()->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $this->actingAs($staff)
+        ->get(route('admin.locker-reservations.renewals'))
+        ->assertSuccessful()
+        ->assertSee('L-VIEW')
+        ->assertDontSee(route('admin.locker-reservations.renew', $reservation), false);
+});
+
 it('does not delete a locker that has reservation history', function () {
     $reservation = LockerReservation::factory()->create();
 

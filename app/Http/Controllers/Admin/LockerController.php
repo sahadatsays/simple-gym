@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\IndexLockerRequest;
 use App\Http\Requests\Admin\StoreLockerRequest;
 use App\Http\Requests\Admin\UpdateLockerRequest;
 use App\Models\Locker;
+use App\Services\LockerReservationService;
 use App\Services\LockerService;
 use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
@@ -19,10 +20,13 @@ class LockerController extends Controller
     public function __construct(
         private LockerRepositoryInterface $lockers,
         private LockerService $lockerService,
+        private LockerReservationService $reservationService,
     ) {}
 
     public function index(IndexLockerRequest $request): View
     {
+        $this->reservationService->expireDueReservations();
+
         $filters = $request->validated();
 
         return view('admin.lockers.index', [
@@ -57,6 +61,8 @@ class LockerController extends Controller
     public function show(Locker $locker): View
     {
         $this->authorize('view', $locker);
+
+        $this->reservationService->expireDueReservations();
 
         $locker->load(['creator', 'reservations.member', 'reservations.invoice']);
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\LockerReservationStatus;
 use Database\Factories\LockerReservationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -72,5 +73,34 @@ class LockerReservation extends Model
     public function isActive(): bool
     {
         return $this->status === LockerReservationStatus::Active;
+    }
+
+    /**
+     * Reservations that still need a next month: already expired, or ending within the reminder window.
+     * A reservation that already has a later period is left off the list.
+     *
+     * @param  Builder<LockerReservation>  $query
+     * @return Builder<LockerReservation>
+     */
+    public function scopeRenewalReview(Builder $query, int $reminderDays): Builder
+    {
+        $reviewUntil = today()->addDays($reminderDays);
+        $table = $query->getModel()->getTable();
+
+        return $query
+            ->where('status', '!=', LockerReservationStatus::Cancelled)
+            ->whereDate('end_date', '<=', $reviewUntil)
+            ->whereNotExists(function ($later) use ($table): void {
+                $later->selectRaw('1')
+                    ->from($table.' as later_reservations')
+                    ->whereColumn('later_reservations.locker_id', $table.'.locker_id')
+                    ->where('later_reservations.status', '!=', LockerReservationStatus::Cancelled->value)
+                    ->whereColumn('later_reservations.start_date', '>', $table.'.end_date');
+            });
+    }
+
+    public function daysUntilExpiry(): int
+    {
+        return (int) today()->diffInDays($this->end_date, false);
     }
 }

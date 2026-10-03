@@ -5,6 +5,9 @@
 @section('content')
     <x-ui.page-header title="Locker Reservations" subtitle="Monthly locker reservations, invoices, and history">
         <x-slot:actions>
+            <a href="{{ route('admin.locker-reservations.renewals') }}" class="btn btn-light">
+                Renewals
+            </a>
             @can('create', App\Models\LockerReservation::class)
                 <a href="{{ route('admin.locker-reservations.create') }}" class="btn btn-primary">
                     Reserve Locker
