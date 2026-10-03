@@ -24,7 +24,6 @@
                 selectedPlanId: @js(old('membership_plan_id')),
                 discountAmount: @js(old('discount_amount', 0)),
                 amountReceived: @js(old('amount_received')),
-                hasDueDateError: @js($errors->has('due_at')),
                 hasPaymentMethodError: @js($errors->has('payment_method')),
                 currencySymbol: @js(App\Support\MoneyFormatter::symbol($gymCurrency)),
             })"
@@ -241,14 +240,13 @@
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-4" x-cloak x-bind:class="{ 'd-none': balanceDue <= 0 && ! hasDueDateError }">
+                        <div class="col-md-4">
                             <x-forms.date-picker
                                 label="Due date"
                                 name="due_at"
                                 :value="old('due_at')"
                                 min-date="today"
                                 help="Required while a balance remains. The member is still activated."
-                                x-bind:disabled="balanceDue <= 0 && ! hasDueDateError"
                             />
                         </div>
                     </div>

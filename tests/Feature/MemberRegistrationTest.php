@@ -60,7 +60,9 @@ it('shows the registration form', function () {
             'discount_amount',
             'due_at',
             'Balance due',
-        ]);
+        ])
+        ->assertSee('name="due_at"', false)
+        ->assertDontSee('x-bind:disabled="balanceDue <= 0 && ! hasDueDateError"', false);
 });
 
 it('completes the full registration workflow', function () {

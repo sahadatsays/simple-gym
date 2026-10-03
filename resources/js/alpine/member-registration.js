@@ -7,7 +7,6 @@ document.addEventListener('alpine:init', () => {
         selectedPlanId: config.selectedPlanId ? String(config.selectedPlanId) : '',
         discountAmount: config.discountAmount ?? 0,
         amountReceived: config.amountReceived ?? '',
-        hasDueDateError: Boolean(config.hasDueDateError),
         hasPaymentMethodError: Boolean(config.hasPaymentMethodError),
         currencySymbol: config.currencySymbol,
 
