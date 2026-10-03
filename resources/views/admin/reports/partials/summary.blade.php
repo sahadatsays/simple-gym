@@ -54,6 +54,8 @@
         'total_borrowed' => 'Total Borrowed',
         'total_repaid' => 'Total Repaid',
         'total_outstanding' => 'Total Outstanding',
+        'assignment_count' => 'Assignments',
+        'reservation_count' => 'Reservations',
     ];
 @endphp
 

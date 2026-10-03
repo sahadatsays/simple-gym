@@ -11,6 +11,8 @@
     'assetStatuses' => [],
     'expenseStatuses' => [],
     'borrowingStatuses' => [],
+    'rfidCardStatuses' => [],
+    'lockerReservationStatuses' => [],
     'paymentMethods' => [],
     'maintenanceTypes' => [],
 ])
@@ -190,6 +192,54 @@
                 <select name="status" id="status" class="form-select">
                     <option value="">All statuses</option>
                     @foreach ($borrowingStatuses as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
+                            {{ $status->label() }}
+                        </option>
+                    @endforeach
+                </select>
+            </x-admin.filter-field>
+        @endif
+
+        @if ($type->isRfidCardReport())
+            <x-admin.filter-field label="Card or member" for="search">
+                <input
+                    type="search"
+                    name="search"
+                    id="search"
+                    value="{{ $filters['search'] ?? '' }}"
+                    placeholder="Card number or member..."
+                    class="form-control ps-2"
+                >
+            </x-admin.filter-field>
+
+            <x-admin.filter-field label="Status" for="status">
+                <select name="status" id="status" class="form-select">
+                    <option value="">All statuses</option>
+                    @foreach ($rfidCardStatuses as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
+                            {{ $status->label() }}
+                        </option>
+                    @endforeach
+                </select>
+            </x-admin.filter-field>
+        @endif
+
+        @if ($type->isLockerReport())
+            <x-admin.filter-field label="Locker or member" for="search">
+                <input
+                    type="search"
+                    name="search"
+                    id="search"
+                    value="{{ $filters['search'] ?? '' }}"
+                    placeholder="Locker number or member..."
+                    class="form-control ps-2"
+                >
+            </x-admin.filter-field>
+
+            <x-admin.filter-field label="Status" for="status">
+                <select name="status" id="status" class="form-select">
+                    <option value="">All statuses</option>
+                    @foreach ($lockerReservationStatuses as $status)
                         <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
                             {{ $status->label() }}
                         </option>

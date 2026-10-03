@@ -8,11 +8,14 @@ use App\Models\Asset;
 use App\Models\Borrowing;
 use App\Models\Expense;
 use App\Models\Investment;
+use App\Models\Locker;
+use App\Models\RfidCard;
 use App\Services\DashboardAlertService;
 use App\Services\DashboardService;
 use App\Services\FinancialSummaryService;
 use App\Services\GymNotificationService;
 use App\Services\GymSettingService;
+use App\Services\LockerReservationService;
 use App\Support\DashboardDateRange;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -25,6 +28,7 @@ class DashboardController extends Controller
         private GymNotificationService $notifications,
         private GymSettingService $gymSettings,
         private FinancialSummaryService $financialSummary,
+        private LockerReservationService $lockerReservations,
     ) {}
 
     public function index(DashboardFilterRequest $request): View
@@ -39,6 +43,12 @@ class DashboardController extends Controller
         $canViewExpenses = $request->user()->can('viewAny', Expense::class);
         $canViewPayments = $request->user()->can('payments.view');
         $canViewBorrowings = $request->user()->can('viewAny', Borrowing::class);
+        $canViewRfidCards = $request->user()->can('viewAny', RfidCard::class);
+        $canViewLockers = $request->user()->can('viewAny', Locker::class);
+
+        if ($canViewLockers) {
+            $this->lockerReservations->expireDueReservations();
+        }
 
         return view('admin.dashboard', [
             'stats' => $this->dashboard->stats($range, $currency),
@@ -59,6 +69,20 @@ class DashboardController extends Controller
                 : null,
             'recentBorrowings' => $canViewBorrowings
                 ? $this->dashboard->recentBorrowings($range)
+                : Collection::make(),
+            'canViewRfidCards' => $canViewRfidCards,
+            'canViewLockers' => $canViewLockers,
+            'rfidStats' => $canViewRfidCards
+                ? $this->dashboard->rfidStats()
+                : null,
+            'lockerStats' => $canViewLockers
+                ? $this->dashboard->lockerStats($range)
+                : null,
+            'recentCardAssignments' => $canViewRfidCards
+                ? $this->dashboard->recentCardAssignments($range)
+                : Collection::make(),
+            'expiringLockerReservations' => $canViewLockers
+                ? $this->dashboard->expiringLockerReservations($range)
                 : Collection::make(),
             'recentRegistrations' => $this->dashboard->recentRegistrations($range),
             'recentPayments' => $this->dashboard->recentPayments($range),

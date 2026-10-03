@@ -4,7 +4,10 @@ namespace App\Services;
 
 use App\Enums\AssetStatus;
 use App\Enums\BorrowingStatus;
+use App\Enums\LockerReservationStatus;
+use App\Enums\LockerStatus;
 use App\Enums\PaymentType;
+use App\Enums\RfidCardStatus;
 use App\Models\Asset;
 use App\Models\AssetMaintenance;
 use App\Models\Borrowing;
@@ -12,9 +15,13 @@ use App\Models\BorrowingRepayment;
 use App\Models\Expense;
 use App\Models\Investment;
 use App\Models\Invoice;
+use App\Models\Locker;
+use App\Models\LockerReservation;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\RfidCard;
+use App\Models\RfidCardAssignment;
 use App\Support\DashboardDateRange;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
@@ -376,6 +383,110 @@ class DashboardService
                 'due_date',
                 'status',
             ]);
+    }
+
+    /**
+     * @return array{available_cards: int, assigned_cards: int}
+     */
+    public function rfidStats(): array
+    {
+        $counts = RfidCard::query()
+            ->toBase()
+            ->selectRaw(
+                'COUNT(CASE WHEN status = ? THEN 1 END) as available_cards',
+                [RfidCardStatus::Available->value],
+            )
+            ->selectRaw(
+                'COUNT(CASE WHEN status = ? THEN 1 END) as assigned_cards',
+                [RfidCardStatus::Assigned->value],
+            )
+            ->first();
+
+        return [
+            'available_cards' => (int) ($counts->available_cards ?? 0),
+            'assigned_cards' => (int) ($counts->assigned_cards ?? 0),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     available_lockers: int,
+     *     active_reservations: int,
+     *     expiring_reservations: int
+     * }
+     */
+    public function lockerStats(DashboardDateRange $range): array
+    {
+        $from = $range->from->toDateString();
+        $to = $range->to->toDateString();
+
+        $lockers = Locker::query()
+            ->toBase()
+            ->selectRaw(
+                'COUNT(CASE WHEN status = ? THEN 1 END) as available_lockers',
+                [LockerStatus::Available->value],
+            )
+            ->first();
+
+        $endDate = match (DB::connection()->getDriverName()) {
+            'sqlite' => 'date(end_date)',
+            default => 'DATE(end_date)',
+        };
+
+        $reservations = LockerReservation::query()
+            ->toBase()
+            ->selectRaw(
+                'COUNT(CASE WHEN status = ? THEN 1 END) as active_reservations',
+                [LockerReservationStatus::Active->value],
+            )
+            ->selectRaw(
+                "COUNT(CASE WHEN status = ? AND {$endDate} >= ? AND {$endDate} <= ? THEN 1 END) as expiring_reservations",
+                [LockerReservationStatus::Active->value, $from, $to],
+            )
+            ->first();
+
+        return [
+            'available_lockers' => (int) ($lockers->available_lockers ?? 0),
+            'active_reservations' => (int) ($reservations->active_reservations ?? 0),
+            'expiring_reservations' => (int) ($reservations->expiring_reservations ?? 0),
+        ];
+    }
+
+    /**
+     * @return Collection<int, RfidCardAssignment>
+     */
+    public function recentCardAssignments(DashboardDateRange $range, int $limit = 8): Collection
+    {
+        return RfidCardAssignment::query()
+            ->with([
+                'member:id,name,member_code',
+                'rfidCard:id,card_number',
+            ])
+            ->whereDate('issue_date', '>=', $range->from->toDateString())
+            ->whereDate('issue_date', '<=', $range->to->toDateString())
+            ->latest('issue_date')
+            ->latest('id')
+            ->limit($limit)
+            ->get(['id', 'member_id', 'rfid_card_id', 'issue_date', 'status']);
+    }
+
+    /**
+     * @return Collection<int, LockerReservation>
+     */
+    public function expiringLockerReservations(DashboardDateRange $range, int $limit = 8): Collection
+    {
+        return LockerReservation::query()
+            ->with([
+                'member:id,name,member_code',
+                'locker:id,locker_number',
+            ])
+            ->where('status', LockerReservationStatus::Active)
+            ->whereDate('end_date', '>=', $range->from->toDateString())
+            ->whereDate('end_date', '<=', $range->to->toDateString())
+            ->orderBy('end_date')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'locker_id', 'member_id', 'start_date', 'end_date', 'status']);
     }
 
     /**

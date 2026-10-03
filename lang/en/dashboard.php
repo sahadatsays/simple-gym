@@ -20,6 +20,7 @@ return [
         'financial_summary' => 'Financial Summary',
         'borrowings' => 'Borrowings',
         'borrowings_note' => 'Borrowed money is not revenue. Repayments are not operating expenses.',
+        'rfid_lockers' => 'RFID & Lockers',
     ],
 
     'stats' => [
@@ -68,6 +69,14 @@ return [
         'still_unpaid_in_period' => 'Still unpaid on borrowings in this period',
         'currently_open' => 'Currently open',
         'due_in_selected_period' => 'Due in selected period',
+        'available_rfid_cards' => 'Available RFID Cards',
+        'assigned_rfid_cards' => 'Assigned RFID Cards',
+        'available_lockers' => 'Available Lockers',
+        'active_locker_reservations' => 'Active Locker Reservations',
+        'lockers_expiring_soon' => 'Lockers Expiring Soon',
+        'currently_available' => 'Currently available',
+        'currently_assigned' => 'Currently assigned',
+        'ending_in_selected_period' => 'Ending in selected period',
     ],
 
     'charts' => [
@@ -140,6 +149,20 @@ return [
         'no_borrowings_recorded' => 'No borrowings recorded for this period.',
         'borrowing_number' => 'Borrowing No.',
         'lender' => 'Lender',
+        'recent_card_assignments' => 'Recent Card Assignments',
+        'recent_card_assignments_subtitle' => 'Assignments in the selected period',
+        'view_all_rfid_cards' => 'View all RFID cards',
+        'no_card_assignments' => 'No card assignments found for this period.',
+        'card' => 'Card',
+        'member' => 'Member',
+        'issue_date' => 'Issue Date',
+        'expiring_locker_reservations' => 'Expiring Locker Reservations',
+        'expiring_locker_reservations_subtitle' => 'Active reservations ending in the selected period',
+        'view_all_locker_reservations' => 'View all locker reservations',
+        'no_expiring_lockers' => 'No lockers are expiring in this period.',
+        'locker' => 'Locker',
+        'start_date' => 'Start Date',
+        'end_date' => 'End Date',
     ],
 
     'alerts' => [

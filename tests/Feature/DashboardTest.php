@@ -3,8 +3,11 @@
 use App\Enums\AssetStatus;
 use App\Enums\BorrowingStatus;
 use App\Enums\ExpenseStatus;
+use App\Enums\LockerReservationStatus;
+use App\Enums\LockerStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
+use App\Enums\RfidCardStatus;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetMaintenance;
@@ -15,9 +18,13 @@ use App\Models\ExpenseCategory;
 use App\Models\Investment;
 use App\Models\InvestmentCategory;
 use App\Models\Invoice;
+use App\Models\Locker;
+use App\Models\LockerReservation;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\RfidCard;
+use App\Models\RfidCardAssignment;
 use App\Models\User;
 use App\Services\DashboardService;
 use App\Services\FinancialSummaryService;
@@ -500,6 +507,134 @@ it('hides borrowing widgets without module permissions', function () {
         ->assertSuccessful()
         ->assertDontSee('Total Borrowed')
         ->assertDontSee('Recent Borrowings');
+});
+
+it('shows rfid and locker widgets for the selected period', function () {
+    $member = Member::factory()->create(['name' => 'Dashboard Card Member']);
+
+    RfidCard::factory()->create([
+        'card_number' => 'DASH-FREE',
+        'status' => RfidCardStatus::Available,
+    ]);
+
+    $assignedCard = RfidCard::factory()->create([
+        'card_number' => 'DASH-USED',
+        'status' => RfidCardStatus::Assigned,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+
+    RfidCardAssignment::query()->create([
+        'member_id' => $member->id,
+        'rfid_card_id' => $assignedCard->id,
+        'issue_date' => now(),
+        'return_date' => null,
+        'card_fee' => 0,
+        'deposit_amount' => 0,
+        'status' => RfidCardStatus::Assigned,
+    ]);
+
+    $oldCard = RfidCard::factory()->create([
+        'card_number' => 'DASH-OLD',
+        'status' => RfidCardStatus::Returned,
+    ]);
+
+    RfidCardAssignment::query()->create([
+        'member_id' => $member->id,
+        'rfid_card_id' => $oldCard->id,
+        'issue_date' => now()->subMonths(3),
+        'return_date' => now()->subMonths(2),
+        'card_fee' => 0,
+        'deposit_amount' => 0,
+        'status' => RfidCardStatus::Returned,
+    ]);
+
+    Locker::factory()->create([
+        'locker_number' => 'L-DASH-FREE',
+        'status' => LockerStatus::Available,
+    ]);
+
+    Locker::factory()->maintenance()->create([
+        'locker_number' => 'L-DASH-MAINT',
+    ]);
+
+    $endingLocker = Locker::factory()->reserved()->create([
+        'locker_number' => 'L-DASH-END',
+    ]);
+
+    LockerReservation::factory()->create([
+        'locker_id' => $endingLocker->id,
+        'member_id' => $member->id,
+        'start_date' => now()->startOfMonth()->toDateString(),
+        'end_date' => now()->endOfMonth()->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $laterLocker = Locker::factory()->reserved()->create([
+        'locker_number' => 'L-DASH-LATER',
+    ]);
+
+    LockerReservation::factory()->create([
+        'locker_id' => $laterLocker->id,
+        'member_id' => $member->id,
+        'start_date' => now()->addYear()->startOfMonth()->toDateString(),
+        'end_date' => now()->addYear()->endOfMonth()->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $overdueLocker = Locker::factory()->reserved()->create([
+        'locker_number' => 'L-DASH-OVER',
+    ]);
+
+    LockerReservation::factory()->create([
+        'locker_id' => $overdueLocker->id,
+        'member_id' => $member->id,
+        'start_date' => now()->subMonth()->startOfMonth()->toDateString(),
+        'end_date' => now()->subDay()->toDateString(),
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $rfidStats = app(DashboardService::class)->rfidStats();
+
+    expect($rfidStats['available_cards'])->toBe(1)
+        ->and($rfidStats['assigned_cards'])->toBe(1);
+
+    $this->actingAs($this->user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertSee('RFID & Lockers')
+        ->assertSee('Available RFID Cards')
+        ->assertSee('Assigned RFID Cards')
+        ->assertSee('Available Lockers')
+        ->assertSee('Active Locker Reservations')
+        ->assertSee('Lockers Expiring Soon')
+        ->assertSee('Recent Card Assignments')
+        ->assertSee('Expiring Locker Reservations')
+        ->assertSee('DASH-USED')
+        ->assertSee('Dashboard Card Member')
+        ->assertSee('L-DASH-END')
+        ->assertDontSee('DASH-OLD')
+        ->assertDontSee('L-DASH-LATER')
+        ->assertDontSee('L-DASH-OVER');
+
+    $lockerStats = app(DashboardService::class)->lockerStats(DashboardDateRange::default());
+
+    expect($lockerStats['available_lockers'])->toBe(2)
+        ->and($lockerStats['active_reservations'])->toBe(2)
+        ->and($lockerStats['expiring_reservations'])->toBe(1);
+});
+
+it('hides rfid and locker widgets without module permissions', function () {
+    $user = User::factory()->create(['is_active' => true]);
+    $user->assignRole('trainer');
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertDontSee('Available RFID Cards')
+        ->assertDontSee('Active Locker Reservations')
+        ->assertDontSee('Recent Card Assignments')
+        ->assertDontSee('Expiring Locker Reservations');
 });
 
 it('forbids dashboard access without permission', function () {

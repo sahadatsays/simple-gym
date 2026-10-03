@@ -6,8 +6,10 @@ use App\Enums\AssetMaintenanceType;
 use App\Enums\AssetStatus;
 use App\Enums\BorrowingStatus;
 use App\Enums\ExpenseStatus;
+use App\Enums\LockerReservationStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ReportType;
+use App\Enums\RfidCardStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -28,6 +30,14 @@ class ReportFilterRequest extends FormRequest
 
         if ($type?->isBorrowingReport()) {
             return $this->user()?->can('borrowings.view') ?? false;
+        }
+
+        if ($type?->isRfidCardReport()) {
+            return $this->user()?->can('rfid-cards.view') ?? false;
+        }
+
+        if ($type?->isLockerReport()) {
+            return $this->user()?->can('lockers.view') ?? false;
         }
 
         return $this->user()?->can('reports.view') ?? false;
@@ -156,6 +166,18 @@ class ReportFilterRequest extends FormRequest
         if ($type === ReportType::Borrowings && filled($this->input('status'))) {
             $this->merge([
                 'status' => BorrowingStatus::tryFrom((string) $this->input('status'))?->value,
+            ]);
+        }
+
+        if ($type === ReportType::RfidCards && filled($this->input('status'))) {
+            $this->merge([
+                'status' => RfidCardStatus::tryFrom((string) $this->input('status'))?->value,
+            ]);
+        }
+
+        if ($type === ReportType::Lockers && filled($this->input('status'))) {
+            $this->merge([
+                'status' => LockerReservationStatus::tryFrom((string) $this->input('status'))?->value,
             ]);
         }
 

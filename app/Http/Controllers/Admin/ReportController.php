@@ -6,10 +6,12 @@ use App\Enums\AssetMaintenanceType;
 use App\Enums\AssetStatus;
 use App\Enums\BorrowingStatus;
 use App\Enums\ExpenseStatus;
+use App\Enums\LockerReservationStatus;
 use App\Enums\MemberStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ProductStatus;
 use App\Enums\ReportType;
+use App\Enums\RfidCardStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReportFilterRequest;
 use App\Models\AssetCategory;
@@ -96,6 +98,8 @@ class ReportController extends Controller
             'assetStatuses' => AssetStatus::cases(),
             'expenseStatuses' => ExpenseStatus::cases(),
             'borrowingStatuses' => BorrowingStatus::cases(),
+            'rfidCardStatuses' => RfidCardStatus::cases(),
+            'lockerReservationStatuses' => LockerReservationStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'maintenanceTypes' => AssetMaintenanceType::cases(),
         ]);
@@ -109,7 +113,9 @@ class ReportController extends Controller
             $user?->can('reports.view')
             || $user?->can('asset-investment-reports.view')
             || $user?->can('expense-reports.view')
-            || $user?->can('borrowings.view'),
+            || $user?->can('borrowings.view')
+            || $user?->can('rfid-cards.view')
+            || $user?->can('lockers.view'),
             403
         );
     }
@@ -134,6 +140,18 @@ class ReportController extends Controller
             return;
         }
 
+        if ($type->isRfidCardReport()) {
+            $this->authorizePermission('rfid-cards.view');
+
+            return;
+        }
+
+        if ($type->isLockerReport()) {
+            $this->authorizePermission('lockers.view');
+
+            return;
+        }
+
         $this->authorizePermission('reports.view');
     }
 
@@ -149,6 +167,14 @@ class ReportController extends Controller
 
         if ($type->isBorrowingReport()) {
             return $user->can('borrowings.view');
+        }
+
+        if ($type->isRfidCardReport()) {
+            return $user->can('rfid-cards.view');
+        }
+
+        if ($type->isLockerReport()) {
+            return $user->can('lockers.view');
         }
 
         return $user->can('reports.view');

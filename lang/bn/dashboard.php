@@ -20,6 +20,7 @@ return [
         'financial_summary' => 'আর্থিক সারাংশ',
         'borrowings' => 'ধার',
         'borrowings_note' => 'ধার করা টাকা আয় নয়। পরিশোধ পরিচালন খরচ নয়।',
+        'rfid_lockers' => 'RFID ও লকার',
     ],
 
     'stats' => [
@@ -68,6 +69,14 @@ return [
         'still_unpaid_in_period' => 'এই সময়কালের ধারের মধ্যে এখনও বাকি',
         'currently_open' => 'বর্তমানে খোলা',
         'due_in_selected_period' => 'নির্বাচিত সময়কালে পরিশোধের তারিখ',
+        'available_rfid_cards' => 'খালি RFID কার্ড',
+        'assigned_rfid_cards' => 'বরাদ্দ RFID কার্ড',
+        'available_lockers' => 'খালি লকার',
+        'active_locker_reservations' => 'সক্রিয় লকার সংরক্ষণ',
+        'lockers_expiring_soon' => 'শীঘ্রই শেষ হওয়া লকার',
+        'currently_available' => 'বর্তমানে খালি',
+        'currently_assigned' => 'বর্তমানে বরাদ্দ',
+        'ending_in_selected_period' => 'নির্বাচিত সময়কালে শেষ হচ্ছে',
     ],
 
     'charts' => [
@@ -140,6 +149,20 @@ return [
         'no_borrowings_recorded' => 'এই সময়কালে কোনো ধার রেকর্ড করা হয়নি।',
         'borrowing_number' => 'ধার নং',
         'lender' => 'ঋণদাতা',
+        'recent_card_assignments' => 'সাম্প্রতিক কার্ড বরাদ্দ',
+        'recent_card_assignments_subtitle' => 'নির্বাচিত সময়কালের বরাদ্দ',
+        'view_all_rfid_cards' => 'সব RFID কার্ড দেখুন',
+        'no_card_assignments' => 'এই সময়কালে কোনো কার্ড বরাদ্দ পাওয়া যায়নি।',
+        'card' => 'কার্ড',
+        'member' => 'সদস্য',
+        'issue_date' => 'ইস্যুর তারিখ',
+        'expiring_locker_reservations' => 'মেয়াদ শেষ হওয়া লকার সংরক্ষণ',
+        'expiring_locker_reservations_subtitle' => 'নির্বাচিত সময়কালে শেষ হওয়া সক্রিয় সংরক্ষণ',
+        'view_all_locker_reservations' => 'সব লকার সংরক্ষণ দেখুন',
+        'no_expiring_lockers' => 'এই সময়কালে কোনো লকারের মেয়াদ শেষ হচ্ছে না।',
+        'locker' => 'লকার',
+        'start_date' => 'শুরুর তারিখ',
+        'end_date' => 'শেষের তারিখ',
     ],
 
     'alerts' => [

@@ -21,6 +21,8 @@ enum ReportType: string
     case AssetValueSummary = 'asset-value-summary';
     case Expenses = 'expenses';
     case Borrowings = 'borrowings';
+    case RfidCards = 'rfid-cards';
+    case Lockers = 'lockers';
     case FinancialSummary = 'financial-summary';
 
     /**
@@ -57,6 +59,8 @@ enum ReportType: string
             self::AssetValueSummary => 'Asset Value Summary',
             self::Expenses => 'Expense Report',
             self::Borrowings => 'Borrowing Report',
+            self::RfidCards => 'RFID Card Report',
+            self::Lockers => 'Locker Report',
             self::FinancialSummary => 'Financial Summary',
         };
     }
@@ -79,6 +83,8 @@ enum ReportType: string
             self::AssetValueSummary => 'Purchase value, current asset value, and maintenance spend.',
             self::Expenses => 'Expense transactions with category totals and payment details.',
             self::Borrowings => 'Borrowed money with repayments, remaining balance, and due dates.',
+            self::RfidCards => 'Card assignments with member, issue date, and status.',
+            self::Lockers => 'Locker reservations with member, dates, and status.',
             self::FinancialSummary => 'Operating revenue, expenses, net result, owner investment, and outstanding due.',
         };
     }
@@ -91,6 +97,8 @@ enum ReportType: string
             self::PosSales, self::ProductSales, self::Assets, self::AssetCategories => 'shopping',
             self::Stock, self::AssetMaintenance => 'alert',
             self::Investments, self::Expenses, self::Borrowings => 'wallet',
+            self::RfidCards => 'users',
+            self::Lockers => 'shopping',
         };
     }
 
@@ -113,5 +121,15 @@ enum ReportType: string
     public function isBorrowingReport(): bool
     {
         return $this === self::Borrowings;
+    }
+
+    public function isRfidCardReport(): bool
+    {
+        return $this === self::RfidCards;
+    }
+
+    public function isLockerReport(): bool
+    {
+        return $this === self::Lockers;
     }
 }

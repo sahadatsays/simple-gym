@@ -17,10 +17,12 @@ use App\Models\BorrowingRepayment;
 use App\Models\Expense;
 use App\Models\Investment;
 use App\Models\Invoice;
+use App\Models\LockerReservation;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductSale;
+use App\Models\RfidCardAssignment;
 use App\Support\DashboardDateRange;
 use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -68,6 +70,8 @@ class ReportService
             ReportType::AssetValueSummary => $this->assetValueSummary($filters),
             ReportType::Expenses => $this->expenseReport($filters, $perPage),
             ReportType::Borrowings => $this->borrowingReport($filters, $perPage),
+            ReportType::RfidCards => $this->rfidCardReport($filters, $perPage),
+            ReportType::Lockers => $this->lockerReport($filters, $perPage),
             ReportType::FinancialSummary => $this->financialSummaryReport($filters),
         };
     }
@@ -556,6 +560,148 @@ class ReportService
             ->when(filled($filters['search'] ?? null), fn (Builder $query) => $query->where('lender_name', 'like', '%'.$filters['search'].'%'))
             ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('borrowing_date', '>=', $filters['from_date']))
             ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('borrowing_date', '<=', $filters['to_date']));
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     */
+    private function rfidCardReport(array $filters, ?int $perPage): array
+    {
+        $query = $this->rfidCardReportQuery($filters);
+        $assignmentCount = (clone $query)->count();
+
+        $rows = $this->paginateOrGet(
+            (clone $query)->with([
+                'member:id,name',
+                'rfidCard:id,card_number',
+            ])->latest('issue_date')->latest('id'),
+            $perPage,
+            fn (RfidCardAssignment $assignment): array => [
+                'card' => $assignment->rfidCard?->card_number ?? '—',
+                'member' => $assignment->member?->name ?? '—',
+                'issue_date' => $assignment->issue_date?->format('M j, Y') ?? '—',
+                'status' => $assignment->status->label(),
+            ],
+        );
+
+        return [
+            'summary' => [
+                'assignment_count' => $assignmentCount,
+            ],
+            'rows' => $rows,
+            'columns' => [
+                ['key' => 'card', 'label' => 'Card'],
+                ['key' => 'member', 'label' => 'Member'],
+                ['key' => 'issue_date', 'label' => 'Issue Date'],
+                ['key' => 'status', 'label' => 'Status'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     * @return Builder<RfidCardAssignment>
+     */
+    private function rfidCardReportQuery(array $filters): Builder
+    {
+        return RfidCardAssignment::query()
+            ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->where(function (Builder $nested) use ($search): void {
+                    $nested->whereHas('rfidCard', fn (Builder $cardQuery) => $cardQuery->where('card_number', 'like', "%{$search}%"))
+                        ->orWhereHas('member', function (Builder $memberQuery) use ($search): void {
+                            $memberQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('member_code', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('issue_date', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('issue_date', '<=', $filters['to_date']));
+    }
+
+    /**
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     */
+    private function lockerReport(array $filters, ?int $perPage): array
+    {
+        $query = $this->lockerReportQuery($filters);
+        $reservationCount = (clone $query)->count();
+
+        $rows = $this->paginateOrGet(
+            (clone $query)->with([
+                'member:id,name',
+                'locker:id,locker_number',
+            ])->orderBy('start_date')->orderBy('id'),
+            $perPage,
+            fn (LockerReservation $reservation): array => [
+                'locker' => $reservation->locker?->locker_number ?? '—',
+                'member' => $reservation->member?->name ?? '—',
+                'start_date' => $reservation->start_date?->format('M j, Y') ?? '—',
+                'end_date' => $reservation->end_date?->format('M j, Y') ?? '—',
+                'status' => $reservation->status->label(),
+            ],
+        );
+
+        return [
+            'summary' => [
+                'reservation_count' => $reservationCount,
+            ],
+            'rows' => $rows,
+            'columns' => [
+                ['key' => 'locker', 'label' => 'Locker'],
+                ['key' => 'member', 'label' => 'Member'],
+                ['key' => 'start_date', 'label' => 'Start Date'],
+                ['key' => 'end_date', 'label' => 'End Date'],
+                ['key' => 'status', 'label' => 'Status'],
+            ],
+        ];
+    }
+
+    /**
+     * Reservations that overlap the selected dates.
+     *
+     * @param  array{
+     *     from_date: string,
+     *     to_date: string,
+     *     status?: string|null,
+     *     search?: string|null
+     * }  $filters
+     * @return Builder<LockerReservation>
+     */
+    private function lockerReportQuery(array $filters): Builder
+    {
+        return LockerReservation::query()
+            ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = $filters['search'];
+
+                $query->where(function (Builder $nested) use ($search): void {
+                    $nested->whereHas('locker', fn (Builder $lockerQuery) => $lockerQuery->where('locker_number', 'like', "%{$search}%"))
+                        ->orWhereHas('member', function (Builder $memberQuery) use ($search): void {
+                            $memberQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('member_code', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when(filled($filters['from_date']), fn (Builder $query) => $query->whereDate('end_date', '>=', $filters['from_date']))
+            ->when(filled($filters['to_date']), fn (Builder $query) => $query->whereDate('start_date', '<=', $filters['to_date']));
     }
 
     /**

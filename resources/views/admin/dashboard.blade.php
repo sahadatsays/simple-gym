@@ -78,6 +78,71 @@
         </div>
     </div>
 
+    @if ($canViewRfidCards || $canViewLockers)
+        <h2 class="h5 fw-bold mb-3">{{ __('dashboard.sections.rfid_lockers') }}</h2>
+
+        <div class="row g-3 g-xl-4 mb-4">
+            @if ($canViewRfidCards)
+                <div class="col-12 col-md-6 col-xl-4">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.available_rfid_cards')"
+                        :value="$rfidStats['available_cards']"
+                        icon="users"
+                        variant="primary"
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.currently_available') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl-4">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.assigned_rfid_cards')"
+                        :value="$rfidStats['assigned_cards']"
+                        icon="user-check"
+                        variant="success"
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.currently_assigned') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+            @endif
+
+            @if ($canViewLockers)
+                <div class="col-12 col-md-6 col-xl-4">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.available_lockers')"
+                        :value="$lockerStats['available_lockers']"
+                        icon="shopping"
+                        variant="info"
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.currently_available') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl-4">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.active_locker_reservations')"
+                        :value="$lockerStats['active_reservations']"
+                        icon="user-check"
+                        variant="success"
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.currently_active') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl-4">
+                    <x-dashboard.stat-card
+                        :title="__('dashboard.stats.lockers_expiring_soon')"
+                        :value="$lockerStats['expiring_reservations']"
+                        icon="alert"
+                        variant="warning"
+                    >
+                        <x-slot:footer>{{ __('dashboard.stats.ending_in_selected_period') }}</x-slot:footer>
+                    </x-dashboard.stat-card>
+                </div>
+            @endif
+        </div>
+    @endif
+
     @if ($financialSummary !== null)
         <h2 class="h5 fw-bold mb-3">{{ __('dashboard.sections.financial_summary') }}</h2>
 
@@ -452,6 +517,18 @@
                 <x-dashboard.recent-borrowings :borrowings="$recentBorrowings" :currency="$stats['currency']" />
             </div>
         @endcan
+
+        @if ($canViewRfidCards)
+            <div class="col-xl-6">
+                <x-dashboard.recent-card-assignments :assignments="$recentCardAssignments" />
+            </div>
+        @endif
+
+        @if ($canViewLockers)
+            <div class="col-xl-6">
+                <x-dashboard.expiring-locker-reservations :reservations="$expiringLockerReservations" />
+            </div>
+        @endif
     </div>
 @endsection
 

@@ -23,6 +23,8 @@
         'assetStatuses' => $assetStatuses,
         'expenseStatuses' => $expenseStatuses,
         'borrowingStatuses' => $borrowingStatuses,
+        'rfidCardStatuses' => $rfidCardStatuses,
+        'lockerReservationStatuses' => $lockerReservationStatuses,
         'paymentMethods' => $paymentMethods,
         'maintenanceTypes' => $maintenanceTypes,
     ])
