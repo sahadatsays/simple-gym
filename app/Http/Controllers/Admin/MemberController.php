@@ -93,8 +93,6 @@ class MemberController extends Controller
                 ->values(),
             'posOrders' => $member->invoices,
             'cardFee' => (float) $settings->rfid_card_fee,
-            'cardDeposit' => (float) $settings->rfid_card_deposit,
-            'replacementFee' => (float) $settings->rfid_replacement_card_fee,
         ]);
     }
 

@@ -123,7 +123,6 @@ it('completes the full registration workflow', function () {
 it('collects configured rfid charges on a separate invoice during registration', function () {
     GymSetting::query()->first()->update([
         'rfid_card_fee' => 100,
-        'rfid_card_deposit' => 50,
     ]);
 
     $card = RfidCard::factory()->create([
@@ -152,15 +151,15 @@ it('collects configured rfid charges on a separate invoice during registration',
         ->and($card->fresh()->status)->toBe(RfidCardStatus::Assigned)
         ->and((float) $membershipInvoice->total)->toBe(2000.0)
         ->and($membershipInvoice->line_items)->toHaveCount(2)
-        ->and((float) $rfidInvoice->total)->toBe(150.0)
+        ->and((float) $rfidInvoice->total)->toBe(100.0)
+        ->and($rfidInvoice->line_items[0]['description'])->toBe('RFID card fee')
         ->and($rfidPayment->type)->toBe(PaymentType::RfidCard)
-        ->and((float) $rfidPayment->amount)->toBe(150.0);
+        ->and((float) $rfidPayment->amount)->toBe(100.0);
 });
 
 it('does not register the member when the rfid card payment fails', function () {
     GymSetting::query()->first()->update([
         'rfid_card_fee' => 100,
-        'rfid_card_deposit' => 0,
     ]);
 
     $card = RfidCard::factory()->create([

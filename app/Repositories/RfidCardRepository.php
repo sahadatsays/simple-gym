@@ -24,7 +24,7 @@ class RfidCardRepository extends BaseRepository implements RfidCardRepositoryInt
     public function paginateWithFilters(array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->newQuery()
-            ->with(['member', 'creator'])
+            ->with(['member.paidRfidCardFeeInvoices', 'creator', 'openAssignment'])
             ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
                 $search = $filters['search'];
 

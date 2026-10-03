@@ -6,6 +6,7 @@ use App\Contracts\Repositories\RfidCardRepositoryInterface;
 use App\Exceptions\PaymentFailedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignRfidCardRequest;
+use App\Http\Requests\Admin\CollectRfidCardFeeRequest;
 use App\Http\Requests\Admin\IndexRfidCardRequest;
 use App\Http\Requests\Admin\IssueRfidCardRequest;
 use App\Http\Requests\Admin\ReplaceRfidCardRequest;
@@ -38,8 +39,6 @@ class RfidCardController extends Controller
             'members' => Member::query()->orderBy('name')->get(['id', 'name', 'member_code']),
             'filters' => $filters,
             'cardFee' => (float) $settings->rfid_card_fee,
-            'cardDeposit' => (float) $settings->rfid_card_deposit,
-            'replacementFee' => (float) $settings->rfid_replacement_card_fee,
         ]);
     }
 
@@ -92,6 +91,24 @@ class RfidCardController extends Controller
         Flash::success('RFID card assigned successfully.');
 
         return redirect()->route('admin.rfid-cards.index');
+    }
+
+    public function collectFee(CollectRfidCardFeeRequest $request, RfidCard $rfidCard): RedirectResponse
+    {
+        try {
+            $this->rfidCardService->collectFee(
+                $rfidCard,
+                $request->validated('payment_method'),
+            );
+        } catch (PaymentFailedException|InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
+
+        Flash::success('RFID card fee collected.');
+
+        return back();
     }
 
     public function issue(IssueRfidCardRequest $request): RedirectResponse

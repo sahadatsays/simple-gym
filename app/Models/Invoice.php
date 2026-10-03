@@ -183,6 +183,22 @@ class Invoice extends Model
             ->open();
     }
 
+    public function includesRfidCardFee(): bool
+    {
+        if ($this->type !== InvoiceType::RfidCard || $this->status !== InvoiceStatus::Paid) {
+            return false;
+        }
+
+        return collect($this->line_items)->contains(function (mixed $item): bool {
+            if (! is_array($item)) {
+                return false;
+            }
+
+            return ($item['description'] ?? '') === 'RFID card fee'
+                && Money::greaterThan((float) ($item['amount'] ?? 0), 0);
+        });
+    }
+
     /**
      * @param  callable(Builder<Invoice>): void  $constraint
      */

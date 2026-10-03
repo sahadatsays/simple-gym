@@ -1,4 +1,9 @@
-@props(['card', 'members', 'cardFee' => 0, 'cardDeposit' => 0, 'replacementFee' => 0, 'gymCurrency' => 'BDT'])
+@props(['card', 'members', 'cardFee' => 0, 'gymCurrency' => 'BDT'])
+
+@php
+    $memberHasPaidCardFee = $card->member?->hasPaidRfidCardFee() ?? false;
+    $cardFeeDue = $cardFee > 0 && ! $memberHasPaidCardFee;
+@endphp
 
 <div class="dropdown d-inline-block">
     <button
@@ -26,6 +31,21 @@
                         data-bs-target="#assignCardModal-{{ $card->id }}"
                     >
                         Assign Card
+                    </button>
+                </li>
+            @endcan
+        @endif
+
+        @if ($card->isActive() && $cardFeeDue && $card->openAssignment?->invoice_id === null)
+            @can('assign', $card)
+                <li>
+                    <button
+                        type="button"
+                        class="dropdown-item"
+                        data-bs-toggle="modal"
+                        data-bs-target="#collectCardFeeModal-{{ $card->id }}"
+                    >
+                        Collect fee
                     </button>
                 </li>
             @endcan
@@ -107,6 +127,40 @@
     </ul>
 </div>
 
+@if ($card->isActive() && $cardFeeDue && $card->openAssignment?->invoice_id === null)
+    @can('assign', $card)
+        <div class="modal fade" id="collectCardFeeModal-{{ $card->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <form action="{{ route('admin.rfid-cards.collect-fee', $card) }}" method="POST">
+                        @csrf
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title fw-bold">Collect card fee</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted small">
+                                Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}. This is collected once for the member. The current assignment stays in place.
+                            </p>
+                            <x-forms.select
+                                label="Payment method"
+                                name="payment_method"
+                                :options="App\Enums\PaymentMethod::options()"
+                                selected="cash"
+                                required
+                            />
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Receive payment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endcan
+@endif
+
 @if ($card->isAssignable())
     @can('assign', $card)
         <div class="modal fade" id="assignCardModal-{{ $card->id }}" tabindex="-1" aria-hidden="true" data-bs-focus="false">
@@ -121,7 +175,7 @@
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
                                 Assign <strong>{{ $card->card_number }}</strong> to a member. The member's current card assignment will be closed.
-                                Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}, deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}.
+                                Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} is collected once per member.
                             </p>
                             <x-forms.searchable-select
                                 label="Member"
@@ -131,13 +185,13 @@
                                 placeholder="Search member..."
                                 required
                             />
-                            @if (($cardFee + $cardDeposit) > 0)
+                            @if ($cardFee > 0)
                                 <x-forms.select
                                     label="Payment method"
                                     name="payment_method"
                                     :options="App\Enums\PaymentMethod::options()"
                                     selected="cash"
-                                    required
+                                    help="Required only when this member has not paid the card fee yet."
                                 />
                             @endif
                         </div>
@@ -167,7 +221,11 @@
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
                                 Replace the active card for <strong>{{ $card->member->name }}</strong>. The current assignment will be closed and kept in history.
-                                Replacement fee {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}.
+                                @if ($memberHasPaidCardFee)
+                                    This member has already paid the card fee, so this replacement is not charged.
+                                @else
+                                    Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} will be collected if it has not been paid yet.
+                                @endif
                             </p>
                             <x-forms.input
                                 label="New card number"
@@ -175,7 +233,7 @@
                                 placeholder="Scan or enter new RFID"
                                 required
                             />
-                            @if ($replacementFee > 0)
+                            @if ($cardFeeDue)
                                 <x-forms.select
                                     label="Payment method"
                                     name="payment_method"

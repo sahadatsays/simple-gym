@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\Gender;
+use App\Enums\InvoiceStatus;
+use App\Enums\InvoiceType;
 use App\Enums\MemberStatus;
 use App\Enums\RfidCardStatus;
 use Database\Factories\MemberFactory;
@@ -131,6 +133,25 @@ class Member extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * @return HasMany<Invoice, $this>
+     */
+    public function paidRfidCardFeeInvoices(): HasMany
+    {
+        return $this->invoices()
+            ->where('type', InvoiceType::RfidCard)
+            ->where('status', InvoiceStatus::Paid);
+    }
+
+    public function hasPaidRfidCardFee(): bool
+    {
+        $invoices = $this->relationLoaded('paidRfidCardFeeInvoices')
+            ? $this->paidRfidCardFeeInvoices
+            : $this->paidRfidCardFeeInvoices()->get();
+
+        return $invoices->contains(fn (Invoice $invoice): bool => $invoice->includesRfidCardFee());
     }
 
     /**

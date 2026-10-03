@@ -22,8 +22,6 @@ return [
         'membership_reminder_days' => 7,
         'default_admission_fee' => 500,
         'rfid_card_fee' => 0,
-        'rfid_card_deposit' => 0,
-        'rfid_replacement_card_fee' => 0,
         'enabled_payment_methods' => ['cash', 'card', 'bank', 'mobile_banking'],
         'is_open' => true,
         'member_access_restriction_enabled' => true,

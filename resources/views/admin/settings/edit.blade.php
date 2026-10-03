@@ -22,6 +22,8 @@
         @csrf
         @method('PUT')
 
+        <x-forms.error-summary />
+
         <div class="row g-4">
             <div class="col-xl-8">
                 <x-ui.card title="Gym Profile" class="mb-4">
@@ -111,25 +113,7 @@
                         label="Card fee"
                         name="rfid_card_fee"
                         :value="$settings->rfid_card_fee"
-                        help="Charged with the deposit when a member is issued a new RFID card."
-                        required
-                        :disabled="! $canUpdate"
-                    />
-
-                    <x-forms.money-input
-                        label="Card deposit"
-                        name="rfid_card_deposit"
-                        :value="$settings->rfid_card_deposit"
-                        help="Collected with the card fee when a member is issued a new RFID card."
-                        required
-                        :disabled="! $canUpdate"
-                    />
-
-                    <x-forms.money-input
-                        label="Replacement card fee"
-                        name="rfid_replacement_card_fee"
-                        :value="$settings->rfid_replacement_card_fee"
-                        help="Charged when a member's card is replaced. Leave at zero to replace without a charge."
+                        help="Charged once, the first time a member receives an RFID card. Replacing that card does not charge the fee again."
                         required
                         :disabled="! $canUpdate"
                     />

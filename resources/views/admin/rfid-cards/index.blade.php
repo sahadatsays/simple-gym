@@ -3,7 +3,7 @@
 @section('title', 'RFID Cards')
 
 @section('content')
-    <x-ui.page-header title="RFID Cards" subtitle="Register, assign, replace, disable, and enable member access cards. Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}, deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}, replacement fee {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}.">
+    <x-ui.page-header title="RFID Cards" subtitle="Register, assign, replace, disable, and enable member access cards. Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} is collected once per member. Set it in Settings.">
         <x-slot:actions>
             @can('create', App\Models\RfidCard::class)
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerCardModal">
@@ -55,7 +55,6 @@
                             <th>Card Number</th>
                             <th>Status</th>
                             <th class="d-none d-lg-table-cell">Card Fee</th>
-                            <th class="d-none d-lg-table-cell">Deposit</th>
                             <th class="d-none d-xl-table-cell">Created By</th>
                             <th class="d-none d-md-table-cell">Assigned Member</th>
                             <th class="text-end pe-4">Actions</th>
@@ -78,7 +77,6 @@
                                     </span>
                                 </td>
                                 <td class="d-none d-lg-table-cell">{{ App\Support\MoneyFormatter::format($card->card_fee, $gymCurrency) }}</td>
-                                <td class="d-none d-lg-table-cell">{{ App\Support\MoneyFormatter::format($card->deposit_amount, $gymCurrency) }}</td>
                                 <td class="d-none d-xl-table-cell text-muted">{{ $card->creator?->name ?? '—' }}</td>
                                 <td class="d-none d-md-table-cell">
                                     @if ($card->member)
@@ -93,15 +91,13 @@
                                         :card="$card"
                                         :members="$members"
                                         :card-fee="$cardFee"
-                                        :card-deposit="$cardDeposit"
-                                        :replacement-fee="$replacementFee"
                                         :gym-currency="$gymCurrency"
                                     />
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-5">
+                                <td colspan="6" class="text-center py-5">
                                     <div class="sg-empty-state">
                                         <h3 class="h6 mb-1">No RFID cards found</h3>
                                         <p class="text-muted small mb-0">Register a card or adjust your search.</p>
@@ -175,15 +171,15 @@
                                 required
                             />
                             <p class="text-muted small">
-                                Replacement fee {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}. The previous assignment stays in history.
+                                The card fee is collected once per member. A member who already paid is not charged again. The previous assignment stays in history.
                             </p>
-                            @if ($replacementFee > 0)
+                            @if ($cardFee > 0)
                                 <x-forms.select
                                     label="Payment method"
                                     name="payment_method"
                                     :options="App\Enums\PaymentMethod::options()"
                                     selected="cash"
-                                    required
+                                    help="Required only when this member has not paid the card fee yet."
                                 />
                             @endif
                         </div>

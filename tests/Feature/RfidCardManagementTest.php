@@ -275,7 +275,6 @@ it('rejects a duplicate card number', function () {
 it('records one assignment and collects the card fee through an invoice', function () {
     GymSetting::query()->first()->update([
         'rfid_card_fee' => 100,
-        'rfid_card_deposit' => 50,
     ]);
 
     $member = Member::factory()->create();
@@ -301,12 +300,13 @@ it('records one assignment and collects the card fee through an invoice', functi
         ->and($assignment->status)->toBe(RfidCardStatus::Assigned)
         ->and($assignment->return_date)->toBeNull()
         ->and((float) $assignment->card_fee)->toBe(100.0)
-        ->and((float) $assignment->deposit_amount)->toBe(50.0)
+        ->and((float) $assignment->deposit_amount)->toBe(0.0)
         ->and($invoice)->not->toBeNull()
-        ->and((float) $invoice->total)->toBe(150.0)
+        ->and((float) $invoice->total)->toBe(100.0)
+        ->and($invoice->line_items[0]['description'])->toBe('RFID card fee')
         ->and($payment)->not->toBeNull()
         ->and($payment->type)->toBe(PaymentType::RfidCard)
-        ->and((float) $payment->amount)->toBe(150.0);
+        ->and((float) $payment->amount)->toBe(100.0);
 
     $this->actingAs($this->admin)
         ->get(route('admin.rfid-cards.show', $card))
@@ -319,7 +319,6 @@ it('records one assignment and collects the card fee through an invoice', functi
 it('requires a payment method when the card has a fee', function () {
     GymSetting::query()->first()->update([
         'rfid_card_fee' => 80,
-        'rfid_card_deposit' => 0,
     ]);
 
     $member = Member::factory()->create();
@@ -340,7 +339,6 @@ it('requires a payment method when the card has a fee', function () {
 it('does not assign the card when the card payment fails', function () {
     GymSetting::query()->first()->update([
         'rfid_card_fee' => 100,
-        'rfid_card_deposit' => 25,
     ]);
 
     $this->mock(PaymentService::class, function ($mock): void {
@@ -368,11 +366,9 @@ it('does not assign the card when the card payment fails', function () {
         ->and(Payment::query()->count())->toBe(0);
 });
 
-it('charges the configured replacement fee and keeps the previous assignment', function () {
+it('does not charge the card fee again when a paid member replaces a card', function () {
     GymSetting::query()->first()->update([
         'rfid_card_fee' => 100,
-        'rfid_card_deposit' => 40,
-        'rfid_replacement_card_fee' => 60,
     ]);
 
     $member = Member::factory()->create();
@@ -399,24 +395,21 @@ it('charges the configured replacement fee and keeps the previous assignment', f
     $firstAssignment = RfidCardAssignment::query()->where('rfid_card_id', $card->id)->first();
     $replacement = RfidCard::query()->where('card_number', 'RFIDREP002')->first();
     $replacementAssignment = RfidCardAssignment::query()->where('rfid_card_id', $replacement?->id)->first();
-    $replacementInvoice = Invoice::query()->where('id', $replacementAssignment?->invoice_id)->first();
 
     expect($firstAssignment->status)->toBe(RfidCardStatus::Returned)
         ->and($firstAssignment->return_date)->not->toBeNull()
         ->and((float) $firstAssignment->card_fee)->toBe(100.0)
-        ->and((float) $firstAssignment->deposit_amount)->toBe(40.0)
         ->and($replacement->status)->toBe(RfidCardStatus::Assigned)
         ->and($replacementAssignment->status)->toBe(RfidCardStatus::Assigned)
-        ->and((float) $replacementAssignment->card_fee)->toBe(60.0)
-        ->and((float) $replacementAssignment->deposit_amount)->toBe(0.0)
-        ->and((float) $replacementInvoice->total)->toBe(60.0)
-        ->and($replacementInvoice->line_items[0]['description'])->toBe('RFID replacement card fee')
+        ->and((float) $replacementAssignment->card_fee)->toBe(0.0)
+        ->and($replacementAssignment->invoice_id)->toBeNull()
+        ->and(Invoice::query()->where('type', InvoiceType::RfidCard)->count())->toBe(1)
         ->and(RfidCardAssignment::query()->count())->toBe(2);
 });
 
-it('leaves the current card assigned when the replacement payment fails', function () {
+it('leaves the current card assigned when the card fee payment fails during replacement', function () {
     GymSetting::query()->first()->update([
-        'rfid_replacement_card_fee' => 75,
+        'rfid_card_fee' => 0,
     ]);
 
     $member = Member::factory()->create();
@@ -430,6 +423,10 @@ it('leaves the current card assigned when the replacement payment fails', functi
             'member_id' => $member->id,
         ])
         ->assertRedirect();
+
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 75,
+    ]);
 
     $this->mock(PaymentService::class, function ($mock): void {
         $mock->shouldReceive('settleInvoice')->once()->andThrow(PaymentFailedException::declined());
@@ -527,6 +524,90 @@ it('does not assign a lost or blocked card', function (RfidCardStatus $status) {
     'lost' => RfidCardStatus::Lost,
     'blocked' => RfidCardStatus::Blocked,
 ]);
+
+it('collects the settings fee for a card that is already assigned', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 100,
+    ]);
+
+    $member = Member::factory()->create();
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDOLD001',
+        'status' => RfidCardStatus::Assigned,
+        'member_id' => $member->id,
+        'card_fee' => 0,
+        'deposit_amount' => 0,
+        'assigned_at' => now(),
+    ]);
+    $assignment = RfidCardAssignment::query()->create([
+        'member_id' => $member->id,
+        'rfid_card_id' => $card->id,
+        'issue_date' => now()->subMonth(),
+        'return_date' => null,
+        'card_fee' => 0,
+        'deposit_amount' => 0,
+        'status' => RfidCardStatus::Assigned,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.rfid-cards.index'))
+        ->post(route('admin.rfid-cards.collect-fee', $card), [
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect(route('admin.rfid-cards.index'));
+
+    $payment = Payment::query()->first();
+
+    expect((float) $card->fresh()->card_fee)->toBe(100.0)
+        ->and((float) $card->fresh()->deposit_amount)->toBe(0.0)
+        ->and($card->fresh()->status)->toBe(RfidCardStatus::Assigned)
+        ->and($card->fresh()->member_id)->toBe($member->id)
+        ->and((float) $assignment->fresh()->card_fee)->toBe(100.0)
+        ->and($assignment->fresh()->invoice_id)->not->toBeNull()
+        ->and(RfidCardAssignment::query()->count())->toBe(1)
+        ->and($payment->type)->toBe(PaymentType::RfidCard)
+        ->and((float) $payment->amount)->toBe(100.0);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.rfid-cards.index'))
+        ->post(route('admin.rfid-cards.collect-fee', $card), [
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect(route('admin.rfid-cards.index'))
+        ->assertSessionHas('flash.type', 'danger');
+
+    expect(Invoice::query()->count())->toBe(1)
+        ->and(Payment::query()->count())->toBe(1);
+});
+
+it('does not collect a card fee when settings have no charge', function () {
+    $member = Member::factory()->create();
+    $card = RfidCard::factory()->create([
+        'status' => RfidCardStatus::Assigned,
+        'member_id' => $member->id,
+        'assigned_at' => now(),
+    ]);
+    RfidCardAssignment::query()->create([
+        'member_id' => $member->id,
+        'rfid_card_id' => $card->id,
+        'issue_date' => now(),
+        'return_date' => null,
+        'card_fee' => 0,
+        'deposit_amount' => 0,
+        'status' => RfidCardStatus::Assigned,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.rfid-cards.index'))
+        ->post(route('admin.rfid-cards.collect-fee', $card), [
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect(route('admin.rfid-cards.index'))
+        ->assertSessionHas('flash.type', 'danger');
+
+    expect(Invoice::query()->count())->toBe(0)
+        ->and((float) $card->fresh()->card_fee)->toBe(0.0);
+});
 
 it('denies rfid management without permission', function () {
     $staff = User::factory()->create(['username' => 'staffuser', 'is_active' => true]);

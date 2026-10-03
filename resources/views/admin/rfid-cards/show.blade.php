@@ -31,9 +31,8 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <div class="text-muted small">Deposit Amount</div>
-                    <div class="fw-semibold mt-1">{{ App\Support\MoneyFormatter::format($card->deposit_amount, $gymCurrency) }}</div>
-                    <div class="text-muted small mt-2">Created by {{ $card->creator?->name ?? '—' }}</div>
+                    <div class="text-muted small">Created by</div>
+                    <div class="fw-semibold mt-1">{{ $card->creator?->name ?? '—' }}</div>
                 </div>
             </div>
         </div>
@@ -52,7 +51,6 @@
                             <th class="d-none d-md-table-cell">Issue Date</th>
                             <th class="d-none d-md-table-cell">Return Date</th>
                             <th class="d-none d-lg-table-cell">Card Fee</th>
-                            <th class="d-none d-lg-table-cell">Deposit</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -66,7 +64,6 @@
                                 <td class="d-none d-md-table-cell">{{ $assignment->issue_date?->format('M j, Y') }}</td>
                                 <td class="d-none d-md-table-cell">{{ $assignment->return_date?->format('M j, Y') ?? '—' }}</td>
                                 <td class="d-none d-lg-table-cell">{{ App\Support\MoneyFormatter::format($assignment->card_fee, $gymCurrency) }}</td>
-                                <td class="d-none d-lg-table-cell">{{ App\Support\MoneyFormatter::format($assignment->deposit_amount, $gymCurrency) }}</td>
                                 <td>
                                     <span class="sg-status-badge {{ $assignment->status->badgeClass() }}">{{ $assignment->status->label() }}</span>
                                     @if ($assignment->invoice)
@@ -78,7 +75,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">No assignments yet.</td>
+                                <td colspan="5" class="text-center py-5 text-muted">No assignments yet.</td>
                             </tr>
                         @endforelse
                     </tbody>

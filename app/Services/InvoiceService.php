@@ -107,39 +107,18 @@ class InvoiceService extends BaseService
         return $this->createInvoice($member, $plan, InvoiceType::Renewal, $charges, $dueAt);
     }
 
-    /**
-     * @param  array<int, array{description: string, amount: float}>  $lineItems
-     */
-    public function createRfidInvoice(Member $member, float $cardFee, float $depositAmount, float $replacementFee = 0): ?Invoice
+    public function createRfidInvoice(Member $member, float $cardFee): ?Invoice
     {
-        $lineItems = [];
-
-        if (Money::greaterThan($cardFee, 0)) {
-            $lineItems[] = [
-                'description' => 'RFID card fee',
-                'amount' => Money::round($cardFee),
-            ];
-        }
-
-        if (Money::greaterThan($depositAmount, 0)) {
-            $lineItems[] = [
-                'description' => 'RFID card deposit',
-                'amount' => Money::round($depositAmount),
-            ];
-        }
-
-        if (Money::greaterThan($replacementFee, 0)) {
-            $lineItems[] = [
-                'description' => 'RFID replacement card fee',
-                'amount' => Money::round($replacementFee),
-            ];
-        }
-
-        if ($lineItems === []) {
+        if (! Money::greaterThan($cardFee, 0)) {
             return null;
         }
 
-        $charges = $this->buildChargeSummary($lineItems);
+        $charges = $this->buildChargeSummary([
+            [
+                'description' => 'RFID card fee',
+                'amount' => Money::round($cardFee),
+            ],
+        ]);
 
         return $this->createChargeInvoice($member, InvoiceType::RfidCard, $charges);
     }
