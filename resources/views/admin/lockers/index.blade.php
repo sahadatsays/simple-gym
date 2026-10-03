@@ -5,6 +5,11 @@
 @section('content')
     <x-ui.page-header title="Lockers" subtitle="Manage locker numbers, locations, and monthly fees">
         <x-slot:actions>
+            @can('viewAny', App\Models\LockerReservation::class)
+                <a href="{{ route('admin.locker-reservations.index') }}" class="btn btn-light">
+                    Reservations
+                </a>
+            @endcan
             @can('create', App\Models\Locker::class)
                 <a href="{{ route('admin.lockers.create') }}" class="btn btn-primary">
                     Add Locker

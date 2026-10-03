@@ -7,7 +7,7 @@
         @if ($group['single'])
             @php($item = $group['items']->first())
             <a
-                href="{{ route($item['route']) }}"
+                href="{{ route($item['route']) }}{{ isset($item['fragment']) ? '#'.$item['fragment'] : '' }}"
                 @class(['sg-sidebar-link', 'active' => $item['active']])
                 title="{{ $item['label'] }}"
             >
@@ -38,7 +38,7 @@
                 <div class="sg-sidebar-submenu" x-show="open" x-transition.opacity.duration.200ms>
                     @foreach ($group['items'] as $item)
                         <a
-                            href="{{ route($item['route']) }}"
+                            href="{{ route($item['route']) }}{{ isset($item['fragment']) ? '#'.$item['fragment'] : '' }}"
                             @class(['sg-sidebar-sublink', 'active' => $item['active']])
                             @click="sidebarOpen = false"
                         >

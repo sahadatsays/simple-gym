@@ -173,7 +173,7 @@
                     </div>
                 </x-ui.card>
 
-                <x-ui.card title="{{ __('settings.sections.device_access_restriction') }}" class="mb-4">
+                <x-ui.card id="access-time-periods" title="{{ __('settings.sections.device_access_restriction') }}" class="mb-4" style="scroll-margin-top: 5rem">
                     <p class="text-muted small">
                         {{ __('settings.device_restriction.description') }}
                     </p>

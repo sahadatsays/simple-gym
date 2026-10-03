@@ -39,7 +39,7 @@
                         </form>
                     @endcan
                 @else
-                    @can('replace', App\Models\RfidCard::class)
+                    @can('issue', App\Models\RfidCard::class)
                         <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#memberIssueCardModal">
                             Issue card
                         </button>
@@ -186,7 +186,7 @@
     </div>
 </div>
 
-@can('replace', App\Models\RfidCard::class)
+@can('issue', App\Models\RfidCard::class)
     @unless ($activeCard)
         <div class="modal fade" id="memberIssueCardModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">

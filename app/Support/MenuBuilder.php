@@ -54,7 +54,7 @@ class MenuBuilder
                         'label' => __('navigation.items.'.$item['key']),
                     ]),
                     'active' => $items->contains(fn (array $item): bool => $item['active']),
-                    'single' => $items->count() === 1,
+                    'single' => $items->count() === 1 && ($group['flatten_single'] ?? true),
                 ];
             })
             ->filter()

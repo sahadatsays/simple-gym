@@ -15,7 +15,7 @@ class IssueRfidCardRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('replace', RfidCard::class) ?? false;
+        return $this->user()?->can('issue', RfidCard::class) ?? false;
     }
 
     /**
