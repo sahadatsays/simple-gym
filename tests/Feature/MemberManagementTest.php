@@ -1,10 +1,17 @@
 <?php
 
+use App\Enums\LockerReservationStatus;
+use App\Enums\LockerStatus;
 use App\Enums\MemberStatus;
+use App\Enums\RfidCardStatus;
 use App\Models\Invoice;
+use App\Models\Locker;
+use App\Models\LockerReservation;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\Payment;
+use App\Models\RfidCard;
+use App\Models\RfidCardAssignment;
 use App\Models\User;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -241,6 +248,101 @@ it('prevents deleting a member with invoice history', function () {
         ->assertSessionHas('flash.type', 'danger');
 
     expect(Member::query()->whereKey($member->id)->exists())->toBeTrue();
+});
+
+it('shows rfid card and locker details on the member profile', function () {
+    $member = Member::factory()->create([
+        'name' => 'Access Member',
+        'membership_plan_id' => $this->plan->id,
+    ]);
+    $currentCard = RfidCard::factory()->create([
+        'card_number' => 'NEW-9',
+        'status' => RfidCardStatus::Assigned,
+        'member_id' => $member->id,
+        'assigned_at' => '2026-09-02 10:00:00',
+    ]);
+    $previousCard = RfidCard::factory()->create([
+        'card_number' => 'OLD-1',
+        'status' => RfidCardStatus::Returned,
+    ]);
+    RfidCardAssignment::query()->create([
+        'member_id' => $member->id,
+        'rfid_card_id' => $previousCard->id,
+        'issue_date' => '2026-08-01 10:00:00',
+        'return_date' => '2026-08-20 10:00:00',
+        'card_fee' => 0,
+        'deposit_amount' => 0,
+        'status' => RfidCardStatus::Returned,
+    ]);
+    RfidCardAssignment::query()->create([
+        'member_id' => $member->id,
+        'rfid_card_id' => $currentCard->id,
+        'issue_date' => '2026-09-02 10:00:00',
+        'return_date' => null,
+        'card_fee' => 0,
+        'deposit_amount' => 0,
+        'status' => RfidCardStatus::Assigned,
+    ]);
+    $locker = Locker::factory()->create([
+        'locker_number' => 'L-77',
+        'monthly_fee' => 250,
+        'status' => LockerStatus::Reserved,
+    ]);
+    $reservation = LockerReservation::factory()->create([
+        'locker_id' => $locker->id,
+        'member_id' => $member->id,
+        'start_date' => '2026-10-01',
+        'end_date' => '2026-10-31',
+        'monthly_fee' => 250,
+        'status' => LockerReservationStatus::Active,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.members.show', $member))
+        ->assertSuccessful()
+        ->assertSee('RFID Card')
+        ->assertSee('NEW-9')
+        ->assertSee('OLD-1')
+        ->assertSee('Sep 2, 2026')
+        ->assertSee('Replace')
+        ->assertSee('Return card')
+        ->assertDontSee('Issue card')
+        ->assertSee('Locker')
+        ->assertSee('L-77')
+        ->assertSee('Oct 1, 2026')
+        ->assertSee('Oct 31, 2026')
+        ->assertSee(route('admin.locker-reservations.renew', $reservation), false);
+
+    $staff = User::factory()->create([
+        'username' => 'profilestaff',
+        'is_active' => true,
+    ]);
+    $staff->assignRole('staff');
+
+    $this->actingAs($staff)
+        ->get(route('admin.members.show', $member))
+        ->assertSuccessful()
+        ->assertSee('NEW-9')
+        ->assertSee('L-77')
+        ->assertDontSee('Issue card')
+        ->assertDontSee('Replace')
+        ->assertDontSee('Return card')
+        ->assertDontSee(route('admin.locker-reservations.renew', $reservation), false);
+});
+
+it('issues an rfid card from the member profile', function () {
+    $member = Member::factory()->create();
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.members.show', $member))
+        ->post(route('admin.rfid-cards.issue'), [
+            'member_id' => $member->id,
+            'card_number' => 'SCAN-1',
+        ])
+        ->assertRedirect(route('admin.members.show', $member));
+
+    expect($member->fresh()->activeRfidCard?->card_number)->toBe('SCAN-1')
+        ->and($member->rfidCardAssignments()->count())->toBe(1);
 });
 
 it('denies access without permission', function () {

@@ -94,6 +94,22 @@ class Member extends Model
     }
 
     /**
+     * @return HasMany<RfidCardAssignment, $this>
+     */
+    public function rfidCardAssignments(): HasMany
+    {
+        return $this->hasMany(RfidCardAssignment::class)->latest('issue_date')->latest('id');
+    }
+
+    /**
+     * @return HasMany<LockerReservation, $this>
+     */
+    public function lockerReservations(): HasMany
+    {
+        return $this->hasMany(LockerReservation::class)->latest('start_date')->latest('id');
+    }
+
+    /**
      * @return BelongsTo<MembershipPlan, $this>
      */
     public function membershipPlan(): BelongsTo

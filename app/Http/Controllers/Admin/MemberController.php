@@ -11,6 +11,8 @@ use App\Http\Requests\Admin\StoreMemberRequest;
 use App\Http\Requests\Admin\UpdateMemberRequest;
 use App\Models\Member;
 use App\Models\MembershipPlan;
+use App\Services\GymSettingService;
+use App\Services\LockerReservationService;
 use App\Services\MemberService;
 use App\Support\Flash;
 use App\Support\MemberTransactionSummary;
@@ -23,6 +25,8 @@ class MemberController extends Controller
     public function __construct(
         private MemberRepositoryInterface $members,
         private MemberService $memberService,
+        private GymSettingService $gymSettings,
+        private LockerReservationService $lockerReservations,
     ) {}
 
     public function index(IndexMemberRequest $request): View
@@ -61,9 +65,13 @@ class MemberController extends Controller
     {
         $this->authorize('view', $member);
 
+        $this->lockerReservations->expireDueReservations();
+
         $member->load([
             'membershipPlan',
-            'activeRfidCard',
+            'activeRfidCard.openAssignment',
+            'rfidCardAssignments.rfidCard',
+            'lockerReservations.locker',
             'payments' => fn ($query) => $query->with('invoice')->latest('paid_at'),
             'invoices' => fn ($query) => $query
                 ->where('type', InvoiceType::PosSale)
@@ -71,6 +79,8 @@ class MemberController extends Controller
                 ->latest('issued_at'),
             'membershipRenewals' => fn ($query) => $query->with(['membershipPlan', 'invoice.payment'])->latest('renewed_at')->limit(10),
         ]);
+
+        $settings = $this->gymSettings->get();
 
         return view('admin.members.show', [
             'member' => $member,
@@ -82,6 +92,9 @@ class MemberController extends Controller
                 ->where('type', PaymentType::PosSale)
                 ->values(),
             'posOrders' => $member->invoices,
+            'cardFee' => (float) $settings->rfid_card_fee,
+            'cardDeposit' => (float) $settings->rfid_card_deposit,
+            'replacementFee' => (float) $settings->rfid_replacement_card_fee,
         ]);
     }
 

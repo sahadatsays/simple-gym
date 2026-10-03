@@ -48,6 +48,7 @@ class LockerReservationController extends Controller
                 ->orderBy('locker_number')
                 ->get(['id', 'locker_number', 'location', 'monthly_fee', 'status']),
             'selectedLockerId' => request()->integer('locker_id') ?: null,
+            'selectedMemberId' => request()->integer('member_id') ?: null,
         ]);
     }
 

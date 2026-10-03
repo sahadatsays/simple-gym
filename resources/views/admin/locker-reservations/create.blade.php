@@ -49,7 +49,7 @@
                     label="Member"
                     name="member_id"
                     :options="$members->mapWithKeys(fn ($member) => [$member->id => $member->name.' ('.$member->member_code.')'])->all()"
-                    :selected="old('member_id')"
+                    :selected="old('member_id', $selectedMemberId)"
                     placeholder="Search member..."
                     required
                 />

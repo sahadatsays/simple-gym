@@ -62,6 +62,35 @@ class RfidCardService extends BaseService
         });
     }
 
+    public function issue(Member $member, string $cardNumber, ?string $paymentMethod = null, ?int $createdBy = null): RfidCard
+    {
+        return $this->transaction(function () use ($member, $cardNumber, $paymentMethod, $createdBy): RfidCard {
+            $member = Member::query()->whereKey($member->id)->lockForUpdate()->first();
+
+            if ($member === null) {
+                throw new InvalidArgumentException('The selected member was not found.');
+            }
+
+            if ($member->activeRfidCard()->exists()) {
+                throw new InvalidArgumentException('This member already has an active card. Replace it instead.');
+            }
+
+            $card = $this->rfidCards->findByCardNumber($cardNumber);
+
+            if ($card === null) {
+                $card = $this->rfidCards->create([
+                    'card_number' => $cardNumber,
+                    'card_fee' => 0,
+                    'deposit_amount' => 0,
+                    'status' => RfidCardStatus::Available,
+                    'created_by' => $createdBy,
+                ]);
+            }
+
+            return $this->assign($card, $member, $paymentMethod);
+        });
+    }
+
     public function replace(Member $member, string $cardNumber, ?string $paymentMethod = null, ?int $createdBy = null): RfidCard
     {
         return $this->transaction(function () use ($member, $cardNumber, $paymentMethod, $createdBy): RfidCard {

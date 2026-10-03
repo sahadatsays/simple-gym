@@ -7,6 +7,7 @@ use App\Exceptions\PaymentFailedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignRfidCardRequest;
 use App\Http\Requests\Admin\IndexRfidCardRequest;
+use App\Http\Requests\Admin\IssueRfidCardRequest;
 use App\Http\Requests\Admin\ReplaceRfidCardRequest;
 use App\Http\Requests\Admin\StoreRfidCardRequest;
 use App\Models\Member;
@@ -91,6 +92,26 @@ class RfidCardController extends Controller
         Flash::success('RFID card assigned successfully.');
 
         return redirect()->route('admin.rfid-cards.index');
+    }
+
+    public function issue(IssueRfidCardRequest $request): RedirectResponse
+    {
+        try {
+            $this->rfidCardService->issue(
+                $request->member(),
+                $request->validated('card_number'),
+                $request->validated('payment_method'),
+                $request->user()?->id,
+            );
+        } catch (PaymentFailedException|InvalidArgumentException $exception) {
+            Flash::error($exception->getMessage());
+
+            return back();
+        }
+
+        Flash::success('RFID card issued successfully.');
+
+        return back();
     }
 
     public function replace(ReplaceRfidCardRequest $request): RedirectResponse
