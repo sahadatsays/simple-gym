@@ -25,7 +25,6 @@ class RenewLockerReservationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start_month' => ['required', 'date_format:Y-m'],
             'payment_method' => ['nullable', 'string', Rule::enum(PaymentMethod::class)],
         ];
     }
@@ -54,7 +53,6 @@ class RenewLockerReservationRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'start_month' => 'start month',
             'payment_method' => 'payment method',
         ];
     }

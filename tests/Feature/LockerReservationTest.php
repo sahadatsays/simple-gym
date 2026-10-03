@@ -158,19 +158,113 @@ it('keeps the previous reservation when a later month is renewed', function () {
 
     $this->actingAs($this->admin)
         ->post(route('admin.locker-reservations.renew', $original), [
-            'start_month' => '2026-11',
             'payment_method' => 'cash',
         ])
         ->assertRedirect();
 
     $original->refresh();
+    $november = LockerReservation::query()->whereDate('start_date', '2026-11-01')->first();
 
     expect(LockerReservation::query()->count())->toBe(2)
         ->and($original->start_date->toDateString())->toBe('2026-10-01')
         ->and($original->end_date->toDateString())->toBe('2026-10-31')
         ->and($original->status)->toBe(LockerReservationStatus::Active)
         ->and((float) $original->monthly_fee)->toBe(180.0)
-        ->and(LockerReservation::query()->whereDate('start_date', '2026-11-01')->count())->toBe(1);
+        ->and($november)->not->toBeNull()
+        ->and($november->end_date->toDateString())->toBe('2026-11-30')
+        ->and($november->id)->not->toBe($original->id)
+        ->and((float) $november->monthly_fee)->toBe(180.0)
+        ->and($november->invoice_id)->not->toBe($original->invoice_id);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.locker-reservations.renew', $november), [
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect();
+
+    $original->refresh();
+    $november->refresh();
+    $december = LockerReservation::query()->whereDate('start_date', '2026-12-01')->first();
+
+    expect(LockerReservation::query()->count())->toBe(3)
+        ->and($original->end_date->toDateString())->toBe('2026-10-31')
+        ->and($november->start_date->toDateString())->toBe('2026-11-01')
+        ->and($november->end_date->toDateString())->toBe('2026-11-30')
+        ->and($december)->not->toBeNull()
+        ->and($december->end_date->toDateString())->toBe('2026-12-31');
+});
+
+it('blocks renewal when the reservation is cancelled or the locker cannot be reserved', function (string $blocker) {
+    $member = Member::factory()->create();
+    $locker = Locker::factory()->create([
+        'monthly_fee' => 120,
+        'status' => LockerStatus::Available,
+    ]);
+    $service = app(LockerReservationService::class);
+    $reservation = $service->reserve($locker, $member, '2026-10', 'cash', $this->admin->id);
+
+    if ($blocker === 'cancelled') {
+        $service->cancel($reservation);
+    } else {
+        $locker->update([
+            'status' => $blocker === 'maintenance' ? LockerStatus::Maintenance : LockerStatus::Disabled,
+        ]);
+    }
+
+    expect(fn () => $service->renew($reservation->fresh(), 'cash', $this->admin->id))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(LockerReservation::query()->count())->toBe(1)
+        ->and($reservation->fresh()->start_date->toDateString())->toBe('2026-10-01')
+        ->and($reservation->fresh()->end_date->toDateString())->toBe('2026-10-31');
+})->with([
+    'cancelled',
+    'maintenance',
+    'disabled',
+]);
+
+it('blocks renewal when the next month is already reserved', function () {
+    $member = Member::factory()->create();
+    $other = Member::factory()->create();
+    $locker = Locker::factory()->create([
+        'monthly_fee' => 100,
+        'status' => LockerStatus::Available,
+    ]);
+    $service = app(LockerReservationService::class);
+    $october = $service->reserve($locker, $member, '2026-10', 'cash', $this->admin->id);
+    $service->reserve($locker->fresh(), $other, '2026-11', 'cash', $this->admin->id);
+
+    expect(fn () => $service->renew($october->fresh(), 'cash', $this->admin->id))
+        ->toThrow(InvalidArgumentException::class, 'already has an active reservation');
+
+    expect(LockerReservation::query()->count())->toBe(2)
+        ->and($october->fresh()->end_date->toDateString())->toBe('2026-10-31');
+});
+
+it('does not extend a reservation when the renewal payment fails', function () {
+    $member = Member::factory()->create();
+    $locker = Locker::factory()->create([
+        'monthly_fee' => 150,
+        'status' => LockerStatus::Available,
+    ]);
+    $reservation = app(LockerReservationService::class)->reserve($locker, $member, '2026-10', 'cash', $this->admin->id);
+
+    $this->mock(PaymentService::class, function ($mock): void {
+        $mock->shouldReceive('settleInvoice')->once()->andThrow(PaymentFailedException::declined());
+    });
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.locker-reservations.show', $reservation))
+        ->post(route('admin.locker-reservations.renew', $reservation), [
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect(route('admin.locker-reservations.show', $reservation))
+        ->assertSessionHasErrors('reservation');
+
+    expect(LockerReservation::query()->count())->toBe(1)
+        ->and(Invoice::query()->count())->toBe(1)
+        ->and($reservation->fresh()->end_date->toDateString())->toBe('2026-10-31')
+        ->and($reservation->fresh()->status)->toBe(LockerReservationStatus::Active);
 });
 
 it('refuses maintenance and disabled lockers', function (LockerStatus $status) {

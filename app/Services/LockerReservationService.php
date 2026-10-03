@@ -59,15 +59,54 @@ class LockerReservationService extends BaseService
         });
     }
 
-    public function renew(LockerReservation $reservation, string $month, ?string $paymentMethod, ?int $createdBy): LockerReservation
+    public function renew(LockerReservation $reservation, ?string $paymentMethod, ?int $createdBy): LockerReservation
     {
-        $reservation->loadMissing(['locker', 'member']);
+        return $this->transaction(function () use ($reservation, $paymentMethod, $createdBy): LockerReservation {
+            $locked = LockerReservation::query()->whereKey($reservation->id)->lockForUpdate()->first();
 
-        if ($reservation->locker === null || $reservation->member === null) {
-            throw new InvalidArgumentException('This reservation cannot be renewed.');
-        }
+            if ($locked === null || $locked->status === LockerReservationStatus::Cancelled) {
+                throw new InvalidArgumentException('A cancelled reservation cannot be renewed.');
+            }
 
-        return $this->reserve($reservation->locker, $reservation->member, $month, $paymentMethod, $createdBy);
+            $locked->load(['locker', 'member']);
+
+            if ($locked->locker === null || $locked->member === null) {
+                throw new InvalidArgumentException('This reservation cannot be renewed.');
+            }
+
+            if (! $locked->locker->canBeReserved()) {
+                throw new InvalidArgumentException('Disabled or maintenance lockers cannot be renewed.');
+            }
+
+            $period = $this->nextPeriod($locked);
+            $history = [
+                'start_date' => $locked->start_date->toDateString(),
+                'end_date' => $locked->end_date->toDateString(),
+                'monthly_fee' => (float) $locked->monthly_fee,
+                'invoice_id' => $locked->invoice_id,
+            ];
+
+            $renewal = $this->reserve(
+                $locked->locker,
+                $locked->member,
+                Carbon::parse($period['start_date'])->format('Y-m'),
+                $paymentMethod,
+                $createdBy,
+            );
+
+            $locked->refresh();
+
+            if (
+                $locked->start_date->toDateString() !== $history['start_date']
+                || $locked->end_date->toDateString() !== $history['end_date']
+                || (float) $locked->monthly_fee !== $history['monthly_fee']
+                || $locked->invoice_id !== $history['invoice_id']
+            ) {
+                throw new InvalidArgumentException('The previous reservation cannot be changed during renewal.');
+            }
+
+            return $renewal;
+        });
     }
 
     public function cancel(LockerReservation $reservation): LockerReservation
@@ -149,9 +188,22 @@ class LockerReservationService extends BaseService
         ];
     }
 
-    public function nextMonth(LockerReservation $reservation): string
+    /**
+     * @return array{start_date: string, end_date: string}
+     */
+    public function nextPeriod(LockerReservation $reservation): array
     {
-        return $reservation->end_date->copy()->addDay()->format('Y-m');
+        $start = $reservation->end_date->copy()->addDay()->startOfDay();
+        $end = $start->copy()->endOfMonth()->startOfDay();
+
+        if ($start->gt($end)) {
+            throw new InvalidArgumentException('The start date must be on or before the end date.');
+        }
+
+        return [
+            'start_date' => $start->toDateString(),
+            'end_date' => $end->toDateString(),
+        ];
     }
 
     private function expireDueForLocker(Locker $locker): void

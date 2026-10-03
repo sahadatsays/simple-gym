@@ -78,7 +78,7 @@ class LockerReservationController extends Controller
 
         return view('admin.locker-reservations.show', [
             'reservation' => $lockerReservation,
-            'nextMonth' => $this->reservationService->nextMonth($lockerReservation),
+            'nextPeriod' => $this->reservationService->nextPeriod($lockerReservation),
         ]);
     }
 
@@ -87,7 +87,6 @@ class LockerReservationController extends Controller
         try {
             $renewal = $this->reservationService->renew(
                 $lockerReservation,
-                $request->validated('start_month'),
                 $request->validated('payment_method'),
                 $request->user()?->id,
             );

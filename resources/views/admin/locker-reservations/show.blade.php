@@ -58,26 +58,21 @@
             </div>
         </div>
 
-        @if ($reservation->isActive())
+        @if ($reservation->status !== App\Enums\LockerReservationStatus::Cancelled)
             <div class="col-lg-4">
                 @can('renew', $reservation)
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-body">
                             <h2 class="h6">Renew</h2>
-                            <p class="text-muted small">A renewal adds a new reservation. The current record stays as history.</p>
+                            <p class="text-muted small">Renewal adds the next month. This reservation stays unchanged.</p>
+                            <dl class="row small mb-3">
+                                <dt class="col-5">Next period</dt>
+                                <dd class="col-7">{{ \Illuminate\Support\Carbon::parse($nextPeriod['start_date'])->format('M j, Y') }} – {{ \Illuminate\Support\Carbon::parse($nextPeriod['end_date'])->format('M j, Y') }}</dd>
+                                <dt class="col-5">Monthly fee</dt>
+                                <dd class="col-7">{{ App\Support\MoneyFormatter::format($reservation->locker->monthly_fee ?? 0, $gymCurrency) }}</dd>
+                            </dl>
                             <form action="{{ route('admin.locker-reservations.renew', $reservation) }}" method="POST">
                                 @csrf
-                                <div class="mb-3">
-                                    <label for="renew_start_month" class="form-label">Start month</label>
-                                    <input
-                                        type="month"
-                                        name="start_month"
-                                        id="renew_start_month"
-                                        class="form-control"
-                                        value="{{ old('start_month', $nextMonth) }}"
-                                        required
-                                    >
-                                </div>
                                 @if ((float) ($reservation->locker->monthly_fee ?? 0) > 0)
                                     <x-forms.select
                                         label="Payment method"
@@ -92,6 +87,7 @@
                     </div>
                 @endcan
 
+                @if ($reservation->isActive())
                 @can('cancel', $reservation)
                     <form
                         action="{{ route('admin.locker-reservations.cancel', $reservation) }}"
@@ -103,6 +99,7 @@
                         <button type="submit" class="btn btn-outline-danger">Cancel reservation</button>
                     </form>
                 @endcan
+                @endif
             </div>
         @endif
     </div>
