@@ -1,7 +1,9 @@
 <?php
 
+use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
 use App\Enums\MemberStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use App\Enums\RfidCardStatus;
 use App\Enums\ZktecoDeviceStatus;
@@ -16,7 +18,9 @@ use App\Models\RfidCardAssignment;
 use App\Models\User;
 use App\Models\ZktecoCommand;
 use App\Models\ZktecoDevice;
+use App\Services\FinancialSummaryService;
 use App\Services\PaymentService;
+use App\Support\DashboardDateRange;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -303,7 +307,9 @@ it('records one assignment and collects the card fee through an invoice', functi
         ->and((float) $assignment->deposit_amount)->toBe(0.0)
         ->and($invoice)->not->toBeNull()
         ->and((float) $invoice->total)->toBe(100.0)
-        ->and($invoice->line_items[0]['description'])->toBe('RFID card fee')
+        ->and($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and($invoice->line_items[0]['description'])->toBe('RFID Card')
+        ->and((float) $invoice->total)->toEqual(collect($invoice->line_items)->sum('amount'))
         ->and($payment)->not->toBeNull()
         ->and($payment->type)->toBe(PaymentType::RfidCard)
         ->and((float) $payment->amount)->toBe(100.0);
@@ -407,9 +413,95 @@ it('does not charge the card fee again when a paid member replaces a card', func
         ->and(RfidCardAssignment::query()->count())->toBe(2);
 });
 
-it('leaves the current card assigned when the card fee payment fails during replacement', function () {
+it('invoices the card fee and deposit as separate line items', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 100,
+        'rfid_card_deposit' => 50,
+    ]);
+
+    $member = Member::factory()->create();
+    $card = RfidCard::factory()->create([
+        'status' => RfidCardStatus::Available,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.rfid-cards.assign', $card), [
+            'member_id' => $member->id,
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect();
+
+    $invoice = Invoice::query()->where('type', InvoiceType::RfidCard)->first();
+    $payment = Payment::query()->where('invoice_id', $invoice?->id)->first();
+    $summary = app(FinancialSummaryService::class)->forRange(DashboardDateRange::default());
+
+    expect($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and($invoice->line_items)->toHaveCount(2)
+        ->and($invoice->line_items[0]['description'])->toBe('RFID Card')
+        ->and((float) $invoice->line_items[0]['amount'])->toBe(100.0)
+        ->and($invoice->line_items[1]['description'])->toBe('RFID Deposit')
+        ->and((float) $invoice->line_items[1]['amount'])->toBe(50.0)
+        ->and((float) $invoice->total)->toBe(150.0)
+        ->and($payment->type)->toBe(PaymentType::RfidCard)
+        ->and($payment->status)->toBe(PaymentStatus::Completed)
+        ->and((float) $payment->amount)->toBe(150.0)
+        ->and((float) $card->fresh()->deposit_amount)->toBe(50.0)
+        ->and($summary['membership_payments'])->toBe(0.0)
+        ->and($summary['revenue'])->toBe(0.0);
+});
+
+it('invoices a replacement on its own line without charging the deposit again', function () {
+    GymSetting::query()->first()->update([
+        'rfid_card_fee' => 100,
+        'rfid_card_deposit' => 50,
+        'rfid_replacement_card_fee' => 40,
+    ]);
+
+    $member = Member::factory()->create();
+    $card = RfidCard::factory()->create([
+        'card_number' => 'RFIDREPDEP',
+        'status' => RfidCardStatus::Available,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.rfid-cards.assign', $card), [
+            'member_id' => $member->id,
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.rfid-cards.replace'), [
+            'member_id' => $member->id,
+            'card_number' => 'RFIDREPDEP2',
+            'payment_method' => 'cash',
+        ])
+        ->assertRedirect();
+
+    $replacement = RfidCard::query()->where('card_number', 'RFIDREPDEP2')->first();
+    $invoices = Invoice::query()->where('type', InvoiceType::RfidCard)->orderBy('id')->get();
+    $replacementPayment = Payment::query()->where('invoice_id', $invoices[1]->id)->first();
+    $summary = app(FinancialSummaryService::class)->forRange(DashboardDateRange::default());
+
+    expect($invoices)->toHaveCount(2)
+        ->and($invoices[1]->line_items)->toHaveCount(1)
+        ->and($invoices[1]->line_items[0]['description'])->toBe('RFID Replacement')
+        ->and((float) $invoices[1]->line_items[0]['amount'])->toBe(40.0)
+        ->and((float) $invoices[1]->total)->toBe(40.0)
+        ->and($invoices[1]->status)->toBe(InvoiceStatus::Paid)
+        ->and($replacementPayment->type)->toBe(PaymentType::RfidCard)
+        ->and((float) $replacement->fresh()->card_fee)->toBe(0.0)
+        ->and((float) $replacement->fresh()->deposit_amount)->toBe(0.0)
+        ->and((float) $card->fresh()->card_fee)->toBe(100.0)
+        ->and((float) $card->fresh()->deposit_amount)->toBe(50.0)
+        ->and($summary['membership_payments'])->toBe(0.0)
+        ->and($summary['revenue'])->toBe(0.0);
+});
+
+it('leaves the current card assigned when the replacement payment fails', function () {
     GymSetting::query()->first()->update([
         'rfid_card_fee' => 0,
+        'rfid_replacement_card_fee' => 0,
     ]);
 
     $member = Member::factory()->create();
@@ -425,7 +517,7 @@ it('leaves the current card assigned when the card fee payment fails during repl
         ->assertRedirect();
 
     GymSetting::query()->first()->update([
-        'rfid_card_fee' => 75,
+        'rfid_replacement_card_fee' => 75,
     ]);
 
     $this->mock(PaymentService::class, function ($mock): void {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
 use App\Enums\LockerReservationStatus;
 use App\Enums\LockerStatus;
@@ -11,8 +12,10 @@ use App\Models\LockerReservation;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\FinancialSummaryService;
 use App\Services\LockerReservationService;
 use App\Services\PaymentService;
+use App\Support\DashboardDateRange;
 use Database\Seeders\GymSettingSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,9 +71,14 @@ it('activates a paid monthly reservation through the existing invoice system', f
         ->and($reservation->created_by)->toBe($this->admin->id)
         ->and($locker->fresh()->status)->toBe(LockerStatus::Reserved)
         ->and($invoice->type)->toBe(InvoiceType::Locker)
-        ->and((float) $invoice->total)->toBe(300.0)
+        ->and($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and($invoice->line_items[0]['description'])->toBe('Locker')
+        ->and((float) $invoice->line_items[0]['amount'])->toBe(300.0)
+        ->and((float) $invoice->total)->toEqual(collect($invoice->line_items)->sum('amount'))
         ->and($payment->type)->toBe(PaymentType::Locker)
-        ->and((float) $payment->amount)->toBe(300.0);
+        ->and((float) $payment->amount)->toBe(300.0)
+        ->and(app(FinancialSummaryService::class)->forRange(DashboardDateRange::default())['membership_payments'])->toBe(0.0)
+        ->and(app(FinancialSummaryService::class)->forRange(DashboardDateRange::default())['revenue'])->toBe(0.0);
 });
 
 it('activates a free locker without creating an invoice', function () {

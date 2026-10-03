@@ -35,7 +35,7 @@ class LockerReservationService extends BaseService
             $this->assertNoOverlap($locker, $period['start_date'], $period['end_date']);
 
             $monthlyFee = Money::round((float) $locker->monthly_fee);
-            $invoice = $this->collectPayment($locker, $member, $period['start_date'], $monthlyFee, $paymentMethod);
+            $invoice = $this->collectPayment($member, $monthlyFee, $paymentMethod);
 
             $reservation = LockerReservation::query()->create([
                 'locker_id' => $locker->id,
@@ -242,7 +242,7 @@ class LockerReservationService extends BaseService
         }
     }
 
-    private function collectPayment(Locker $locker, Member $member, string $startDate, float $monthlyFee, ?string $paymentMethod): ?Invoice
+    private function collectPayment(Member $member, float $monthlyFee, ?string $paymentMethod): ?Invoice
     {
         if (! Money::greaterThan($monthlyFee, 0)) {
             return null;
@@ -252,12 +252,7 @@ class LockerReservationService extends BaseService
             throw new InvalidArgumentException('Choose a payment method for the locker fee.');
         }
 
-        $monthLabel = Carbon::parse($startDate)->format('F Y');
-        $invoice = $this->invoiceService->createLockerInvoice(
-            $member,
-            sprintf('Locker %s monthly fee (%s)', $locker->locker_number, $monthLabel),
-            $monthlyFee,
-        );
+        $invoice = $this->invoiceService->createLockerInvoice($member, $monthlyFee);
 
         if ($invoice === null) {
             return null;

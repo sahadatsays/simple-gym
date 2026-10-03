@@ -36,10 +36,16 @@ class AssignRfidCardRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $member = Member::query()->find($this->integer('member_id'));
-            $cardFee = (float) (GymSetting::query()->value('rfid_card_fee') ?? 0);
+            $settings = GymSetting::query()->first();
+            $cardFee = $member !== null && ! $member->hasPaidRfidCardFee()
+                ? (float) ($settings->rfid_card_fee ?? 0)
+                : 0.0;
+            $deposit = $member !== null && ! $member->hasPaidRfidDeposit()
+                ? (float) ($settings->rfid_card_deposit ?? 0)
+                : 0.0;
 
-            if ($member !== null && ! $member->hasPaidRfidCardFee() && Money::greaterThan($cardFee, 0) && ! $this->filled('payment_method')) {
-                $validator->errors()->add('payment_method', 'Choose a payment method for the card fee.');
+            if (Money::greaterThan($cardFee + $deposit, 0) && ! $this->filled('payment_method')) {
+                $validator->errors()->add('payment_method', 'Choose a payment method for the card charge.');
             }
         });
     }

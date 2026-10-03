@@ -152,7 +152,8 @@ it('collects configured rfid charges on a separate invoice during registration',
         ->and((float) $membershipInvoice->total)->toBe(2000.0)
         ->and($membershipInvoice->line_items)->toHaveCount(2)
         ->and((float) $rfidInvoice->total)->toBe(100.0)
-        ->and($rfidInvoice->line_items[0]['description'])->toBe('RFID card fee')
+        ->and($rfidInvoice->line_items[0]['description'])->toBe('RFID Card')
+        ->and((float) $rfidInvoice->total)->toEqual(collect($rfidInvoice->line_items)->sum('amount'))
         ->and($rfidPayment->type)->toBe(PaymentType::RfidCard)
         ->and((float) $rfidPayment->amount)->toBe(100.0);
 });
@@ -239,8 +240,11 @@ it('registers a member against the discounted admission and plan total', functio
         ->and((float) $invoice->subtotal)->toBe(2000.0)
         ->and((float) $invoice->discount_amount)->toBe(400.0)
         ->and((float) $invoice->total)->toBe(1600.0)
+        ->and($invoice->line_items[0]['description'])->toBe('Admission Fee')
         ->and($invoice->line_items[0]['amount'])->toEqual(500)
-        ->and($invoice->line_items[1]['amount'])->toEqual(1500);
+        ->and($invoice->line_items[1]['description'])->toBe('Membership')
+        ->and($invoice->line_items[1]['amount'])->toEqual(1500)
+        ->and((float) $invoice->total)->toEqual(collect($invoice->line_items)->sum('amount') - (float) $invoice->discount_amount);
 
     $payment = Payment::query()->where('member_id', $member->id)->first();
 

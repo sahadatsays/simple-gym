@@ -53,12 +53,20 @@ class RfidCardService extends BaseService
 
             $this->assertCardCanBeAssigned($card);
 
-            $cardFee = $this->dueCardFee($member);
-            $invoice = $this->collectCardFee($member, $cardFee, $paymentMethod);
+            $charges = $this->issueCharges($member);
+            $invoice = $this->collectCharges($member, $charges, $paymentMethod);
 
             $this->closeAssignedCardsForMember($member);
 
-            return $this->activateAssignment($card, $member, $cardFee, $invoice, 'rfid_card.assigned', 'RFID card assigned to member');
+            return $this->activateAssignment(
+                $card,
+                $member,
+                $charges['card_fee'],
+                $charges['deposit'],
+                $invoice,
+                'rfid_card.assigned',
+                'RFID card assigned to member',
+            );
         });
     }
 
@@ -114,12 +122,20 @@ class RfidCardService extends BaseService
 
             $this->assertCardCanBeAssigned($card);
 
-            $cardFee = $this->dueCardFee($member);
-            $invoice = $this->collectCardFee($member, $cardFee, $paymentMethod);
+            $charges = $this->replacementCharges();
+            $invoice = $this->collectCharges($member, $charges, $paymentMethod);
 
             $this->closeAssignedCardsForMember($member);
 
-            return $this->activateAssignment($card, $member, $cardFee, $invoice, 'rfid_card.replaced', 'Member RFID card replaced');
+            return $this->activateAssignment(
+                $card,
+                $member,
+                0,
+                0,
+                $invoice,
+                'rfid_card.replaced',
+                'Member RFID card replaced',
+            );
         });
     }
 
@@ -143,26 +159,26 @@ class RfidCardService extends BaseService
                 throw new InvalidArgumentException('This card has no open assignment to charge.');
             }
 
-            if ($assignment->invoice_id !== null || $card->member->hasPaidRfidCardFee()) {
-                throw new InvalidArgumentException('This member has already paid the card fee.');
+            if ($assignment->invoice_id !== null) {
+                throw new InvalidArgumentException('The card charges for this assignment have already been collected.');
             }
 
-            $cardFee = Money::round((float) $this->gymSettings->get()->rfid_card_fee);
+            $charges = $this->issueCharges($card->member);
 
-            if (! Money::greaterThan($cardFee, 0)) {
+            if (! Money::greaterThan($this->chargeTotal($charges), 0)) {
                 throw new InvalidArgumentException('Set the card fee in Settings before collecting payment.');
             }
 
-            $invoice = $this->collectCardFee($card->member, $cardFee, $paymentMethod);
+            $invoice = $this->collectCharges($card->member, $charges, $paymentMethod);
 
             $card = $this->rfidCards->update($card, [
-                'card_fee' => $cardFee,
-                'deposit_amount' => 0,
+                'card_fee' => $charges['card_fee'],
+                'deposit_amount' => $charges['deposit'],
             ]);
 
             $assignment->update([
-                'card_fee' => $cardFee,
-                'deposit_amount' => 0,
+                'card_fee' => $charges['card_fee'],
+                'deposit_amount' => $charges['deposit'],
                 'invoice_id' => $invoice?->id,
             ]);
 
@@ -358,25 +374,53 @@ class RfidCardService extends BaseService
         }
     }
 
-    private function dueCardFee(Member $member): float
+    /**
+     * @return array{card_fee: float, deposit: float, replacement_fee: float}
+     */
+    private function issueCharges(Member $member): array
     {
-        if ($member->hasPaidRfidCardFee()) {
-            return 0.0;
-        }
+        $settings = $this->gymSettings->get();
 
-        return Money::round((float) $this->gymSettings->get()->rfid_card_fee);
+        return [
+            'card_fee' => $member->hasPaidRfidCardFee() ? 0.0 : Money::round((float) $settings->rfid_card_fee),
+            'deposit' => $member->hasPaidRfidDeposit() ? 0.0 : Money::round((float) $settings->rfid_card_deposit),
+            'replacement_fee' => 0.0,
+        ];
     }
 
-    private function collectCardFee(Member $member, float $cardFee, ?string $paymentMethod): ?Invoice
+    /**
+     * @return array{card_fee: float, deposit: float, replacement_fee: float}
+     */
+    private function replacementCharges(): array
     {
-        $invoice = $this->invoiceService->createRfidInvoice($member, $cardFee);
+        return [
+            'card_fee' => 0.0,
+            'deposit' => 0.0,
+            'replacement_fee' => Money::round((float) $this->gymSettings->get()->rfid_replacement_card_fee),
+        ];
+    }
+
+    /**
+     * @param  array{card_fee: float, deposit: float, replacement_fee: float}  $charges
+     */
+    private function chargeTotal(array $charges): float
+    {
+        return Money::round($charges['card_fee'] + $charges['deposit'] + $charges['replacement_fee']);
+    }
+
+    /**
+     * @param  array{card_fee: float, deposit: float, replacement_fee: float}  $charges
+     */
+    private function collectCharges(Member $member, array $charges, ?string $paymentMethod): ?Invoice
+    {
+        $invoice = $this->invoiceService->createRfidInvoice($member, $charges);
 
         if ($invoice === null) {
             return null;
         }
 
         if ($paymentMethod === null || $paymentMethod === '') {
-            throw new InvalidArgumentException('Choose a payment method for the card fee.');
+            throw new InvalidArgumentException('Choose a payment method for the card charge.');
         }
 
         $this->paymentService->settleInvoice(
@@ -390,14 +434,14 @@ class RfidCardService extends BaseService
         return $invoice->fresh();
     }
 
-    private function activateAssignment(RfidCard $card, Member $member, float $cardFee, ?Invoice $invoice, string $event, string $message): RfidCard
+    private function activateAssignment(RfidCard $card, Member $member, float $cardFee, float $depositAmount, ?Invoice $invoice, string $event, string $message): RfidCard
     {
         $assignedCard = $this->rfidCards->update($card, [
             'status' => RfidCardStatus::Assigned,
             'member_id' => $member->id,
             'assigned_at' => now(),
             'card_fee' => $cardFee,
-            'deposit_amount' => 0,
+            'deposit_amount' => $depositAmount,
         ]);
 
         RfidCardAssignment::query()->create([
@@ -406,7 +450,7 @@ class RfidCardService extends BaseService
             'issue_date' => now(),
             'return_date' => null,
             'card_fee' => $cardFee,
-            'deposit_amount' => 0,
+            'deposit_amount' => $depositAmount,
             'status' => RfidCardStatus::Assigned,
             'invoice_id' => $invoice?->id,
             'open_card_id' => $assignedCard->id,

@@ -39,6 +39,8 @@ class RfidCardController extends Controller
             'members' => Member::query()->orderBy('name')->get(['id', 'name', 'member_code']),
             'filters' => $filters,
             'cardFee' => (float) $settings->rfid_card_fee,
+            'cardDeposit' => (float) $settings->rfid_card_deposit,
+            'replacementFee' => (float) $settings->rfid_replacement_card_fee,
         ]);
     }
 

@@ -37,11 +37,10 @@ class ReplaceRfidCardRequest extends FormRequest
                 return;
             }
 
-            $member = Member::query()->find($this->integer('member_id'));
-            $cardFee = (float) (GymSetting::query()->value('rfid_card_fee') ?? 0);
+            $replacementFee = (float) (GymSetting::query()->value('rfid_replacement_card_fee') ?? 0);
 
-            if ($member !== null && ! $member->hasPaidRfidCardFee() && Money::greaterThan($cardFee, 0) && ! $this->filled('payment_method')) {
-                $validator->errors()->add('payment_method', 'Choose a payment method for the card fee.');
+            if (Money::greaterThan($replacementFee, 0) && ! $this->filled('payment_method')) {
+                $validator->errors()->add('payment_method', 'Choose a payment method for the replacement card fee.');
             }
         });
     }

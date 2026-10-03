@@ -3,7 +3,7 @@
 @section('title', 'RFID Cards')
 
 @section('content')
-    <x-ui.page-header title="RFID Cards" subtitle="Register, assign, replace, disable, and enable member access cards. Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} is collected once per member. Set it in Settings.">
+    <x-ui.page-header title="RFID Cards" subtitle="Register, assign, replace, disable, and enable member access cards. RFID Card {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}, RFID Deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}, RFID Replacement {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}. Set those amounts in Settings.">
         <x-slot:actions>
             @can('create', App\Models\RfidCard::class)
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerCardModal">
@@ -91,6 +91,8 @@
                                         :card="$card"
                                         :members="$members"
                                         :card-fee="$cardFee"
+                                        :card-deposit="$cardDeposit"
+                                        :replacement-fee="$replacementFee"
                                         :gym-currency="$gymCurrency"
                                     />
                                 </td>
@@ -171,9 +173,9 @@
                                 required
                             />
                             <p class="text-muted small">
-                                The card fee is collected once per member. A member who already paid is not charged again. The previous assignment stays in history.
+                                RFID Replacement {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}. The previous assignment stays in history.
                             </p>
-                            @if ($cardFee > 0)
+                            @if ($replacementFee > 0)
                                 <x-forms.select
                                     label="Payment method"
                                     name="payment_method"

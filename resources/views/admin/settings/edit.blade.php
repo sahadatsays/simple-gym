@@ -113,7 +113,25 @@
                         label="Card fee"
                         name="rfid_card_fee"
                         :value="$settings->rfid_card_fee"
-                        help="Charged once, the first time a member receives an RFID card. Replacing that card does not charge the fee again."
+                        help="Invoiced as RFID Card the first time a member receives a card."
+                        required
+                        :disabled="! $canUpdate"
+                    />
+
+                    <x-forms.money-input
+                        label="Card deposit"
+                        name="rfid_card_deposit"
+                        :value="$settings->rfid_card_deposit"
+                        help="Invoiced as RFID Deposit with the first card. It is not charged again on replacement."
+                        required
+                        :disabled="! $canUpdate"
+                    />
+
+                    <x-forms.money-input
+                        label="Replacement card fee"
+                        name="rfid_replacement_card_fee"
+                        :value="$settings->rfid_replacement_card_fee"
+                        help="Invoiced as RFID Replacement when an active card is replaced."
                         required
                         :disabled="! $canUpdate"
                     />

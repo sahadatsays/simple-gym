@@ -31,6 +31,18 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class Invoice extends Model
 {
+    public const LineAdmission = 'Admission Fee';
+
+    public const LineMembership = 'Membership';
+
+    public const LineRfidCard = 'RFID Card';
+
+    public const LineRfidDeposit = 'RFID Deposit';
+
+    public const LineRfidReplacement = 'RFID Replacement';
+
+    public const LineLocker = 'Locker';
+
     /** @use HasFactory<InvoiceFactory> */
     use HasFactory;
 
@@ -185,16 +197,29 @@ class Invoice extends Model
 
     public function includesRfidCardFee(): bool
     {
+        return $this->includesPaidCharge([self::LineRfidCard, 'RFID card fee']);
+    }
+
+    public function includesRfidDeposit(): bool
+    {
+        return $this->includesPaidCharge([self::LineRfidDeposit, 'RFID card deposit']);
+    }
+
+    /**
+     * @param  array<int, string>  $descriptions
+     */
+    private function includesPaidCharge(array $descriptions): bool
+    {
         if ($this->type !== InvoiceType::RfidCard || $this->status !== InvoiceStatus::Paid) {
             return false;
         }
 
-        return collect($this->line_items)->contains(function (mixed $item): bool {
+        return collect($this->line_items)->contains(function (mixed $item) use ($descriptions): bool {
             if (! is_array($item)) {
                 return false;
             }
 
-            return ($item['description'] ?? '') === 'RFID card fee'
+            return in_array($item['description'] ?? '', $descriptions, true)
                 && Money::greaterThan((float) ($item['amount'] ?? 0), 0);
         });
     }

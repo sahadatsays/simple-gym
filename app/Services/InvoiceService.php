@@ -28,13 +28,13 @@ class InvoiceService extends BaseService
 
         if ((float) $plan->admission_fee > 0) {
             $lineItems[] = [
-                'description' => 'Admission Fee',
+                'description' => Invoice::LineAdmission,
                 'amount' => (float) $plan->admission_fee,
             ];
         }
 
         $lineItems[] = [
-            'description' => 'Membership Fee',
+            'description' => Invoice::LineMembership,
             'amount' => (float) $plan->membership_fee,
         ];
 
@@ -48,7 +48,7 @@ class InvoiceService extends BaseService
     {
         $lineItems = [
             [
-                'description' => 'Membership Renewal Fee',
+                'description' => Invoice::LineMembership,
                 'amount' => (float) $plan->membership_fee,
             ],
         ];
@@ -107,23 +107,45 @@ class InvoiceService extends BaseService
         return $this->createInvoice($member, $plan, InvoiceType::Renewal, $charges, $dueAt);
     }
 
-    public function createRfidInvoice(Member $member, float $cardFee): ?Invoice
+    /**
+     * @param  array{card_fee?: float, deposit?: float, replacement_fee?: float}  $charges
+     */
+    public function createRfidInvoice(Member $member, array $charges): ?Invoice
     {
-        if (! Money::greaterThan($cardFee, 0)) {
+        $lineItems = [];
+        $cardFee = Money::round((float) ($charges['card_fee'] ?? 0));
+        $deposit = Money::round((float) ($charges['deposit'] ?? 0));
+        $replacementFee = Money::round((float) ($charges['replacement_fee'] ?? 0));
+
+        if (Money::greaterThan($cardFee, 0)) {
+            $lineItems[] = [
+                'description' => Invoice::LineRfidCard,
+                'amount' => $cardFee,
+            ];
+        }
+
+        if (Money::greaterThan($deposit, 0)) {
+            $lineItems[] = [
+                'description' => Invoice::LineRfidDeposit,
+                'amount' => $deposit,
+            ];
+        }
+
+        if (Money::greaterThan($replacementFee, 0)) {
+            $lineItems[] = [
+                'description' => Invoice::LineRfidReplacement,
+                'amount' => $replacementFee,
+            ];
+        }
+
+        if ($lineItems === []) {
             return null;
         }
 
-        $charges = $this->buildChargeSummary([
-            [
-                'description' => 'RFID card fee',
-                'amount' => Money::round($cardFee),
-            ],
-        ]);
-
-        return $this->createChargeInvoice($member, InvoiceType::RfidCard, $charges);
+        return $this->createChargeInvoice($member, InvoiceType::RfidCard, $this->buildChargeSummary($lineItems));
     }
 
-    public function createLockerInvoice(Member $member, string $description, float $amount): ?Invoice
+    public function createLockerInvoice(Member $member, float $amount): ?Invoice
     {
         if (! Money::greaterThan($amount, 0)) {
             return null;
@@ -131,7 +153,7 @@ class InvoiceService extends BaseService
 
         $charges = $this->buildChargeSummary([
             [
-                'description' => $description,
+                'description' => Invoice::LineLocker,
                 'amount' => Money::round($amount),
             ],
         ]);

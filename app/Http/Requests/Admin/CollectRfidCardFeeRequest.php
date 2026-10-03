@@ -33,10 +33,18 @@ class CollectRfidCardFeeRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $cardFee = (float) (GymSetting::query()->value('rfid_card_fee') ?? 0);
+            $card = $this->route('rfid_card');
+            $member = $card instanceof RfidCard ? $card->member : null;
+            $settings = GymSetting::query()->first();
+            $cardFee = $member !== null && ! $member->hasPaidRfidCardFee()
+                ? (float) ($settings->rfid_card_fee ?? 0)
+                : 0.0;
+            $deposit = $member !== null && ! $member->hasPaidRfidDeposit()
+                ? (float) ($settings->rfid_card_deposit ?? 0)
+                : 0.0;
 
-            if (Money::greaterThan($cardFee, 0) && ! $this->filled('payment_method')) {
-                $validator->errors()->add('payment_method', 'Choose a payment method for the card fee.');
+            if (Money::greaterThan($cardFee + $deposit, 0) && ! $this->filled('payment_method')) {
+                $validator->errors()->add('payment_method', 'Choose a payment method for the card charge.');
             }
         });
     }

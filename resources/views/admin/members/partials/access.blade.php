@@ -1,8 +1,12 @@
 @php
     $activeCard = $member->activeRfidCard;
     $issueDate = $activeCard?->openAssignment?->issue_date ?? $activeCard?->assigned_at;
+    $cardDeposit = $cardDeposit ?? 0;
+    $replacementFee = $replacementFee ?? 0;
     $memberHasPaidCardFee = $member->hasPaidRfidCardFee();
     $cardFeeDue = $cardFee > 0 && ! $memberHasPaidCardFee;
+    $depositDue = $cardDeposit > 0 && ! $member->hasPaidRfidDeposit();
+    $issueChargeDue = $cardFeeDue || $depositDue;
 @endphp
 
 <div class="card border-0 shadow-sm mb-4">
@@ -11,7 +15,7 @@
             <h3 class="h6 fw-semibold mb-0">RFID Card</h3>
             <div class="d-flex flex-wrap gap-2">
                 @if ($activeCard)
-                    @if ($cardFeeDue && $activeCard->openAssignment?->invoice_id === null)
+                    @if ($issueChargeDue && $activeCard->openAssignment?->invoice_id === null)
                         @can('assign', $activeCard)
                             <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#memberCollectCardFeeModal">
                                 Collect fee
@@ -196,7 +200,7 @@
                         </div>
                         <div class="modal-body">
                             <p class="text-muted small">
-                                Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} is collected once for this member.
+                                RFID Card {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}, RFID Deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}.
                             </p>
                             <x-forms.input
                                 label="Card number"
@@ -204,7 +208,7 @@
                                 placeholder="Scan or enter RFID"
                                 required
                             />
-                            @if ($cardFeeDue)
+                            @if ($issueChargeDue)
                                 <x-forms.select
                                     label="Payment method"
                                     name="payment_method"
@@ -225,7 +229,7 @@
     @endunless
 
     @if ($activeCard)
-        @if ($cardFeeDue && $activeCard->openAssignment?->invoice_id === null)
+        @if ($issueChargeDue && $activeCard->openAssignment?->invoice_id === null)
             @can('assign', $activeCard)
                 <div class="modal fade" id="memberCollectCardFeeModal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -238,7 +242,12 @@
                                 </div>
                                 <div class="modal-body">
                                     <p class="text-muted small">
-                                        Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} is collected once for this member.
+                                        @if ($cardFeeDue)
+                                            RFID Card {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}.
+                                        @endif
+                                        @if ($depositDue)
+                                            RFID Deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}.
+                                        @endif
                                     </p>
                                     <x-forms.select
                                         label="Payment method"
@@ -271,11 +280,7 @@
                         <div class="modal-body">
                             <p class="text-muted small">
                                 The current assignment stays in history.
-                                @if ($memberHasPaidCardFee)
-                                    This member has already paid the card fee.
-                                @else
-                                    Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} will be collected now.
-                                @endif
+                                RFID Replacement {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}.
                             </p>
                             <x-forms.input
                                 label="New card number"
@@ -283,7 +288,7 @@
                                 placeholder="Scan or enter new RFID"
                                 required
                             />
-                            @if ($cardFeeDue)
+                            @if ($replacementFee > 0)
                                 <x-forms.select
                                     label="Payment method"
                                     name="payment_method"

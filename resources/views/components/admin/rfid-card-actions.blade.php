@@ -1,8 +1,11 @@
-@props(['card', 'members', 'cardFee' => 0, 'gymCurrency' => 'BDT'])
+@props(['card', 'members', 'cardFee' => 0, 'cardDeposit' => 0, 'replacementFee' => 0, 'gymCurrency' => 'BDT'])
 
 @php
     $memberHasPaidCardFee = $card->member?->hasPaidRfidCardFee() ?? false;
+    $memberHasPaidDeposit = $card->member?->hasPaidRfidDeposit() ?? false;
     $cardFeeDue = $cardFee > 0 && ! $memberHasPaidCardFee;
+    $depositDue = $cardDeposit > 0 && ! $memberHasPaidDeposit;
+    $issueChargeDue = $cardFeeDue || $depositDue;
 @endphp
 
 <div class="dropdown d-inline-block">
@@ -36,7 +39,7 @@
             @endcan
         @endif
 
-        @if ($card->isActive() && $cardFeeDue && $card->openAssignment?->invoice_id === null)
+        @if ($card->isActive() && $issueChargeDue && $card->openAssignment?->invoice_id === null)
             @can('assign', $card)
                 <li>
                     <button
@@ -127,7 +130,7 @@
     </ul>
 </div>
 
-@if ($card->isActive() && $cardFeeDue && $card->openAssignment?->invoice_id === null)
+@if ($card->isActive() && $issueChargeDue && $card->openAssignment?->invoice_id === null)
     @can('assign', $card)
         <div class="modal fade" id="collectCardFeeModal-{{ $card->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -140,7 +143,13 @@
                         </div>
                         <div class="modal-body">
                             <p class="text-muted small">
-                                Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}. This is collected once for the member. The current assignment stays in place.
+                                @if ($cardFeeDue)
+                                    RFID Card {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}.
+                                @endif
+                                @if ($depositDue)
+                                    RFID Deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}.
+                                @endif
+                                The current assignment stays in place.
                             </p>
                             <x-forms.select
                                 label="Payment method"
@@ -175,7 +184,7 @@
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
                                 Assign <strong>{{ $card->card_number }}</strong> to a member. The member's current card assignment will be closed.
-                                Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} is collected once per member.
+                                RFID Card {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }}, RFID Deposit {{ App\Support\MoneyFormatter::format($cardDeposit, $gymCurrency) }}.
                             </p>
                             <x-forms.searchable-select
                                 label="Member"
@@ -185,7 +194,7 @@
                                 placeholder="Search member..."
                                 required
                             />
-                            @if ($cardFee > 0)
+                            @if ($cardFee > 0 || $cardDeposit > 0)
                                 <x-forms.select
                                     label="Payment method"
                                     name="payment_method"
@@ -221,11 +230,7 @@
                         <div class="modal-body">
                             <p class="text-muted small mb-3">
                                 Replace the active card for <strong>{{ $card->member->name }}</strong>. The current assignment will be closed and kept in history.
-                                @if ($memberHasPaidCardFee)
-                                    This member has already paid the card fee, so this replacement is not charged.
-                                @else
-                                    Card fee {{ App\Support\MoneyFormatter::format($cardFee, $gymCurrency) }} will be collected if it has not been paid yet.
-                                @endif
+                                RFID Replacement {{ App\Support\MoneyFormatter::format($replacementFee, $gymCurrency) }}.
                             </p>
                             <x-forms.input
                                 label="New card number"
@@ -233,7 +238,7 @@
                                 placeholder="Scan or enter new RFID"
                                 required
                             />
-                            @if ($cardFeeDue)
+                            @if ($replacementFee > 0)
                                 <x-forms.select
                                     label="Payment method"
                                     name="payment_method"

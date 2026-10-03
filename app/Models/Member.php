@@ -154,6 +154,15 @@ class Member extends Model
         return $invoices->contains(fn (Invoice $invoice): bool => $invoice->includesRfidCardFee());
     }
 
+    public function hasPaidRfidDeposit(): bool
+    {
+        $invoices = $this->relationLoaded('paidRfidCardFeeInvoices')
+            ? $this->paidRfidCardFeeInvoices
+            : $this->paidRfidCardFeeInvoices()->get();
+
+        return $invoices->contains(fn (Invoice $invoice): bool => $invoice->includesRfidDeposit());
+    }
+
     /**
      * @return HasMany<MembershipRenewal, $this>
      */
